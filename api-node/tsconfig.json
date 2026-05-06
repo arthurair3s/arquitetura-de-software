@@ -2,6 +2,10 @@
   "compilerOptions": {
     "types": ["node"],
     "esModuleInterop": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "allowJs": true,
+    "strict": true,
+    "target": "ES2022",
+    "outDir": "./dist"
   }
 }
