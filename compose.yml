@@ -1,9 +1,8 @@
 name: express-delivery
 
 services:
-  db:
+  postgres_db:
     image: postgres:15-alpine
-    container_name: db_postgres
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
@@ -23,7 +22,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: db_redis
     ports:
       - '6379:6379'
     restart: unless-stopped
@@ -34,14 +32,13 @@ services:
     build:
       context: .
       dockerfile: ms-entregadores-cs/Dockerfile
-    container_name: ms_entregadores
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5001
-      ConnectionStrings__DefaultConnection: Host=db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+      ConnectionStrings__DefaultConnection: Host=postgres_db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
       ConnectionStrings__RedisConnection: redis:6379
     depends_on:
-      db:
+      postgres_db:
         condition: service_healthy
       redis:
         condition: service_started
@@ -55,7 +52,6 @@ services:
     build:
       context: .
       dockerfile: ms-roteamento-cs/Dockerfile
-    container_name: ms_roteamento
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5002
@@ -71,7 +67,6 @@ services:
 
   osrm-server:
     image: osrm/osrm-backend
-    container_name: osrm_server
     ports:
       - '5080:5000'
     volumes:
@@ -86,16 +81,15 @@ services:
     build:
       context: ./api-node
       dockerfile: Dockerfile
-    container_name: api_delivery
     expose:
       - '4000'
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?schema=public
-      ENTREGADORES_SERVICE_URL: ms_entregadores:5001
-      ROTEAMENTO_SERVICE_URL: ms_roteamento:5002
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@postgres_db:5432/${DB_NAME}?schema=public
+      ENTREGADORES_SERVICE_URL: ms-entregadores:5001
+      ROTEAMENTO_SERVICE_URL: ms-roteamento:5002
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      db:
+      postgres_db:
         condition: service_healthy
       ms-entregadores:
         condition: service_started
@@ -110,11 +104,10 @@ services:
     networks:
       - app-network
 
-  frontend:
+  web:
     build:
       context: ./frontend-web
       dockerfile: Dockerfile
-    container_name: frontend_web
     expose:
       - '5173'
     depends_on:
@@ -127,7 +120,6 @@ services:
 
   kong:
     image: kong:3.4
-    container_name: kong-gateway
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
