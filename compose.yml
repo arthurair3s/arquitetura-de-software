@@ -71,7 +71,7 @@ services:
       - '5080:5000'
     volumes:
       - ./osrm-data:/data
-    command: osrm-routed --algorithm mld /data/sudeste-260505.osrm
+    command: osrm-routed --algorithm mld /data/sudeste-260509.osrm
     restart: unless-stopped
     networks:
       app-network:
