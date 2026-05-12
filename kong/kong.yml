@@ -23,13 +23,13 @@ services:
           - /graphql
         strip_path: false
 
-  - name: frontend
-    url: http://frontend:5173/
+  - name: web
+    url: http://web:5173/
     connect_timeout: 5000
     read_timeout: 30000
     write_timeout: 30000
     routes:
-      - name: frontend-route
+      - name: web-route
         paths:
           - /
         strip_path: false
