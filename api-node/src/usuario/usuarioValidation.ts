@@ -23,9 +23,8 @@ export const editarUsuarioSchema = z.object({
 export const atualizarEnderecoSchema = z.object({
   latitude: z.coerce.number().nullable().optional(),
   longitude: z.coerce.number().nullable().optional(),
-  endereco: z.string().min(1, "O endereço não pode ser vazio.")
+  endereco: z.string().min(1, "O endereço não pode ser vazio.").optional().nullable()
 }).refine(data => {
-  // Ajuste para aceitar null ou undefined conforme o frontend envia
   return (data.latitude != null && data.longitude != null) || (data.endereco && data.endereco.trim() !== "")
 }, {
   message: "Forneça coordenadas válidas ou um endereço em texto."
