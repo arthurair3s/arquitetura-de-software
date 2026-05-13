@@ -6,7 +6,7 @@ export const pagamentoResolver = {
   Query,
   Mutation,
   Pagamento: {
-    pedido: async parent => {
+    pedido: async (parent: any) => {
       if (!parent.pedido_id) return null
       return pedidoService.buscarPorId(parent.pedido_id)
     }
