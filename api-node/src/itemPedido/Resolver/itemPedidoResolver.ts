@@ -7,10 +7,12 @@ export const itemPedidoResolver = {
   Query,
   Mutation,
   ItemPedido: {
-    pedido: async parent => {
+    pedido: async (parent: any) => {
+      if (!parent.pedido_id) return null
       return pedidoService.buscarPorId(parent.pedido_id)
     },
-    produto: async parent => {
+    produto: async (parent: any) => {
+      if (!parent.produto_id) return null
       return produtoService.buscarPorId(parent.produto_id)
     }
   }
