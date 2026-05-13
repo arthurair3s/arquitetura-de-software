@@ -1,5 +1,5 @@
 import * as produtoRepository from './produtoRepository.js'
-import { Produto } from './domain/Produto.js'
+import { Produto, ProdutoInvalidoError } from './domain/Produto.js'
 
 export const listar = async (): Promise<Produto[]> => {
   return produtoRepository.listarProdutos()
@@ -24,7 +24,7 @@ export const criar = async (dados: {
     dados.preco,
     undefined,
     dados.descricao,
-    dados.categoria_id ? Number(dados.categoria_id) : null
+    dados.categoria_id != null ? Number(dados.categoria_id) : null
   );
   return produtoRepository.criarProduto(produto)
 }
@@ -37,21 +37,14 @@ export const editarPorId = async (id: number | string, dados: {
 }): Promise<Produto> => {
   const produtoAtual = await produtoRepository.buscarProdutoPorId(id);
   if (!produtoAtual) {
-    throw new Error('Produto não encontrado');
+    throw new ProdutoInvalidoError('Produto não encontrado');
   }
 
   if (dados.nome !== undefined) produtoAtual.nome = dados.nome;
   if (dados.preco !== undefined) produtoAtual.preco = Number(dados.preco);
   if (dados.descricao !== undefined) produtoAtual.descricao = dados.descricao;
   // categoria_id é readonly no momento, mas pode ser atualizada via repo se não tiver regra associada
-  const updateData: Partial<Produto> = {
-    nome: produtoAtual.nome,
-    preco: produtoAtual.preco,
-    descricao: produtoAtual.descricao,
-    categoria_id: dados.categoria_id != null ? Number(dados.categoria_id) : produtoAtual.categoria_id
-  };
-
-  return produtoRepository.editarProdutoPorId(id, updateData)
+  return produtoRepository.editarProdutoPorId(id, produtoAtual)
 }
 
 export const deletar = async (id: number | string): Promise<boolean> => {

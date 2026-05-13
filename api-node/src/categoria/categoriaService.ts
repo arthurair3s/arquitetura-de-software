@@ -1,5 +1,5 @@
 import * as categoriaRepository from './categoriaRepository.js'
-import { Categoria } from './domain/Categoria.js'
+import { Categoria, CategoriaInvalidaError } from './domain/Categoria.js'
 
 export const listar = async (): Promise<Categoria[]> => {
   return categoriaRepository.listarCategorias()
@@ -22,19 +22,14 @@ export const criar = async (dados: { nome: string; restaurante_id: string }): Pr
 export const editarPorId = async (id: number | string, dados: { nome?: string; restaurante_id?: number }): Promise<Categoria> => {
   const categoriaAtual = await categoriaRepository.buscarCategoriaPorId(id);
   if (!categoriaAtual) {
-    throw new Error('Categoria não encontrada');
+    throw new CategoriaInvalidaError('Categoria não encontrada');
   }
 
   if (dados.nome !== undefined) {
     categoriaAtual.nome = dados.nome;
   }
   
-  const updateData: { nome?: string; restaurante_id?: number } = {
-    nome: categoriaAtual.nome,
-    restaurante_id: dados.restaurante_id != null ? Number(dados.restaurante_id) : categoriaAtual.restaurante_id || undefined
-  };
-
-  return categoriaRepository.editarCategoriaPorId(id, updateData)
+  return categoriaRepository.editarCategoriaPorId(id, categoriaAtual)
 }
 
 export const deletar = async (id: number | string): Promise<boolean> => {

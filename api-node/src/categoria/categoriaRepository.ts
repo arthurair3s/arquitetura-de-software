@@ -25,7 +25,7 @@ export const criarCategoria = async (categoria: Categoria): Promise<Categoria> =
   const novaCategoria = await prisma.categorias.create({
     data: { 
       nome: categoria.nome, 
-      restaurante_id: categoria.restaurante_id ? Number(categoria.restaurante_id) : undefined 
+      restaurante_id: categoria.restaurante_id != null ? Number(categoria.restaurante_id) : undefined 
     }
   })
   return Categoria.criar(novaCategoria)
@@ -36,7 +36,7 @@ export const editarCategoriaPorId = async (id: number | string, categoria: Parti
     where: { id: Number(id) },
     data: {
       nome: categoria.nome,
-      restaurante_id: categoria.restaurante_id ? Number(categoria.restaurante_id) : undefined
+      restaurante_id: categoria.restaurante_id != null ? Number(categoria.restaurante_id) : undefined
     }
   })
   return Categoria.criar(categoriaAtualizada)
