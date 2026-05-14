@@ -1,13 +1,23 @@
 import * as entregaRepository from './entregaRepository.js'
 import * as pedidoRepository from '../pedido/pedidoRepository.js'
 import * as restauranteRepository from '../restaurante/restauranteRepository.js'
-import * as entregadorService from '../entregador/entregadorService.js'
-import * as roteamentoService from '../roteamento/roteamentoService.js'
+import { EntregadorAppService } from '../entregador/application/entregadorService.js'
+import { EntregadorRepository } from '../entregador/infrastructure/entregadorRepository.js'
+import { RestauranteAppService } from '../restaurante/application/restauranteService.js'
+import { RestauranteRepository } from '../restaurante/infrastructure/restauranteRepository.js'
+const entregadorService = new EntregadorAppService(
+  new EntregadorRepository(),
+  new RestauranteAppService(new RestauranteRepository()),
+  new GrpcRoteamentoProvider()
+)
+import { RoteamentoAppService } from '../roteamento/application/roteamentoService.js'
+import { GrpcRoteamentoProvider } from '../roteamento/infrastructure/grpcRoteamentoProvider.js'
+const roteamentoService = new RoteamentoAppService(new GrpcRoteamentoProvider())
 import { Entrega, EntregaInvalidaError } from './domain/Entrega.js'
-import { logger } from '../utils/logger.js'
+import { logger } from '../shared/utils/logger.js'
 
 const activeSimulations = new Map<number, NodeJS.Timeout>();
-const routeCache = new Map<string, any>(); // cache de trajeto por entrega/status
+const routeCache = new Map<string, any>(); // cache de trajetos
 
 export const listar = async (): Promise<Entrega[]> => {
   return entregaRepository.listarEntregas()
@@ -45,7 +55,7 @@ export const editarPorId = async (id: number | string, dados: {
 
   if (dados.status !== undefined) entregaAtual.status = dados.status;
   if (dados.previsao_entrega !== undefined) entregaAtual.previsao_entrega = dados.previsao_entrega ? new Date(dados.previsao_entrega) : null;
-  // Note: changing IDs might require dropping down to repository or doing it via setters if exposed
+  // atualização de dados via setters ou repositório
 
   return entregaRepository.editarEntregaPorId(id, entregaAtual)
 }

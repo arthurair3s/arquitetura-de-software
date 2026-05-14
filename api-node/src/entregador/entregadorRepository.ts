@@ -1,6 +1,6 @@
 import entregadorClient from '../grpc/entregadorClient.js'
 import { Entregador } from './domain/Entregador.js'
-import { logger } from '../utils/logger.js'
+import { logger } from '../shared/utils/logger.js'
 
 export const criarEntregador = (entregador: Entregador): Promise<Entregador> => {
   return new Promise((resolve, reject) => {
@@ -37,7 +37,7 @@ export const buscarEntregadorPorId = (id: number | string): Promise<Entregador |
       { id: Number(id) },
       (error, response) => {
         if (error) {
-          if (error.code === 5) return resolve(null); // NOT_FOUND
+          if (error.code === 5) return resolve(null); // registro não encontrado
           return reject(error);
         }
         resolve(Entregador.criar(response))

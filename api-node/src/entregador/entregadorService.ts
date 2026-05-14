@@ -2,7 +2,7 @@ import * as restauranteRepository from '../restaurante/restauranteRepository.js'
 import * as entregadorRepository from './entregadorRepository.js'
 import roteamentoClient from '../grpc/roteamentoClient.js'
 import { Entregador, EntregadorInvalidoError } from './domain/Entregador.js'
-import { logger } from '../utils/logger.js'
+import { logger } from '../shared/utils/logger.js'
 
 let simulacaoInterval: any = null;
 const motoristasBases = new Map<number, { lat: number; lng: number }>();
@@ -143,7 +143,7 @@ export const povoarFrota = async (): Promise<boolean> => {
         try {
           await atualizarLocalizacao(e.id, snapped.latitude, snapped.longitude);
         } catch (err) {
-          // ignore
+
         }
       });
     } catch (err: any) {

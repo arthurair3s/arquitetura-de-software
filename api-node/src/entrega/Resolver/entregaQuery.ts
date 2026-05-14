@@ -1,6 +1,6 @@
-import * as entregaService from '../entregaService.js'
+import type { EntregaAppService } from '../application/entregaService.js'
 
-export const Query = {
-  entregas: async () => entregaService.listar(),
-  entrega: async (_: any, { id }: { id: string }) => entregaService.buscarPorId(id)
-}
+export const createEntregaQuery = (service: EntregaAppService) => ({
+  entregas: async () => service.listar(),
+  entrega: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+})
