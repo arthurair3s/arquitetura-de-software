@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { GraphQLError } from 'graphql'
 import * as usuarioRepository from './usuarioRepository.js'
 import { Usuario, UsuarioInvalidoError } from './domain/Usuario.js'
-import { logger } from '../utils/logger.js'
+import { logger } from '../shared/utils/logger.js'
 
 const JWT_SECRET = process.env.JWT_SECRET
 
