@@ -25,7 +25,6 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 
 const entregadorProto = grpc.loadPackageDefinition(packageDefinition) as any;
 
-// Interface para o serviço de entregadores seguindo o padrão I
 export interface IEntregadorServiceClient extends grpc.Client {
   CadastrarEntregador(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
   BuscarProximos(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
@@ -34,6 +33,7 @@ export interface IEntregadorServiceClient extends grpc.Client {
   EditarEntregador(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
   DeletarEntregador(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
   AtualizarStatus(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
+  AtualizarLocalizacaoStream(callback: (error: grpc.ServiceError | null, response: any) => void): grpc.ClientWritableStream<any>;
 }
 
 const client = new entregadorProto.EntregadorService(

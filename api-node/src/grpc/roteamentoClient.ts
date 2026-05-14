@@ -25,7 +25,6 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 
 const roteamentoProto = grpc.loadPackageDefinition(packageDefinition) as any;
 
-// Interface para o serviço de roteamento seguindo o padrão I
 export interface IRoteamentoServiceClient extends grpc.Client {
   CalcularResumoRota(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
   ObterGeometriaRota(request: any, callback: (error: grpc.ServiceError | null, response: any) => void): void;
