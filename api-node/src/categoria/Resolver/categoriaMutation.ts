@@ -1,8 +1,8 @@
-import * as categoriaService from '../categoriaService.js'
+import type { CategoriaAppService } from '../application/categoriaService.js'
 
-export const Mutation = {
-  criarCategoria: async (_: any, args: { nome: string; restaurante_id: string }) => 
-    categoriaService.criar(args),
+export const createCategoriaMutation = (service: CategoriaAppService) => ({
+  criarCategoria: async (_: any, args: { nome: string; restaurante_id: string }) =>
+    service.criar(args),
 
   editarCategoria: async (_: any, args: { id: string; nome?: string; restaurante_id?: string }) => {
     const { id, ...dados } = args
@@ -10,9 +10,9 @@ export const Mutation = {
       ...dados,
       restaurante_id: dados.restaurante_id ? Number(dados.restaurante_id) : undefined
     }
-    return categoriaService.editarPorId(id, updateData)
+    return service.editarPorId(id, updateData)
   },
 
-  deletarCategoria: async (_: any, { id }: { id: string }) => 
-    !!(await categoriaService.deletar(id))
-}
+  deletarCategoria: async (_: any, { id }: { id: string }) =>
+    !!(await service.deletar(id))
+})

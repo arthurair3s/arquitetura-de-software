@@ -13,7 +13,7 @@ export const buscarPorRestaurante = async (restaurante_id: number | string): Pro
   return categoriaRepository.buscarCategoriasPorRestaurante(restaurante_id)
 }
 
-// O Input vem do GraphQL, validamos usando a Entidade
+// validação dos dados de entrada usando a entidade
 export const criar = async (dados: { nome: string; restaurante_id: string }): Promise<Categoria> => {
   const categoria = new Categoria(dados.nome, undefined, Number(dados.restaurante_id));
   return categoriaRepository.criarCategoria(categoria)
