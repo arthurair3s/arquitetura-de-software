@@ -43,7 +43,7 @@ export const editarPorId = async (id: number | string, dados: {
   if (dados.nome !== undefined) produtoAtual.nome = dados.nome;
   if (dados.preco !== undefined) produtoAtual.preco = Number(dados.preco);
   if (dados.descricao !== undefined) produtoAtual.descricao = dados.descricao;
-  // categoria_id é readonly no momento, mas pode ser atualizada via repo se não tiver regra associada
+  // atualização da categoria via repositório
   return produtoRepository.editarProdutoPorId(id, produtoAtual)
 }
 
