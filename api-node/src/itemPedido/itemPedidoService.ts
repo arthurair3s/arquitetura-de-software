@@ -42,7 +42,7 @@ export const editarPorId = async (id: number | string, dados: {
   if (dados.quantidade !== undefined) itemAtual.quantidade = Number(dados.quantidade);
   if (dados.preco_unitario !== undefined) itemAtual.preco_unitario = Number(dados.preco_unitario);
   
-  // Notice we don't update pedido_id and produto_id as they are readonly.
+  // campos somente leitura não são atualizados
 
   return itemPedidoRepository.editarItemPedidoPorId(id, itemAtual)
 }
