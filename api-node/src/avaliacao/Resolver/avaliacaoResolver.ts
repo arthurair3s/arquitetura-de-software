@@ -1,12 +1,18 @@
-import { Query } from './avaliacaoQuery.js'
-import { Mutation } from './avaliacaoMutation.js'
+import { AvaliacaoRepository } from '../infrastructure/avaliacaoRepository.js'
+import { AvaliacaoAppService } from '../application/avaliacaoService.js'
+import { createAvaliacaoQuery } from './avaliacaoQuery.js'
+import { createAvaliacaoMutation } from './avaliacaoMutation.js'
 import * as usuarioService from '../../usuario/usuarioService.js'
 import * as restauranteService from '../../restaurante/restauranteService.js'
 import { Avaliacao } from '../domain/Avaliacao.js'
 
+// inicialização das dependências do módulo
+const repository = new AvaliacaoRepository()
+const service = new AvaliacaoAppService(repository)
+
 export const avaliacaoResolver = {
-  Query,
-  Mutation,
+  Query: createAvaliacaoQuery(service),
+  Mutation: createAvaliacaoMutation(service),
   Avaliacao: {
     usuario: async (parent: Avaliacao) => {
       if (!parent.usuario_id) return null

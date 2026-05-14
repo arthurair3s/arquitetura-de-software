@@ -1,6 +1,6 @@
-import * as avaliacaoService from '../avaliacaoService.js'
+import type { AvaliacaoAppService } from '../application/avaliacaoService.js'
 
-export const Query = {
-  avaliacoes: async () => avaliacaoService.listar(),
-  avaliacao: async (_: any, { id }: { id: string }) => avaliacaoService.buscarPorId(id)
-}
+export const createAvaliacaoQuery = (service: AvaliacaoAppService) => ({
+  avaliacoes: async () => service.listar(),
+  avaliacao: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+})
