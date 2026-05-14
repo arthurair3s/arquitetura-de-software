@@ -3,53 +3,79 @@ import * as pedidoRepository from '../pedido/pedidoRepository.js'
 import * as restauranteRepository from '../restaurante/restauranteRepository.js'
 import * as entregadorService from '../entregador/entregadorService.js'
 import * as roteamentoService from '../roteamento/roteamentoService.js'
+import { Entrega, EntregaInvalidaError } from './domain/Entrega.js'
 import { logger } from '../utils/logger.js'
 
-const activeSimulations = new Map();
-const routeCache = new Map(); // cache de trajeto por entrega/status
+const activeSimulations = new Map<number, NodeJS.Timeout>();
+const routeCache = new Map<string, any>(); // cache de trajeto por entrega/status
 
-export const listar = async () => {
+export const listar = async (): Promise<Entrega[]> => {
   return entregaRepository.listarEntregas()
 }
 
-export const buscarPorId = async id => {
+export const buscarPorId = async (id: number | string): Promise<Entrega | null> => {
   return entregaRepository.buscarEntregaPorId(id)
 }
 
-export const criar = async entrega => {
+export const criar = async (dados: {
+  pedido_id: number | string;
+  entregador_id: number | string;
+  status?: string;
+  previsao_entrega?: string | Date;
+}): Promise<Entrega> => {
+  const entrega = new Entrega(
+    Number(dados.pedido_id),
+    Number(dados.entregador_id),
+    dados.status,
+    dados.previsao_entrega ? new Date(dados.previsao_entrega) : null
+  );
   return entregaRepository.criarEntrega(entrega)
 }
 
-export const editarPorId = async (id, entrega) => {
-  return entregaRepository.editarEntregaPorId(id, entrega)
+export const editarPorId = async (id: number | string, dados: {
+  pedido_id?: number | string;
+  entregador_id?: number | string;
+  status?: string;
+  previsao_entrega?: string | Date;
+}): Promise<Entrega> => {
+  const entregaAtual = await entregaRepository.buscarEntregaPorId(id);
+  if (!entregaAtual) {
+    throw new EntregaInvalidaError('Entrega não encontrada');
+  }
+
+  if (dados.status !== undefined) entregaAtual.status = dados.status;
+  if (dados.previsao_entrega !== undefined) entregaAtual.previsao_entrega = dados.previsao_entrega ? new Date(dados.previsao_entrega) : null;
+  // Note: changing IDs might require dropping down to repository or doing it via setters if exposed
+
+  return entregaRepository.editarEntregaPorId(id, entregaAtual)
 }
 
-export const deletar = async id => {
+export const deletar = async (id: number | string): Promise<boolean> => {
   return entregaRepository.deletarEntrega(id)
 }
 
-export const buscarPorPedidoId = async id => {
+export const buscarPorPedidoId = async (id: number | string): Promise<Entrega[]> => {
   return entregaRepository.buscarEntregaPorPedidoId(id)
 }
 
-export const buscarPorEntregadorId = async id => {
+export const buscarPorEntregadorId = async (id: number | string): Promise<Entrega[]> => {
   return entregaRepository.buscarEntregaPorEntregadorId(id)
 }
 
-export const atribuirMelhorEntregador = async pedidoId => {
+export const atribuirMelhorEntregador = async (pedidoId: number | string): Promise<Entrega> => {
   const pedido = await pedidoRepository.buscarPedidoPorId(pedidoId)
-  if (!pedido) throw new Error('Pedido não encontrado.')
+  if (!pedido) throw new EntregaInvalidaError('Pedido não encontrado.')
 
   const restaurante = await restauranteRepository.buscarRestaurantePorId(pedido.restaurante_id)
-  if (!restaurante || !restaurante.latitude || !restaurante.longitude) {
-    throw new Error('Restaurante sem coordenadas geográficas cadastradas.')
+  if (!restaurante || restaurante.latitude == null || restaurante.longitude == null) {
+    throw new EntregaInvalidaError('Restaurante sem coordenadas geográficas cadastradas.')
   }
 
-  let candidatos = await entregadorService.listarProximosAoRestaurante(restaurante.id, 2.0)
+  let candidatos = await entregadorService.listarProximosAoRestaurante(restaurante.id!, 2.0)
   
   if (!candidatos || candidatos.length === 0) {
     logger.info(`Ninguém a 2.0km. Tentando busca elástica de 3.5km...`, 'EntregaService');
-    candidatos = await entregadorService.listarProximosAoRestaurante(restaurante.id, 3.5);
+    candidatos = await entregadorService.listarProximosAoRestaurante(restaurante.id!, 3.5);
   }
 
   let melhor = null
@@ -57,14 +83,14 @@ export const atribuirMelhorEntregador = async pedidoId => {
 
   if (!candidatos || candidatos.length === 0) {
     logger.warn(`Radar vazio para o restaurante ${restaurante.nome} (ID: ${restaurante.id}). Falha ao encontrar motoboys.`, 'EntregaService');
-    throw new Error('Nenhum entregador disponível num raio de 3.5km.');
+    throw new EntregaInvalidaError('Nenhum entregador disponível num raio de 3.5km.');
   }
 
-  const disponiveis = candidatos.filter(e => e.status === 'DISPONIVEL' || e.status === '1' || e.status === 1)
+  const disponiveis = candidatos.filter(e => e.status === 'DISPONIVEL' || e.status === '1' || (e.status as any) === 1)
 
   if (disponiveis.length === 0) {
     logger.warn('Candidatos no radar estão ocupados. Falhando atribuição.', 'EntregaService');
-    throw new Error('Todos os entregadores na região estão ocupados no momento.');
+    throw new EntregaInvalidaError('Todos os entregadores na região estão ocupados no momento.');
   }
 
   const selecionados = disponiveis.slice(0, 5) 
@@ -93,15 +119,15 @@ export const atribuirMelhorEntregador = async pedidoId => {
 
   const entrega = await criar({
     pedido_id: pedidoId,
-    entregador_id: melhor.id,
+    entregador_id: melhor.id!,
     status: 'ATRIBUIDA'
   })
 
-  if (melhor.status === 'DISPONIVEL' || melhor.status === '1' || melhor.status === 1) {
+  if (melhor.status === 'DISPONIVEL' || melhor.status === '1' || (melhor.status as any) === 1) {
     try {
-      await entregadorService.atualizarStatus(melhor.id, 'EM_ENTREGA')
+      await entregadorService.atualizarStatus(melhor.id!, 'EM_ENTREGA')
       logger.info(`Status de ${melhor.nome} alterado para EM_ENTREGA`, 'GRPC');
-    } catch (err) {
+    } catch (err: any) {
       logger.error(`Falha ao atualizar status do entregador: ${err.message}`, 'GRPC');
     }
   }
@@ -109,22 +135,22 @@ export const atribuirMelhorEntregador = async pedidoId => {
   return entrega
 }
 
-export const simularDeslocamento = async (entregaId) => {
-  if (activeSimulations.has(entregaId)) return true;
+export const simularDeslocamento = async (entregaId: number | string): Promise<boolean> => {
+  const entregaIdNum = Number(entregaId);
+  if (activeSimulations.has(entregaIdNum)) return true;
 
   const entrega = await buscarPorId(entregaId);
-  if (!entrega) throw new Error('entrega nao encontrada');
+  if (!entrega) throw new EntregaInvalidaError('entrega nao encontrada');
 
   const pedido = await pedidoRepository.buscarPedidoPorId(entrega.pedido_id);
   const motorista = await entregadorService.buscarPorId(entrega.entregador_id);
   
-  if (!pedido || !motorista) throw new Error('pedido ou motorista nao encontrado');
+  if (!pedido || !motorista) throw new EntregaInvalidaError('pedido ou motorista nao encontrado');
 
   const currentStatus = (entrega.status || "").trim().toUpperCase();
   logger.info(`Início para entrega ${entregaId}. Status: ${currentStatus}`, 'Simulação');
 
-  await entregadorService.bloquearParaSimulacao(entrega.entregador_id);
-  
+  entregadorService.bloquearParaSimulacao(entrega.entregador_id);
   await entregadorService.atualizarStatus(entrega.entregador_id, 'EM_ENTREGA');
 
   let destLat = Number(pedido.destino_latitude);
@@ -155,7 +181,7 @@ export const simularDeslocamento = async (entregaId) => {
   const interval = setInterval(async () => {
     if (pontos.length === 0) {
       clearInterval(interval);
-      activeSimulations.delete(entregaId);
+      activeSimulations.delete(entregaIdNum);
       
       if (currentStatus === 'ATRIBUIDA') {
         logger.info(`Sucesso: Chegou ao Restaurante. Atualizando para EM_TRANSITO.`, 'Simulação');
@@ -163,28 +189,30 @@ export const simularDeslocamento = async (entregaId) => {
       } else {
         logger.info(`Sucesso: Chegou ao Cliente. Finalizando entrega.`, 'Simulação');
         await editarPorId(entregaId, { status: 'ENTREGUE' });
-        await entregadorService.atualizarStatus(motorista.id, 'DISPONIVEL');
-        entregadorService.liberarDeSimulacao(motorista.id);
+        await entregadorService.atualizarStatus(motorista.id!, 'DISPONIVEL');
+        entregadorService.liberarDeSimulacao(motorista.id!);
       }
       return;
     }
 
     const ponto = pontos.shift();
+    if (!ponto) return;
+
     try {
       if (pontos.length % 5 === 0) {
         logger.debug(`Motoboy ${motorista.nome} em: ${ponto.latitude.toFixed(5)}, ${ponto.longitude.toFixed(5)} (${pontos.length} restantes)`, 'Simulação');
       }
-      await entregadorService.atualizarLocalizacao(motorista.id, ponto.latitude, ponto.longitude);
-    } catch (e) {
+      await entregadorService.atualizarLocalizacao(motorista.id!, ponto.latitude, ponto.longitude);
+    } catch (e: any) {
       logger.error(`Erro no deslocamento simulado: ${e.message}`, 'Simulação');
     }
   }, 1000);
 
-  activeSimulations.set(entregaId, interval);
+  activeSimulations.set(entregaIdNum, interval);
   return true;
 };
 
-export const obterRotaEstavel = async (entregaId) => {
+export const obterRotaEstavel = async (entregaId: number | string): Promise<any> => {
   const entrega = await buscarPorId(entregaId);
   if (!entrega) return null;
 
@@ -204,8 +232,8 @@ export const obterRotaEstavel = async (entregaId) => {
   
   if (!pedido || !motorista) return null;
 
-  let destLat = pedido.destino_latitude;
-  let destLon = pedido.destino_longitude;
+  let destLat: number | null = pedido.destino_latitude;
+  let destLon: number | null = pedido.destino_longitude;
 
   if (currentStatus === 'ATRIBUIDA') {
     const restaurante = await restauranteRepository.buscarRestaurantePorId(pedido.restaurante_id);
@@ -228,13 +256,13 @@ export const obterRotaEstavel = async (entregaId) => {
       routeCache.set(cacheKey, rota);
     }
     return rota;
-  } catch (err) {
+  } catch (err: any) {
     logger.error(`Erro crítico ao calcular cache rota: ${err.message}`, 'Cache Rota');
     return null;
   }
 };
 
-export const obterRotaColeta = async (entregaId) => {
+export const obterRotaColeta = async (entregaId: number | string): Promise<any> => {
   const entrega = await buscarPorId(entregaId);
   if (!entrega) return null;
 
@@ -246,7 +274,7 @@ export const obterRotaColeta = async (entregaId) => {
   if (!pedido || !motorista) return null;
 
   const restaurante = await restauranteRepository.buscarRestaurantePorId(pedido.restaurante_id);
-  if (!restaurante) return null;
+  if (!restaurante || restaurante.latitude == null || restaurante.longitude == null) return null;
 
   try {
     return await roteamentoService.obterGeometria(
@@ -260,7 +288,7 @@ export const obterRotaColeta = async (entregaId) => {
   }
 };
 
-export const obterRotaEntrega = async (entregaId) => {
+export const obterRotaEntrega = async (entregaId: number | string): Promise<any> => {
   const entrega = await buscarPorId(entregaId);
   if (!entrega) return null;
 
@@ -280,6 +308,8 @@ export const obterRotaEntrega = async (entregaId) => {
     startLat = motorista.latitude;
     startLon = motorista.longitude;
   }
+
+  if (startLat == null || startLon == null) return null;
 
   try {
     return await roteamentoService.obterGeometria(
