@@ -1,4 +1,5 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { StatusEntrega } from './StatusEntrega.js';
 
 export class EntregaInvalidaError extends DomainError {
   constructor(message: string) {
@@ -11,13 +12,13 @@ export class Entrega {
   public readonly id?: number;
   public readonly pedido_id: number;
   public readonly entregador_id: number;
-  private _status: string;
+  private _status: StatusEntrega;
   private _previsao_entrega: Date | null;
 
   constructor(
     pedido_id: number,
     entregador_id: number,
-    status: string = 'ATRIBUIDA',
+    status: StatusEntrega,
     previsao_entrega: Date | null = null,
     id?: number
   ) {
@@ -30,12 +31,27 @@ export class Entrega {
     this.validar();
   }
 
-  get status(): string {
+  get statusObj(): StatusEntrega {
     return this._status;
   }
 
-  set status(novoStatus: string) {
+  /**
+   * altera o status da entrega garantindo as regras de transição.
+   */
+  public alterarStatus(novoStatus: StatusEntrega): void {
+    if (!this._status.podeTransicionarPara(novoStatus)) {
+      throw new EntregaInvalidaError(`Transição de status inválida: ${this._status.valor} -> ${novoStatus.valor}`);
+    }
     this._status = novoStatus;
+  }
+
+  // atalho para compatibilidade
+  get status(): string {
+    return this._status.valor;
+  }
+
+  set status(novoStatus: string) {
+    this._status = new StatusEntrega(novoStatus);
     this.validar();
   }
 
@@ -55,14 +71,6 @@ export class Entrega {
     if (this.entregador_id == null || this.entregador_id <= 0) {
       throw new EntregaInvalidaError('ID do entregador inválido.');
     }
-    if (!this._status || this._status.trim() === '') {
-      throw new EntregaInvalidaError('O status da entrega não pode ser vazio.');
-    }
-    
-    const validStatuses = ['ATRIBUIDA', 'EM_TRANSITO', 'ENTREGUE'];
-    if (!validStatuses.includes(this._status.toUpperCase())) {
-      throw new EntregaInvalidaError(`Status da entrega inválido. Valores aceitos: ${validStatuses.join(', ')}`);
-    }
   }
 
   static criar(dados: {
@@ -79,7 +87,7 @@ export class Entrega {
     return new Entrega(
       Number(dados.pedido_id),
       Number(dados.entregador_id),
-      dados.status || 'ATRIBUIDA',
+      new StatusEntrega(dados.status || 'ATRIBUIDA'),
       dt,
       dados.id
     );

@@ -1,4 +1,5 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js';
 
 export class ItemPedidoInvalidoError extends DomainError {
   constructor(message: string) {
@@ -12,9 +13,9 @@ export class ItemPedido {
   public readonly pedido_id: number;
   public readonly produto_id: number;
   private _quantidade: number;
-  private _preco_unitario: number;
+  private _preco_unitario: Dinheiro;
 
-  constructor(pedido_id: number, produto_id: number, quantidade: number, preco_unitario: number, id?: number) {
+  constructor(pedido_id: number, produto_id: number, quantidade: number, preco_unitario: Dinheiro, id?: number) {
     this.id = id;
     this.pedido_id = pedido_id;
     this.produto_id = produto_id;
@@ -33,13 +34,22 @@ export class ItemPedido {
     this.validar();
   }
 
-  get preco_unitario(): number {
+  get preco_unitario_obj(): Dinheiro {
     return this._preco_unitario;
   }
 
-  set preco_unitario(novoPreco: number) {
+  set preco_unitario_obj(novoPreco: Dinheiro) {
     this._preco_unitario = novoPreco;
     this.validar();
+  }
+
+  // atalho para compatibilidade
+  get preco_unitario(): number {
+    return this._preco_unitario.valor;
+  }
+
+  public calcularSubtotal(): Dinheiro {
+    return this._preco_unitario.multiplicar(this._quantidade);
   }
 
   private validar(): void {
@@ -52,7 +62,7 @@ export class ItemPedido {
     if (this._quantidade == null || this._quantidade <= 0) {
       throw new ItemPedidoInvalidoError('A quantidade deve ser maior que zero.');
     }
-    if (this._preco_unitario == null || this._preco_unitario < 0) {
+    if (this._preco_unitario.valor < 0) {
       throw new ItemPedidoInvalidoError('O preço unitário não pode ser negativo.');
     }
   }
@@ -68,7 +78,7 @@ export class ItemPedido {
       Number(dados.pedido_id),
       Number(dados.produto_id),
       Number(dados.quantidade),
-      Number(dados.preco_unitario),
+      new Dinheiro(Number(dados.preco_unitario)),
       dados.id
     );
   }

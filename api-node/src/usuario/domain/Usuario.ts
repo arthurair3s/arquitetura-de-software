@@ -1,4 +1,7 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { Email } from '../../shared/domain/value-objects/Email.js';
+import { SenhaHash } from '../../shared/domain/value-objects/SenhaHash.js';
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
 
 export class UsuarioInvalidoError extends DomainError {
   constructor(message: string) {
@@ -10,20 +13,18 @@ export class UsuarioInvalidoError extends DomainError {
 export class Usuario {
   public readonly id?: number;
   private _nome: string;
-  private _email: string;
+  private _email: Email;
   private _telefone: string | null;
-  private _senha: string | null;
-  private _latitude: number | null;
-  private _longitude: number | null;
+  private _senha: SenhaHash | null;
+  private _coordenada: Coordenada | null;
   private _endereco: string | null;
 
   constructor(
     nome: string,
-    email: string,
+    email: Email,
     telefone: string | null = null,
-    senha: string | null = null,
-    latitude: number | null = null,
-    longitude: number | null = null,
+    senha: SenhaHash | null = null,
+    coordenada: Coordenada | null = null,
     endereco: string | null = null,
     id?: number
   ) {
@@ -32,8 +33,7 @@ export class Usuario {
     this._email = email;
     this._telefone = telefone;
     this._senha = senha;
-    this._latitude = latitude;
-    this._longitude = longitude;
+    this._coordenada = coordenada;
     this._endereco = endereco;
 
     this.validar();
@@ -45,11 +45,14 @@ export class Usuario {
     this.validar();
   }
 
-  get email(): string { return this._email; }
-  set email(novoEmail: string) {
+  get emailObj(): Email { return this._email; }
+  set emailObj(novoEmail: Email) {
     this._email = novoEmail;
     this.validar();
   }
+
+  // atalho para compatibilidade
+  get email(): string { return this._email.valor; }
 
   get telefone(): string | null { return this._telefone; }
   set telefone(novoTelefone: string | null) {
@@ -57,23 +60,24 @@ export class Usuario {
     this.validar();
   }
 
-  get senha(): string | null { return this._senha; }
-  set senha(novaSenha: string | null) {
+  get senhaObj(): SenhaHash | null { return this._senha; }
+  set senhaObj(novaSenha: SenhaHash | null) {
     this._senha = novaSenha;
     this.validar();
   }
 
-  get latitude(): number | null { return this._latitude; }
-  set latitude(novaLat: number | null) {
-    this._latitude = novaLat;
+  // atalho para compatibilidade
+  get senha(): string | null { return this._senha?.valor ?? null; }
+
+  get coordenada(): Coordenada | null { return this._coordenada; }
+  set coordenada(novaCoord: Coordenada | null) {
+    this._coordenada = novaCoord;
     this.validar();
   }
 
-  get longitude(): number | null { return this._longitude; }
-  set longitude(novaLong: number | null) {
-    this._longitude = novaLong;
-    this.validar();
-  }
+  // atalhos para compatibilidade
+  get latitude(): number | null { return this._coordenada?.latitude ?? null; }
+  get longitude(): number | null { return this._coordenada?.longitude ?? null; }
 
   get endereco(): string | null { return this._endereco; }
   set endereco(novoEndereco: string | null) {
@@ -84,23 +88,6 @@ export class Usuario {
   private validar(): void {
     if (!this._nome || this._nome.trim().length < 3) {
       throw new UsuarioInvalidoError('O nome do usuário deve ter pelo menos 3 caracteres.');
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!this._email || !emailRegex.test(this._email)) {
-      throw new UsuarioInvalidoError('Formato de e-mail inválido.');
-    }
-
-    if (this._latitude !== null && this._latitude !== undefined) {
-      if (this._latitude < -90 || this._latitude > 90) {
-        throw new UsuarioInvalidoError('A latitude deve estar entre -90 e 90.');
-      }
-    }
-
-    if (this._longitude !== null && this._longitude !== undefined) {
-      if (this._longitude < -180 || this._longitude > 180) {
-        throw new UsuarioInvalidoError('A longitude deve estar entre -180 e 180.');
-      }
     }
   }
 
@@ -114,13 +101,16 @@ export class Usuario {
     endereco?: string | null;
     id?: number;
   }): Usuario {
+    const coordenada = (dados.latitude != null && dados.longitude != null)
+      ? new Coordenada(Number(dados.latitude), Number(dados.longitude))
+      : null;
+
     return new Usuario(
       dados.nome,
-      dados.email,
+      new Email(dados.email),
       dados.telefone || null,
-      dados.senha || null,
-      dados.latitude != null ? Number(dados.latitude) : null,
-      dados.longitude != null ? Number(dados.longitude) : null,
+      dados.senha ? new SenhaHash(dados.senha) : null,
+      coordenada,
       dados.endereco || null,
       dados.id
     );

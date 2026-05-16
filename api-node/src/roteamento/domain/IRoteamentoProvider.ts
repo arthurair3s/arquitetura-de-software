@@ -1,3 +1,5 @@
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
+
 export interface PontoRota {
   latitude: number;
   longitude: number;
@@ -16,8 +18,8 @@ export interface GeometriaRota {
 }
 
 export interface IRoteamentoProvider {
-  calcularResumo(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<ResumoRota>
-  obterGeometria(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<GeometriaRota>
+  calcularResumo(origem: Coordenada, destino: Coordenada): Promise<ResumoRota>
+  obterGeometria(origem: Coordenada, destino: Coordenada): Promise<GeometriaRota>
   calcularMultiplosPontos(pontos: PontoRota[]): Promise<GeometriaRota>
   encaixarNaEstrada(latitude: number, longitude: number): Promise<PontoRota>
 }

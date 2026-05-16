@@ -1,4 +1,7 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js';
+import { StatusPedido } from './StatusPedido.js';
 
 export class PedidoInvalidoError extends DomainError {
   constructor(message: string) {
@@ -11,19 +14,17 @@ export class Pedido {
   public readonly id?: number;
   public readonly usuario_id: number;
   public readonly restaurante_id: number;
-  private _status: string;
-  private _valor_total: number;
-  private _destino_latitude: number;
-  private _destino_longitude: number;
+  private _status: StatusPedido;
+  private _valor_total: Dinheiro;
+  private _destino: Coordenada;
   public readonly data_criacao?: Date;
 
   constructor(
     usuario_id: number,
     restaurante_id: number,
-    status: string,
-    valor_total: number,
-    destino_latitude: number,
-    destino_longitude: number,
+    status: StatusPedido,
+    valor_total: Dinheiro,
+    destino: Coordenada,
     data_criacao?: Date,
     id?: number
   ) {
@@ -32,47 +33,66 @@ export class Pedido {
     this.restaurante_id = restaurante_id;
     this._status = status;
     this._valor_total = valor_total;
-    this._destino_latitude = destino_latitude;
-    this._destino_longitude = destino_longitude;
+    this._destino = destino;
     this.data_criacao = data_criacao;
 
     this.validar();
   }
 
-  get status(): string {
+  get statusObj(): StatusPedido {
     return this._status;
   }
 
-  set status(novoStatus: string) {
+  /**
+   * Altera o status do pedido garantindo as regras de transição.
+   */
+  public alterarStatus(novoStatus: StatusPedido): void {
+    if (!this._status.podeTransicionarPara(novoStatus)) {
+      throw new PedidoInvalidoError(`Transição de status inválida: ${this._status.valor} -> ${novoStatus.valor}`);
+    }
     this._status = novoStatus;
+  }
+
+  // Atalho para compatibilidade (não deve ser usado para alterar status complexos)
+  get status(): string {
+    return this._status.valor;
+  }
+
+  set status(novoStatus: string) {
+    this._status = new StatusPedido(novoStatus);
     this.validar();
   }
 
-  get valor_total(): number {
+  get valor(): Dinheiro {
     return this._valor_total;
   }
 
-  set valor_total(novoValor: number) {
+  set valor(novoValor: Dinheiro) {
     this._valor_total = novoValor;
     this.validar();
   }
 
-  get destino_latitude(): number {
-    return this._destino_latitude;
+  // Atalho para compatibilidade
+  get valor_total(): number {
+    return this._valor_total.valor;
   }
 
-  set destino_latitude(novaLat: number) {
-    this._destino_latitude = novaLat;
+  get destino(): Coordenada {
+    return this._destino;
+  }
+
+  set destino(novaCoordenada: Coordenada) {
+    this._destino = novaCoordenada;
     this.validar();
+  }
+
+  // Atalhos para compatibilidade
+  get destino_latitude(): number {
+    return this._destino.latitude;
   }
 
   get destino_longitude(): number {
-    return this._destino_longitude;
-  }
-
-  set destino_longitude(novaLong: number) {
-    this._destino_longitude = novaLong;
-    this.validar();
+    return this._destino.longitude;
   }
 
   private validar(): void {
@@ -82,18 +102,8 @@ export class Pedido {
     if (this.restaurante_id == null || this.restaurante_id <= 0) {
       throw new PedidoInvalidoError('ID do restaurante inválido.');
     }
-    if (this._valor_total == null || this._valor_total < 0) {
+    if (this._valor_total.valor < 0) {
       throw new PedidoInvalidoError('O valor total do pedido não pode ser negativo.');
-    }
-    if (!this._status || this._status.trim() === '') {
-      throw new PedidoInvalidoError('O status do pedido não pode ser vazio.');
-    }
-
-    if (this._destino_latitude < -90 || this._destino_latitude > 90) {
-      throw new PedidoInvalidoError('Latitude de entrega inválida (deve estar entre -90 e 90).');
-    }
-    if (this._destino_longitude < -180 || this._destino_longitude > 180) {
-      throw new PedidoInvalidoError('Longitude de entrega inválida (deve estar entre -180 e 180).');
     }
   }
 
@@ -107,13 +117,17 @@ export class Pedido {
     data_criacao?: Date | null;
     id?: number;
   }): Pedido {
+    const destino = new Coordenada(
+      Number(dados.destino_latitude),
+      Number(dados.destino_longitude)
+    );
+
     return new Pedido(
       Number(dados.usuario_id),
       Number(dados.restaurante_id),
-      dados.status || 'EM_PREPARO_ENTREGA',
-      Number(dados.valor_total || 0),
-      Number(dados.destino_latitude),
-      Number(dados.destino_longitude),
+      new StatusPedido(dados.status || 'PENDENTE'),
+      new Dinheiro(Number(dados.valor_total || 0)),
+      destino,
       dados.data_criacao || undefined,
       dados.id
     );
