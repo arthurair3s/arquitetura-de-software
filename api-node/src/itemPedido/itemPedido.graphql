@@ -6,9 +6,6 @@ type ItemPedido {
   preco_unitario: Float
 }
 
-extend type Pedido {
-  itensPedido: [ItemPedido]
-}
 
 extend type Produto {
   itensPedido: [ItemPedido]

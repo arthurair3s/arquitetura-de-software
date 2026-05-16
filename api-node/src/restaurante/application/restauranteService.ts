@@ -1,5 +1,6 @@
 import type { IRestauranteRepository } from '../domain/IRestauranteRepository.js'
 import { Restaurante, RestauranteInvalidoError } from '../domain/Restaurante.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
 
 export class RestauranteAppService {
   constructor(private readonly repository: IRestauranteRepository) {}
@@ -19,12 +20,15 @@ export class RestauranteAppService {
     latitude?: number | null
     longitude?: number | null
   }): Promise<Restaurante> {
+    const coordenada = (dados.latitude != null && dados.longitude != null)
+      ? new Coordenada(dados.latitude, dados.longitude)
+      : null;
+
     const restaurante = new Restaurante(
       dados.nome,
       dados.descricao,
       dados.endereco,
-      dados.latitude,
-      dados.longitude
+      coordenada
     )
     return this.repository.criarRestaurante(restaurante)
   }

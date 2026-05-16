@@ -39,7 +39,7 @@ export class AtribuicaoEntregaService {
       throw new EntregaInvalidaError('Nenhum entregador disponível num raio de 3.5km.');
     }
 
-    const disponiveis = candidatos.filter(e => e.status === 'DISPONIVEL' || e.status === '1' || (e.status as any) === 1)
+    const disponiveis = candidatos.filter(e => e.statusObj.estaDisponivel())
 
     if (disponiveis.length === 0) {
       logger.warn('Candidatos no radar estão ocupados. Falhando atribuição.', 'EntregaService');
@@ -51,11 +51,12 @@ export class AtribuicaoEntregaService {
     const candidatosComEta = await Promise.all(
       selecionados.map(async entregador => {
         try {
+          if (!entregador.coordenada || !restaurante.coordenada) {
+            return { entregador, eta: Infinity }
+          }
           const resumo = await this.roteamentoService.calcularResumo(
-            Number(entregador.latitude),
-            Number(entregador.longitude),
-            Number(restaurante.latitude),
-            Number(restaurante.longitude)
+            entregador.coordenada,
+            restaurante.coordenada
           )
           return { entregador, eta: resumo.duracao_estimada_segundos }
         } catch (error) {
@@ -76,7 +77,7 @@ export class AtribuicaoEntregaService {
       status: 'ATRIBUIDA'
     })
 
-    if (melhor.status === 'DISPONIVEL' || melhor.status === '1' || (melhor.status as any) === 1) {
+    if (melhor.statusObj.estaDisponivel()) {
       try {
         await this.entregadorService.atualizarStatus(melhor.id!, 'EM_ENTREGA')
         logger.info(`Status de ${melhor.nome} alterado para EM_ENTREGA`, 'GRPC');

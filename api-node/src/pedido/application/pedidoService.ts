@@ -2,6 +2,9 @@ import { GraphQLError } from 'graphql'
 import type { IPedidoRepository } from '../domain/IPedidoRepository.js'
 import type { UsuarioAppService } from '../../usuario/application/usuarioService.js'
 import { Pedido, PedidoInvalidoError } from '../domain/Pedido.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'
+import { StatusPedido } from '../domain/StatusPedido.js'
 
 export class PedidoAppService {
   constructor(
@@ -39,13 +42,14 @@ export class PedidoAppService {
       destino_longitude = usuario.longitude
     }
 
+    const destino = new Coordenada(Number(destino_latitude), Number(destino_longitude))
+
     const pedido = new Pedido(
       Number(usuario_id),
       Number(restaurante_id),
-      'EM_PREPARO_ENTREGA',
-      Number(valor_total),
-      destino_latitude,
-      destino_longitude
+      new StatusPedido('EM_PREPARO_ENTREGA'),
+      new Dinheiro(Number(valor_total)),
+      destino
     )
 
     return this.repository.criarPedido(pedido)
@@ -63,9 +67,13 @@ export class PedidoAppService {
     }
 
     if (dados.status !== undefined) pedidoAtual.status = dados.status
-    if (dados.valor_total !== undefined) pedidoAtual.valor_total = Number(dados.valor_total)
-    if (dados.destino_latitude !== undefined) pedidoAtual.destino_latitude = Number(dados.destino_latitude)
-    if (dados.destino_longitude !== undefined) pedidoAtual.destino_longitude = Number(dados.destino_longitude)
+    if (dados.valor_total !== undefined) pedidoAtual.valor = new Dinheiro(Number(dados.valor_total))
+    
+    if (dados.destino_latitude !== undefined || dados.destino_longitude !== undefined) {
+      const lat = dados.destino_latitude !== undefined ? Number(dados.destino_latitude) : pedidoAtual.destino_latitude
+      const lon = dados.destino_longitude !== undefined ? Number(dados.destino_longitude) : pedidoAtual.destino_longitude
+      pedidoAtual.destino = new Coordenada(lat, lon)
+    }
 
     return this.repository.editarPedidoPorId(id, pedidoAtual)
   }

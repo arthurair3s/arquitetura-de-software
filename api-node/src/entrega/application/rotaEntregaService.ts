@@ -4,6 +4,7 @@ import type { EntregadorAppService } from '../../entregador/application/entregad
 import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
 import type { RoteamentoAppService } from '../../roteamento/application/roteamentoService.js'
 import { logger } from '../../shared/utils/logger.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
 
 export class RotaEntregaService {
   private routeCache = new Map<string, any>();
@@ -34,27 +35,21 @@ export class RotaEntregaService {
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id);
     const motorista = await this.entregadorService.buscarPorId(entrega.entregador_id);
     
-    if (!pedido || !motorista) return null;
+    if (!pedido || !motorista || !motorista.coordenada) return null;
 
-    let destLat: number | null = pedido.destino_latitude ?? null;
-    let destLon: number | null = pedido.destino_longitude ?? null;
+    let destinoCoordenada: Coordenada = pedido.destino;
 
     if (currentStatus === 'ATRIBUIDA') {
       const restaurante = await this.restauranteService.buscarPorId(pedido.restaurante_id);
-      if (restaurante) {
-        destLat = restaurante.latitude;
-        destLon = restaurante.longitude;
+      if (restaurante && restaurante.coordenada) {
+        destinoCoordenada = restaurante.coordenada;
       }
     }
 
-    if (destLat == null || destLon == null) return null;
-
     try {
       const rota = await this.roteamentoService.obterGeometria(
-        Number(motorista.latitude), 
-        Number(motorista.longitude), 
-        Number(destLat), 
-        Number(destLon)
+        motorista.coordenada, 
+        destinoCoordenada
       );
       if (rota && rota.caminho && rota.caminho.length > 0) {
         this.routeCache.set(cacheKey, rota);
@@ -75,17 +70,15 @@ export class RotaEntregaService {
 
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id);
     const motorista = await this.entregadorService.buscarPorId(entrega.entregador_id);
-    if (!pedido || !motorista) return null;
+    if (!pedido || !motorista || !motorista.coordenada) return null;
 
     const restaurante = await this.restauranteService.buscarPorId(pedido.restaurante_id);
-    if (!restaurante || restaurante.latitude == null || restaurante.longitude == null) return null;
+    if (!restaurante || !restaurante.coordenada) return null;
 
     try {
       return await this.roteamentoService.obterGeometria(
-        Number(motorista.latitude), 
-        Number(motorista.longitude), 
-        Number(restaurante.latitude), 
-        Number(restaurante.longitude)
+        motorista.coordenada, 
+        restaurante.coordenada
       );
     } catch (err) {
       return null;
@@ -98,29 +91,25 @@ export class RotaEntregaService {
 
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id);
     const motorista = await this.entregadorService.buscarPorId(entrega.entregador_id);
-    if (!pedido || !motorista) return null;
+    if (!pedido || !motorista || !motorista.coordenada) return null;
 
     const restaurante = await this.restauranteService.buscarPorId(pedido.restaurante_id);
     if (!restaurante) return null;
 
     const currentStatus = (entrega.status || "").trim().toUpperCase();
 
-    let startLat = restaurante.latitude;
-    let startLon = restaurante.longitude;
+    let startCoordenada: Coordenada | null = restaurante.coordenada;
 
     if (currentStatus === 'EM_TRANSITO') {
-      startLat = motorista.latitude;
-      startLon = motorista.longitude;
+      startCoordenada = motorista.coordenada;
     }
 
-    if (startLat == null || startLon == null || pedido.destino_latitude == null || pedido.destino_longitude == null) return null;
+    if (!startCoordenada) return null;
 
     try {
       return await this.roteamentoService.obterGeometria(
-        Number(startLat), 
-        Number(startLon), 
-        Number(pedido.destino_latitude), 
-        Number(pedido.destino_longitude)
+        startCoordenada, 
+        pedido.destino
       );
     } catch (err) {
       return null;

@@ -1,9 +1,11 @@
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { GraphQLError } from 'graphql'
 import type { IUsuarioRepository } from '../domain/IUsuarioRepository.js'
 import { Usuario, UsuarioInvalidoError } from '../domain/Usuario.js'
 import { logger } from '../../shared/utils/logger.js'
+import { Email } from '../../shared/domain/value-objects/Email.js'
+import { SenhaHash } from '../../shared/domain/value-objects/SenhaHash.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
 
 const JWT_SECRET = process.env.JWT_SECRET
 
@@ -11,8 +13,6 @@ if (!JWT_SECRET) {
   logger.error('FATAL: A variável de ambiente JWT_SECRET não foi configurada. A aplicação será encerrada.', 'AuthService')
   throw new Error('FATAL: A variável de ambiente JWT_SECRET não foi configurada.')
 }
-
-const SALT_ROUNDS = 10
 
 /**
  * verificarToken — função utilitária de autenticação.
@@ -53,11 +53,18 @@ export class UsuarioAppService {
     telefone?: string | null
     senha?: string | null
   }): Promise<Usuario> {
-    let senhaHashed = null
+    let senhaHashed: SenhaHash | null = null
     if (dados.senha) {
-      senhaHashed = await bcrypt.hash(dados.senha, SALT_ROUNDS)
+      senhaHashed = await SenhaHash.deSenhaPlana(dados.senha)
     }
-    const usuario = new Usuario(dados.nome, dados.email, dados.telefone, senhaHashed)
+
+    const usuario = new Usuario(
+      dados.nome,
+      new Email(dados.email),
+      dados.telefone,
+      senhaHashed
+    )
+
     const novoUsuario = await this.repository.criarUsuario(usuario)
     logger.debug(`Novo usuário criado: ${novoUsuario.email} (ID: ${novoUsuario.id})`, 'UsuarioService')
     return novoUsuario
@@ -71,12 +78,14 @@ export class UsuarioAppService {
   }): Promise<Usuario> {
     const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
     if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
+
     if (dados.nome !== undefined) usuarioAtual.nome = dados.nome
-    if (dados.email !== undefined) usuarioAtual.email = dados.email
+    if (dados.email !== undefined) usuarioAtual.emailObj = new Email(dados.email)
     if (dados.telefone !== undefined) usuarioAtual.telefone = dados.telefone
     if (dados.senha !== undefined && dados.senha !== null) {
-      usuarioAtual.senha = await bcrypt.hash(dados.senha, SALT_ROUNDS)
+      usuarioAtual.senhaObj = await SenhaHash.deSenhaPlana(dados.senha)
     }
+
     return this.repository.editarUsuarioPorId(id, usuarioAtual)
   }
 
@@ -90,15 +99,18 @@ export class UsuarioAppService {
       logger.warn(`Tentativa de login com e-mail inexistente: ${email}`, 'AuthService')
       throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
     }
-    if (!usuario.senha) {
+
+    if (!usuario.senhaObj) {
       logger.warn(`Falha de senha para o usuário: ${email} (Senha não definida no banco)`, 'AuthService')
       throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
     }
-    const senhaValida = await bcrypt.compare(senha, usuario.senha)
+
+    const senhaValida = await usuario.senhaObj.comparar(senha)
     if (!senhaValida) {
       logger.warn(`Falha de senha para o usuário: ${email}`, 'AuthService')
       throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
     }
+
     const token = jwt.sign(
       { iss: 'express-delivery-app', id: usuario.id, email: usuario.email, nome: usuario.nome },
       JWT_SECRET as string,
@@ -114,9 +126,21 @@ export class UsuarioAppService {
   }): Promise<Usuario> {
     const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
     if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
-    if (dados.latitude !== undefined) usuarioAtual.latitude = dados.latitude !== null ? Number(dados.latitude) : null
-    if (dados.longitude !== undefined) usuarioAtual.longitude = dados.longitude !== null ? Number(dados.longitude) : null
+
+    if (dados.latitude !== undefined || dados.longitude !== undefined) {
+      const novaLat = dados.latitude !== undefined ? (dados.latitude !== null ? Number(dados.latitude) : null) : null
+      const novaLon = dados.longitude !== undefined ? (dados.longitude !== null ? Number(dados.longitude) : null) : null
+      
+      const latFinal = novaLat !== null ? novaLat : usuarioAtual.latitude
+      const lonFinal = novaLon !== null ? novaLon : usuarioAtual.longitude
+
+      usuarioAtual.coordenada = (latFinal !== null && lonFinal !== null) 
+        ? new Coordenada(latFinal, lonFinal) 
+        : null
+    }
+
     if (dados.endereco !== undefined) usuarioAtual.endereco = dados.endereco !== null ? dados.endereco : null
+
     return this.repository.atualizarEndereco(id, {
       latitude: usuarioAtual.latitude,
       longitude: usuarioAtual.longitude,

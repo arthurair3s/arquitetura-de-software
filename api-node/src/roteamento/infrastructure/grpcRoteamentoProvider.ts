@@ -1,13 +1,14 @@
 import roteamentoClient from '../../grpc/roteamentoClient.js'
 import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../domain/IRoteamentoProvider.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
 
 export class GrpcRoteamentoProvider implements IRoteamentoProvider {
-  calcularResumo(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<ResumoRota> {
+  calcularResumo(origem: Coordenada, destino: Coordenada): Promise<ResumoRota> {
     return new Promise((resolve, reject) => {
       roteamentoClient.CalcularResumoRota(
         {
-          origem: { latitude: Number(origemLat), longitude: Number(origemLon) },
-          destino: { latitude: Number(destinoLat), longitude: Number(destinoLon) }
+          origem: { latitude: origem.latitude, longitude: origem.longitude },
+          destino: { latitude: destino.latitude, longitude: destino.longitude }
         },
         (error, response) => {
           if (error) return reject(error)
@@ -17,12 +18,12 @@ export class GrpcRoteamentoProvider implements IRoteamentoProvider {
     })
   }
 
-  obterGeometria(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<GeometriaRota> {
+  obterGeometria(origem: Coordenada, destino: Coordenada): Promise<GeometriaRota> {
     return new Promise((resolve, reject) => {
       roteamentoClient.ObterGeometriaRota(
         {
-          origem: { latitude: Number(origemLat), longitude: Number(origemLon) },
-          destino: { latitude: Number(destinoLat), longitude: Number(destinoLon) }
+          origem: { latitude: origem.latitude, longitude: origem.longitude },
+          destino: { latitude: destino.latitude, longitude: destino.longitude }
         },
         (error, response) => {
           if (error) return reject(error)

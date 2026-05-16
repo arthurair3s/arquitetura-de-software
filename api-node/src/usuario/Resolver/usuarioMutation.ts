@@ -34,14 +34,14 @@ export const createUsuarioMutation = (service: UsuarioAppService) => ({
   },
 
   atualizarEndereco: async (_: any, args: any, context: any) => {
-    if (!context.usuario) {
+    if (!context.user) {
       throw new GraphQLError('Não autorizado', { extensions: { code: 'UNAUTHENTICATED' } })
     }
     const parsed = atualizarEnderecoSchema.safeParse(args)
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return service.atualizarEndereco(context.usuario.id, parsed.data)
+    return service.atualizarEndereco(context.user.id, parsed.data)
   },
 
   deletarUsuario: async (_: any, { id }: { id: string }) =>

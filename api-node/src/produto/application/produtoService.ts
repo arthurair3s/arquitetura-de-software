@@ -1,5 +1,6 @@
 import type { IProdutoRepository } from '../domain/IProdutoRepository.js'
 import { Produto, ProdutoInvalidoError } from '../domain/Produto.js'
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'
 
 export class ProdutoAppService {
   constructor(private readonly repository: IProdutoRepository) {}
@@ -24,7 +25,7 @@ export class ProdutoAppService {
   }): Promise<Produto> {
     const produto = new Produto(
       dados.nome,
-      dados.preco,
+      new Dinheiro(dados.preco),
       undefined,
       dados.descricao,
       dados.categoria_id != null ? Number(dados.categoria_id) : null
@@ -43,7 +44,7 @@ export class ProdutoAppService {
       throw new ProdutoInvalidoError('Produto não encontrado')
     }
     if (dados.nome !== undefined) produtoAtual.nome = dados.nome
-    if (dados.preco !== undefined) produtoAtual.preco = Number(dados.preco)
+    if (dados.preco !== undefined) produtoAtual.precoObj = new Dinheiro(Number(dados.preco))
     if (dados.descricao !== undefined) produtoAtual.descricao = dados.descricao
     return this.repository.editarProdutoPorId(id, produtoAtual)
   }

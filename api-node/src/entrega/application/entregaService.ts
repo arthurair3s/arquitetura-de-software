@@ -1,6 +1,7 @@
 import type { IEntregaRepository } from '../domain/IEntregaRepository.js'
 import { Entrega, EntregaInvalidaError } from '../domain/Entrega.js'
 import { logger } from '../../shared/utils/logger.js'
+import { StatusEntrega } from '../domain/StatusEntrega.js'
 
 export class EntregaAppService {
   constructor(
@@ -21,10 +22,11 @@ export class EntregaAppService {
     status?: string;
     previsao_entrega?: string | Date;
   }): Promise<Entrega> {
+    const status = new StatusEntrega(dados.status || 'ATRIBUIDA');
     const entrega = new Entrega(
       Number(dados.pedido_id),
       Number(dados.entregador_id),
-      dados.status,
+      status,
       dados.previsao_entrega ? new Date(dados.previsao_entrega) : null
     );
     return this.repository.criarEntrega(entrega)

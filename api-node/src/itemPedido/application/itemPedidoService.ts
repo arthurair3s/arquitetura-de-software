@@ -1,5 +1,6 @@
 import type { IItemPedidoRepository } from '../domain/IItemPedidoRepository.js'
 import { ItemPedido, ItemPedidoInvalidoError } from '../domain/ItemPedido.js'
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'
 
 export class ItemPedidoAppService {
   constructor(private readonly repository: IItemPedidoRepository) {}
@@ -26,7 +27,7 @@ export class ItemPedidoAppService {
       Number(dados.pedido_id),
       Number(dados.produto_id),
       Number(dados.quantidade),
-      Number(dados.preco_unitario)
+      new Dinheiro(Number(dados.preco_unitario))
     )
     return this.repository.criarItemPedido(item)
   }
@@ -42,7 +43,7 @@ export class ItemPedidoAppService {
       throw new ItemPedidoInvalidoError('Item do Pedido não encontrado')
     }
     if (dados.quantidade !== undefined) itemAtual.quantidade = Number(dados.quantidade)
-    if (dados.preco_unitario !== undefined) itemAtual.preco_unitario = Number(dados.preco_unitario)
+    if (dados.preco_unitario !== undefined) itemAtual.preco_unitario_obj = new Dinheiro(Number(dados.preco_unitario))
     return this.repository.editarItemPedidoPorId(id, itemAtual)
   }
 

@@ -10,8 +10,8 @@ type Entregador {
   telefone: String
   veiculo: String
   status: StatusEntregador
-  latitude: String
-  longitude: String
+  latitude: Float
+  longitude: Float
 }
 
 extend type Query {

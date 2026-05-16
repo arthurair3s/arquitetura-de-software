@@ -1,5 +1,7 @@
 import type { IPagamentoRepository } from '../domain/IPagamentoRepository.js'
 import { Pagamento, PagamentoInvalidoError } from '../domain/Pagamento.js'
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'
+import { StatusPagamento } from '../domain/StatusPagamento.js'
 
 export class PagamentoAppService {
   constructor(private readonly repository: IPagamentoRepository) {}
@@ -18,11 +20,12 @@ export class PagamentoAppService {
     status?: string
     valor?: number
   }): Promise<Pagamento> {
+    const status = new StatusPagamento(dados.status || 'PENDENTE');
     const pagamento = new Pagamento(
       Number(dados.pedido_id),
       dados.metodo || '',
-      Number(dados.valor || 0),
-      dados.status || 'PENDENTE'
+      new Dinheiro(Number(dados.valor || 0)),
+      status
     )
     return this.repository.criarPagamento(pagamento)
   }
@@ -39,7 +42,7 @@ export class PagamentoAppService {
     }
     if (dados.metodo !== undefined) pagamentoAtual.metodo = dados.metodo
     if (dados.status !== undefined) pagamentoAtual.status = dados.status
-    if (dados.valor !== undefined) pagamentoAtual.valor = Number(dados.valor)
+    if (dados.valor !== undefined) pagamentoAtual.valorObj = new Dinheiro(Number(dados.valor))
     return this.repository.editarPagamentoPorId(id, pagamentoAtual)
   }
 

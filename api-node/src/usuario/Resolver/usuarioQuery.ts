@@ -7,9 +7,9 @@ export const createUsuarioQuery = (service: UsuarioAppService) => ({
   usuario: async (_: any, { id }: { id: string }) => service.buscarPorId(id),
 
   me: async (_: any, __: any, context: any) => {
-    if (!context.usuario) {
+    if (!context.user) {
       throw new GraphQLError('Não autorizado', { extensions: { code: 'UNAUTHENTICATED' } })
     }
-    return service.buscarPorId(context.usuario.id)
+    return service.buscarPorId(context.user.id)
   }
 })

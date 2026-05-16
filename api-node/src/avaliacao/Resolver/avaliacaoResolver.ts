@@ -2,9 +2,14 @@ import { AvaliacaoRepository } from '../infrastructure/avaliacaoRepository.js'
 import { AvaliacaoAppService } from '../application/avaliacaoService.js'
 import { createAvaliacaoQuery } from './avaliacaoQuery.js'
 import { createAvaliacaoMutation } from './avaliacaoMutation.js'
-import * as usuarioService from '../../usuario/usuarioService.js'
-import * as restauranteService from '../../restaurante/restauranteService.js'
+import { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepository.js'
+import { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
+import { RestauranteRepository } from '../../restaurante/infrastructure/restauranteRepository.js'
 import { Avaliacao } from '../domain/Avaliacao.js'
+
+const usuarioService = new UsuarioAppService(new UsuarioRepository())
+const restauranteService = new RestauranteAppService(new RestauranteRepository())
 
 // inicialização das dependências do módulo
 const repository = new AvaliacaoRepository()

@@ -34,7 +34,11 @@ export class EntregadorAppService {
   estaEmSimulacao(id: number | string): boolean { return motoristasEmSimulacao.has(Number(id)); }
 
   async criar(dados: { nome?: string; telefone?: string | null; veiculo?: string | null }): Promise<Entregador> {
-    const entregador = new Entregador(dados.nome, dados.telefone, dados.veiculo);
+    const entregador = Entregador.criar({
+      nome: dados.nome,
+      telefone: dados.telefone,
+      veiculo: dados.veiculo
+    });
     return this.repository.criarEntregador(entregador);
   }
 
