@@ -1,8 +1,8 @@
-import { PedidoRepository } from '../infrastructure/pedidoRepository.js'
-import { PedidoAppService } from '../application/pedidoService.js'
-import { UsuarioRepository } from '../../usuario/infrastructure/adapters/usuarioRepository.js'
-import { UsuarioAppService } from '../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
+import { PedidoRepository } from '../../infrastructure/adapters/pedidoRepository.js'
+import { PedidoAppService } from '../../application/services/pedidoService.js'
+import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
+import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
+import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
 import { createPedidoQuery } from './pedidoQuery.js'
 import { createPedidoMutation } from './pedidoMutation.js'
 

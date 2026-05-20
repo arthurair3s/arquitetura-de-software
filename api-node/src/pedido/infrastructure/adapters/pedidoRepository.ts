@@ -1,6 +1,6 @@
-import { prisma } from '../../infra/database/connection.js'
-import { Pedido } from '../domain/Pedido.js'
-import type { IPedidoRepository } from '../domain/IPedidoRepository.js'
+import { prisma } from '../../../infra/database/connection.js'
+import { Pedido } from '../../domain/Pedido.js'
+import type { IPedidoRepository } from '../../domain/ports/IPedidoRepository.js'
 
 export class PedidoRepository implements IPedidoRepository {
   async listarPedidos(): Promise<Pedido[]> {

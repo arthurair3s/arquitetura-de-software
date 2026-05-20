@@ -1,4 +1,4 @@
-import { Pedido } from './Pedido.js'
+import { Pedido } from '../Pedido.js'
 
 export interface IPedidoRepository {
   listarPedidos(): Promise<Pedido[]>

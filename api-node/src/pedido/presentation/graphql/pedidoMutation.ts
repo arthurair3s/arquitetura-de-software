@@ -1,9 +1,9 @@
-import type { PedidoAppService } from '../application/pedidoService.js'
+import type { IPedidoService } from '../../application/ports/IPedidoService.js'
 import { GraphQLError } from 'graphql'
-import { criarPedidoSchema, editarPedidoSchema } from '../application/pedidoValidation.js'
-import { withDomainErrorHandling } from '../../shared/utils/errorHandler.js'
+import { criarPedidoSchema, editarPedidoSchema } from '../../application/pedidoValidation.js'
+import { withDomainErrorHandling } from '../../../shared/utils/errorHandler.js'
 
-export const createPedidoMutation = (service: PedidoAppService) => ({
+export const createPedidoMutation = (service: IPedidoService) => ({
   criarPedido: async (_: any, args: any) => {
     const parsed = criarPedidoSchema.safeParse(args)
     if (!parsed.success) {

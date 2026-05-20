@@ -1,14 +1,15 @@
-import type { IPedidoRepository } from '../domain/IPedidoRepository.js'
-import type { UsuarioAppService } from '../../usuario/application/services/usuarioService.js'
-import { Pedido, PedidoInvalidoError } from '../domain/Pedido.js'
-import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
-import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'
-import { StatusPedido } from '../domain/StatusPedido.js'
+import type { IPedidoRepository } from '../../domain/ports/IPedidoRepository.js'
+import type { IPedidoService } from '../ports/IPedidoService.js'
+import type { IUsuarioService } from '../../../usuario/application/ports/IUsuarioService.js'
+import { Pedido, PedidoInvalidoError } from '../../domain/Pedido.js'
+import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
+import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
+import { StatusPedido } from '../../domain/StatusPedido.js'
 
-export class PedidoAppService {
+export class PedidoAppService implements IPedidoService {
   constructor(
     private readonly repository: IPedidoRepository,
-    private readonly usuarioService: UsuarioAppService
+    private readonly usuarioService: IUsuarioService
   ) {}
 
   async listar(): Promise<Pedido[]> {
