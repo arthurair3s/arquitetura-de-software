@@ -11,6 +11,7 @@ import { PedidoAppService } from '../../pedido/application/pedidoService.js'
 import { PedidoRepository } from '../../pedido/infrastructure/pedidoRepository.js'
 
 import { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
 import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepository.js'
 
 import { EntregadorAppService } from '../../entregador/application/entregadorService.js'
@@ -23,7 +24,7 @@ import { RoteamentoAppService } from '../../roteamento/application/roteamentoSer
 import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/grpcRoteamentoProvider.js'
 
 // inicialização das dependências do módulo
-const usuarioService = new UsuarioAppService(new UsuarioRepository())
+const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
 const pedidoService = new PedidoAppService(new PedidoRepository(), usuarioService)
 
 const restauranteService = new RestauranteAppService(new RestauranteRepository())

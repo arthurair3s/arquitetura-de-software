@@ -2,11 +2,12 @@ import { PedidoRepository } from '../infrastructure/pedidoRepository.js'
 import { PedidoAppService } from '../application/pedidoService.js'
 import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepository.js'
 import { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
 import { createPedidoQuery } from './pedidoQuery.js'
 import { createPedidoMutation } from './pedidoMutation.js'
 
 // inicialização das dependências do módulo
-const usuarioService = new UsuarioAppService(new UsuarioRepository())
+const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
 const pedidoRepository = new PedidoRepository()
 const service = new PedidoAppService(pedidoRepository, usuarioService)
 

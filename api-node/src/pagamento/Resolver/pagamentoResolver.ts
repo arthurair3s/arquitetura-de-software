@@ -5,10 +5,11 @@ import { createPagamentoMutation } from './pagamentoMutation.js'
 import { PedidoAppService } from '../../pedido/application/pedidoService.js'
 import { PedidoRepository } from '../../pedido/infrastructure/pedidoRepository.js'
 import { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
 import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepository.js'
 const pedidoService = new PedidoAppService(
   new PedidoRepository(),
-  new UsuarioAppService(new UsuarioRepository())
+  new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
 )
 
 // inicialização das dependências do módulo

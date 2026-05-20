@@ -7,8 +7,9 @@ import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepositor
 import { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
 import { RestauranteRepository } from '../../restaurante/infrastructure/restauranteRepository.js'
 import { Avaliacao } from '../domain/Avaliacao.js'
+import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
 
-const usuarioService = new UsuarioAppService(new UsuarioRepository())
+const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
 const restauranteService = new RestauranteAppService(new RestauranteRepository())
 
 // inicialização das dependências do módulo

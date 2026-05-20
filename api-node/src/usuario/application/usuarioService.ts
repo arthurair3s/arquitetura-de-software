@@ -1,35 +1,16 @@
-import jwt from 'jsonwebtoken'
-import { GraphQLError } from 'graphql'
 import type { IUsuarioRepository } from '../domain/IUsuarioRepository.js'
 import { Usuario, UsuarioInvalidoError } from '../domain/Usuario.js'
 import { logger } from '../../shared/utils/logger.js'
 import { Email } from '../../shared/domain/value-objects/Email.js'
 import { SenhaHash } from '../../shared/domain/value-objects/SenhaHash.js'
 import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
-
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  logger.error('FATAL: A variável de ambiente JWT_SECRET não foi configurada. A aplicação será encerrada.', 'AuthService')
-  throw new Error('FATAL: A variável de ambiente JWT_SECRET não foi configurada.')
-}
-
-/**
- * verificarToken — função utilitária de autenticação.
- * Exportada de forma independente pois é usada no contexto do Apollo (index.ts)
- * sem precisar de injeção de repositório.
- */
-export const verificarToken = (token: string): any => {
-  try {
-    return jwt.verify(token, JWT_SECRET)
-  } catch (err: any) {
-    logger.warn(`Token inválido ou expirado detectado: ${err.message}`, 'AuthService')
-    return null
-  }
-}
+import type { ITokenService } from '../../shared/domain/ITokenService.js'
 
 export class UsuarioAppService {
-  constructor(private readonly repository: IUsuarioRepository) {}
+  constructor(
+    private readonly repository: IUsuarioRepository,
+    private readonly tokenService: ITokenService
+  ) {}
 
   async listar(): Promise<Usuario[]> {
     return this.repository.listarUsuarios()
@@ -66,7 +47,7 @@ export class UsuarioAppService {
     )
 
     const novoUsuario = await this.repository.criarUsuario(usuario)
-    logger.debug(`Novo usuário criado: ${novoUsuario.email} (ID: ${novoUsuario.id})`, 'UsuarioService')
+    logger.debug(`Novo usuário criado: ${novoUsuario.emailObj.valor} (ID: ${novoUsuario.id})`, 'UsuarioService')
     return novoUsuario
   }
 
@@ -79,11 +60,14 @@ export class UsuarioAppService {
     const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
     if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
 
-    if (dados.nome !== undefined) usuarioAtual.nome = dados.nome
-    if (dados.email !== undefined) usuarioAtual.emailObj = new Email(dados.email)
-    if (dados.telefone !== undefined) usuarioAtual.telefone = dados.telefone
+    const novoNome = dados.nome !== undefined ? dados.nome : usuarioAtual.nome
+    const novoEmail = dados.email !== undefined ? new Email(dados.email) : usuarioAtual.emailObj
+    const novoTelefone = dados.telefone !== undefined ? dados.telefone : usuarioAtual.telefone
+
+    usuarioAtual.atualizarPerfil(novoNome, novoEmail, novoTelefone)
+
     if (dados.senha !== undefined && dados.senha !== null) {
-      usuarioAtual.senhaObj = await SenhaHash.deSenhaPlana(dados.senha)
+      usuarioAtual.alterarSenha(await SenhaHash.deSenhaPlana(dados.senha))
     }
 
     return this.repository.editarUsuarioPorId(id, usuarioAtual)
@@ -97,24 +81,23 @@ export class UsuarioAppService {
     const usuario = await this.repository.buscarUsuarioPorEmail(email)
     if (!usuario) {
       logger.warn(`Tentativa de login com e-mail inexistente: ${email}`, 'AuthService')
-      throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
+      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
     }
 
     if (!usuario.senhaObj) {
       logger.warn(`Falha de senha para o usuário: ${email} (Senha não definida no banco)`, 'AuthService')
-      throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
+      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
     }
 
     const senhaValida = await usuario.senhaObj.comparar(senha)
     if (!senhaValida) {
       logger.warn(`Falha de senha para o usuário: ${email}`, 'AuthService')
-      throw new GraphQLError('E-mail ou senha incorretos.', { extensions: { code: 'UNAUTHENTICATED' } })
+      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
     }
 
-    const token = jwt.sign(
-      { iss: 'express-delivery-app', id: usuario.id, email: usuario.email, nome: usuario.nome },
-      JWT_SECRET as string,
-      { expiresIn: '7d' }
+    const token = this.tokenService.gerarToken(
+      { iss: 'express-delivery-app', id: usuario.id, email: usuario.emailObj.valor, nome: usuario.nome },
+      '7d'
     )
     return { token, usuario }
   }
@@ -127,23 +110,23 @@ export class UsuarioAppService {
     const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
     if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
 
+    let novaCoordenada = usuarioAtual.coordenada
     if (dados.latitude !== undefined || dados.longitude !== undefined) {
-      const novaLat = dados.latitude !== undefined ? (dados.latitude !== null ? Number(dados.latitude) : null) : null
-      const novaLon = dados.longitude !== undefined ? (dados.longitude !== null ? Number(dados.longitude) : null) : null
+      const novaLat = dados.latitude !== undefined ? (dados.latitude !== null ? Number(dados.latitude) : null) : (usuarioAtual.coordenada?.latitude ?? null)
+      const novaLon = dados.longitude !== undefined ? (dados.longitude !== null ? Number(dados.longitude) : null) : (usuarioAtual.coordenada?.longitude ?? null)
       
-      const latFinal = novaLat !== null ? novaLat : usuarioAtual.latitude
-      const lonFinal = novaLon !== null ? novaLon : usuarioAtual.longitude
-
-      usuarioAtual.coordenada = (latFinal !== null && lonFinal !== null) 
-        ? new Coordenada(latFinal, lonFinal) 
+      novaCoordenada = (novaLat !== null && novaLon !== null) 
+        ? new Coordenada(novaLat, novaLon) 
         : null
     }
 
-    if (dados.endereco !== undefined) usuarioAtual.endereco = dados.endereco !== null ? dados.endereco : null
+    const novoEndereco = dados.endereco !== undefined ? (dados.endereco !== null ? dados.endereco : null) : usuarioAtual.endereco
+
+    usuarioAtual.atualizarEndereco(novaCoordenada, novoEndereco)
 
     return this.repository.atualizarEndereco(id, {
-      latitude: usuarioAtual.latitude,
-      longitude: usuarioAtual.longitude,
+      latitude: usuarioAtual.coordenada?.latitude ?? null,
+      longitude: usuarioAtual.coordenada?.longitude ?? null,
       endereco: usuarioAtual.endereco
     })
   }

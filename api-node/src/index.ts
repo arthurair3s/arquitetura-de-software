@@ -7,7 +7,7 @@ import { loadFilesSync } from '@graphql-tools/load-files';
 import { mergeTypeDefs } from '@graphql-tools/merge';
 
 import { resolvers } from './resolvers.js';
-import { verificarToken } from './usuario/application/usuarioService.js';
+import { JwtTokenService } from './shared/infrastructure/JwtTokenService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,12 +51,14 @@ const server = new ApolloServer<MyContext>({
   }
 });
 
+const tokenService = new JwtTokenService();
+
 const { url } = await startStandaloneServer(server, {
   listen: { port: 4000, host: '0.0.0.0' },
   context: async ({ req }): Promise<MyContext> => {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.replace('Bearer ', '');
-    const user = token ? verificarToken(token) : null;
+    const user = token ? tokenService.verificarToken(token) : null;
     return { user };
   }
 });
