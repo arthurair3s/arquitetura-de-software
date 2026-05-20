@@ -35,8 +35,8 @@ export class SimuladorDeslocamentoService {
     this.entregadorService.bloquearParaSimulacao(entrega.entregador_id);
     await this.entregadorService.atualizarStatus(entrega.entregador_id, 'EM_ENTREGA');
 
-    let destLat = Number(pedido.destino_latitude);
-    let destLon = Number(pedido.destino_longitude);
+    let destLat = Number(pedido.destino.latitude);
+    let destLon = Number(pedido.destino.longitude);
 
     if (currentStatus === 'ATRIBUIDA') {
       const restaurante = await this.restauranteService.buscarPorId(pedido.restaurante_id);

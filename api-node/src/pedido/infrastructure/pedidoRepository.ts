@@ -29,9 +29,9 @@ export class PedidoRepository implements IPedidoRepository {
         usuario_id: pedido.usuario_id != null ? Number(pedido.usuario_id) : undefined,
         restaurante_id: pedido.restaurante_id != null ? Number(pedido.restaurante_id) : undefined,
         status: pedido.status,
-        valor_total: pedido.valor_total,
-        destino_latitude: pedido.destino_latitude,
-        destino_longitude: pedido.destino_longitude
+        valor_total: pedido.valor?.valor,
+        destino_latitude: pedido.destino?.latitude,
+        destino_longitude: pedido.destino?.longitude
       }
     })
     return Pedido.criar(novoPedido)
@@ -42,9 +42,9 @@ export class PedidoRepository implements IPedidoRepository {
       where: { id: Number(id) },
       data: {
         status: pedido.status,
-        valor_total: pedido.valor_total != null ? Number(pedido.valor_total) : undefined,
-        destino_latitude: pedido.destino_latitude != null ? Number(pedido.destino_latitude) : undefined,
-        destino_longitude: pedido.destino_longitude != null ? Number(pedido.destino_longitude) : undefined
+        valor_total: pedido.valor?.valor != null ? Number(pedido.valor.valor) : undefined,
+        destino_latitude: pedido.destino?.latitude != null ? Number(pedido.destino.latitude) : undefined,
+        destino_longitude: pedido.destino?.longitude != null ? Number(pedido.destino.longitude) : undefined
       }
     })
     return Pedido.criar(pedidoAtualizado)

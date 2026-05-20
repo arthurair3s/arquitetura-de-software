@@ -53,46 +53,27 @@ export class Pedido {
     this._status = novoStatus;
   }
 
-  // Atalho para compatibilidade (não deve ser usado para alterar status complexos)
+  // Atalho para compatibilidade
   get status(): string {
     return this._status.valor;
-  }
-
-  set status(novoStatus: string) {
-    this._status = new StatusPedido(novoStatus);
-    this.validar();
   }
 
   get valor(): Dinheiro {
     return this._valor_total;
   }
 
-  set valor(novoValor: Dinheiro) {
+  public atualizarValor(novoValor: Dinheiro): void {
     this._valor_total = novoValor;
     this.validar();
-  }
-
-  // Atalho para compatibilidade
-  get valor_total(): number {
-    return this._valor_total.valor;
   }
 
   get destino(): Coordenada {
     return this._destino;
   }
 
-  set destino(novaCoordenada: Coordenada) {
+  public atualizarEnderecoEntrega(novaCoordenada: Coordenada): void {
     this._destino = novaCoordenada;
     this.validar();
-  }
-
-  // Atalhos para compatibilidade
-  get destino_latitude(): number {
-    return this._destino.latitude;
-  }
-
-  get destino_longitude(): number {
-    return this._destino.longitude;
   }
 
   private validar(): void {

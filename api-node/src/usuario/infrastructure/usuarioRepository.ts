@@ -28,11 +28,11 @@ export class UsuarioRepository implements IUsuarioRepository {
     const novoUsuario = await prisma.usuarios.create({
       data: {
         nome: usuario.nome,
-        email: usuario.email,
+        email: usuario.emailObj.valor,
         telefone: usuario.telefone,
-        senha: usuario.senha,
-        latitude: usuario.latitude != null ? Number(usuario.latitude) : undefined,
-        longitude: usuario.longitude != null ? Number(usuario.longitude) : undefined,
+        senha: usuario.senhaObj?.valor ?? null,
+        latitude: usuario.coordenada?.latitude != null ? Number(usuario.coordenada.latitude) : undefined,
+        longitude: usuario.coordenada?.longitude != null ? Number(usuario.coordenada.longitude) : undefined,
         endereco: usuario.endereco
       }
     })
@@ -44,11 +44,11 @@ export class UsuarioRepository implements IUsuarioRepository {
       where: { id: Number(id) },
       data: {
         nome: usuario.nome,
-        email: usuario.email,
+        email: usuario.emailObj?.valor,
         telefone: usuario.telefone,
-        senha: usuario.senha,
-        latitude: usuario.latitude !== undefined ? (usuario.latitude != null ? Number(usuario.latitude) : null) : undefined,
-        longitude: usuario.longitude !== undefined ? (usuario.longitude != null ? Number(usuario.longitude) : null) : undefined,
+        senha: usuario.senhaObj?.valor ?? null,
+        latitude: usuario.coordenada !== undefined ? (usuario.coordenada?.latitude != null ? Number(usuario.coordenada.latitude) : null) : undefined,
+        longitude: usuario.coordenada !== undefined ? (usuario.coordenada?.longitude != null ? Number(usuario.coordenada.longitude) : null) : undefined,
         endereco: usuario.endereco
       }
     })
