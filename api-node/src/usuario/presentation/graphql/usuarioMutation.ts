@@ -1,14 +1,14 @@
-import type { UsuarioAppService } from '../application/usuarioService.js'
+import type { IUsuarioService } from '../../application/ports/IUsuarioService.js'
 import { GraphQLError } from 'graphql'
 import {
   loginSchema,
   criarUsuarioSchema,
   editarUsuarioSchema,
   atualizarEnderecoSchema
-} from '../application/usuarioValidation.js'
-import { withDomainErrorHandling } from '../../shared/utils/errorHandler.js'
+} from '../../application/usuarioValidation.js'
+import { withDomainErrorHandling } from '../../../shared/utils/errorHandler.js'
 
-export const createUsuarioMutation = (service: UsuarioAppService) => ({
+export const createUsuarioMutation = (service: IUsuarioService) => ({
   login: async (_: any, args: any) => {
     const parsed = loginSchema.safeParse(args)
     if (!parsed.success) {

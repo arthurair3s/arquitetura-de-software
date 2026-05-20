@@ -1,4 +1,4 @@
-import { usuarioResolver } from './usuario/Resolver/usuarioResolver.js'
+import { usuarioResolver } from './usuario/presentation/graphql/usuarioResolver.js'
 import { restauranteResolver } from './restaurante/Resolver/restauranteResolver.js'
 import { produtoResolver } from './produto/Resolver/produtoResolver.js'
 import { pedidoResolver } from './pedido/Resolver/pedidoResolver.js'

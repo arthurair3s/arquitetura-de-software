@@ -1,5 +1,5 @@
 import type { IPedidoRepository } from '../domain/IPedidoRepository.js'
-import type { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import type { UsuarioAppService } from '../../usuario/application/services/usuarioService.js'
 import { Pedido, PedidoInvalidoError } from '../domain/Pedido.js'
 import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
 import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js'

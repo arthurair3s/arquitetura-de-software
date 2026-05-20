@@ -1,6 +1,6 @@
-import { prisma } from '../../infra/database/connection.js'
-import { Usuario } from '../domain/Usuario.js'
-import type { IUsuarioRepository } from '../domain/IUsuarioRepository.js'
+import { prisma } from '../../../infra/database/connection.js'
+import { Usuario } from '../../domain/Usuario.js'
+import type { IUsuarioRepository } from '../../domain/ports/IUsuarioRepository.js'
 
 export class UsuarioRepository implements IUsuarioRepository {
   async listarUsuarios(): Promise<Usuario[]> {

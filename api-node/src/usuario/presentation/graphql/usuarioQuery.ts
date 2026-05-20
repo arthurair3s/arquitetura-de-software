@@ -1,7 +1,7 @@
-import type { UsuarioAppService } from '../application/usuarioService.js'
+import type { IUsuarioService } from '../../application/ports/IUsuarioService.js'
 import { GraphQLError } from 'graphql'
 
-export const createUsuarioQuery = (service: UsuarioAppService) => ({
+export const createUsuarioQuery = (service: IUsuarioService) => ({
   usuarios: async () => service.listar(),
 
   usuario: async (_: any, { id }: { id: string }) => service.buscarPorId(id),

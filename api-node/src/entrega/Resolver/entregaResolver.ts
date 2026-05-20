@@ -10,9 +10,9 @@ import { SimuladorDeslocamentoService } from '../application/simuladorDeslocamen
 import { PedidoAppService } from '../../pedido/application/pedidoService.js'
 import { PedidoRepository } from '../../pedido/infrastructure/pedidoRepository.js'
 
-import { UsuarioAppService } from '../../usuario/application/usuarioService.js'
+import { UsuarioAppService } from '../../usuario/application/services/usuarioService.js'
 import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
-import { UsuarioRepository } from '../../usuario/infrastructure/usuarioRepository.js'
+import { UsuarioRepository } from '../../usuario/infrastructure/adapters/usuarioRepository.js'
 
 import { EntregadorAppService } from '../../entregador/application/entregadorService.js'
 import { EntregadorRepository } from '../../entregador/infrastructure/entregadorRepository.js'

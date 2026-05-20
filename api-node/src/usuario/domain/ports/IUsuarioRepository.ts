@@ -1,4 +1,4 @@
-import { Usuario } from './Usuario.js'
+import { Usuario } from '../Usuario.js'
 
 export interface IUsuarioRepository {
   listarUsuarios(): Promise<Usuario[]>

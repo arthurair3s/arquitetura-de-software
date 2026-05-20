@@ -1,12 +1,13 @@
-import type { IUsuarioRepository } from '../domain/IUsuarioRepository.js'
-import { Usuario, UsuarioInvalidoError } from '../domain/Usuario.js'
-import { logger } from '../../shared/utils/logger.js'
-import { Email } from '../../shared/domain/value-objects/Email.js'
-import { SenhaHash } from '../../shared/domain/value-objects/SenhaHash.js'
-import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
-import type { ITokenService } from '../../shared/domain/ITokenService.js'
+import type { IUsuarioRepository } from '../../domain/ports/IUsuarioRepository.js'
+import type { IUsuarioService } from '../ports/IUsuarioService.js'
+import { Usuario, UsuarioInvalidoError } from '../../domain/Usuario.js'
+import { logger } from '../../../shared/utils/logger.js'
+import { Email } from '../../../shared/domain/value-objects/Email.js'
+import { SenhaHash } from '../../../shared/domain/value-objects/SenhaHash.js'
+import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
+import type { ITokenService } from '../../../shared/domain/ITokenService.js'
 
-export class UsuarioAppService {
+export class UsuarioAppService implements IUsuarioService {
   constructor(
     private readonly repository: IUsuarioRepository,
     private readonly tokenService: ITokenService
