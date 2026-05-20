@@ -1,4 +1,4 @@
-import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
+import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js';
 
 export interface PontoRota {
   latitude: number;

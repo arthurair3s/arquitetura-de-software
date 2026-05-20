@@ -1,5 +1,5 @@
-import { GrpcRoteamentoProvider } from '../infrastructure/grpcRoteamentoProvider.js'
-import { RoteamentoAppService } from '../application/roteamentoService.js'
+import { GrpcRoteamentoProvider } from '../../infrastructure/adapters/grpcRoteamentoProvider.js'
+import { RoteamentoAppService } from '../../application/services/roteamentoService.js'
 import { createRoteamentoQuery } from './roteamentoQuery.js'
 
 // inicialização das dependências do módulo

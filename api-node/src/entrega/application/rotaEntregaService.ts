@@ -2,7 +2,7 @@ import type { EntregaAppService } from './entregaService.js'
 import type { PedidoAppService } from '../../pedido/application/pedidoService.js'
 import type { EntregadorAppService } from '../../entregador/application/entregadorService.js'
 import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import type { RoteamentoAppService } from '../../roteamento/application/roteamentoService.js'
+import type { IRoteamentoService } from '../../roteamento/application/ports/IRoteamentoService.js'
 import { logger } from '../../shared/utils/logger.js'
 import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js'
 
@@ -14,7 +14,7 @@ export class RotaEntregaService {
     private readonly pedidoService: PedidoAppService,
     private readonly entregadorService: EntregadorAppService,
     private readonly restauranteService: RestauranteAppService,
-    private readonly roteamentoService: RoteamentoAppService
+    private readonly roteamentoService: IRoteamentoService
   ) {}
 
   async obterRotaEstavel(entregaId: number | string): Promise<any> {

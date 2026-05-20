@@ -2,7 +2,7 @@ import { EntregadorRepository } from '../infrastructure/entregadorRepository.js'
 import { EntregadorAppService } from '../application/entregadorService.js'
 import { RestauranteRepository } from '../../restaurante/infrastructure/restauranteRepository.js'
 import { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/grpcRoteamentoProvider.js'
+import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'
 import { createEntregadorQuery } from './entregadorQuery.js'
 import { createEntregadorMutation } from './entregadorMutation.js'
 

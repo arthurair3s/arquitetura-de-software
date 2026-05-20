@@ -1,7 +1,8 @@
-import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../domain/IRoteamentoProvider.js'
-import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
+import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../../domain/ports/IRoteamentoProvider.js'
+import type { IRoteamentoService } from '../ports/IRoteamentoService.js'
+import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js';
 
-export class RoteamentoAppService {
+export class RoteamentoAppService implements IRoteamentoService {
   constructor(private readonly provider: IRoteamentoProvider) {}
 
   async calcularResumo(origem: Coordenada, destino: Coordenada): Promise<ResumoRota> {

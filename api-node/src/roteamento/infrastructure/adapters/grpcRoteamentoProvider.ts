@@ -1,6 +1,6 @@
-import roteamentoClient from '../../grpc/roteamentoClient.js'
-import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../domain/IRoteamentoProvider.js'
-import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
+import roteamentoClient from '../../../grpc/roteamentoClient.js'
+import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../../domain/ports/IRoteamentoProvider.js'
+import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js';
 
 export class GrpcRoteamentoProvider implements IRoteamentoProvider {
   calcularResumo(origem: Coordenada, destino: Coordenada): Promise<ResumoRota> {

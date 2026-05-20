@@ -2,7 +2,7 @@ import type { EntregaAppService } from './entregaService.js'
 import type { PedidoAppService } from '../../pedido/application/pedidoService.js'
 import type { EntregadorAppService } from '../../entregador/application/entregadorService.js'
 import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import type { RoteamentoAppService } from '../../roteamento/application/roteamentoService.js'
+import type { IRoteamentoService } from '../../roteamento/application/ports/IRoteamentoService.js'
 import { Entrega, EntregaInvalidaError } from '../domain/Entrega.js'
 import { logger } from '../../shared/utils/logger.js'
 
@@ -12,7 +12,7 @@ export class AtribuicaoEntregaService {
     private readonly pedidoService: PedidoAppService,
     private readonly restauranteService: RestauranteAppService,
     private readonly entregadorService: EntregadorAppService,
-    private readonly roteamentoService: RoteamentoAppService
+    private readonly roteamentoService: IRoteamentoService
   ) {}
 
   async atribuirMelhorEntregador(pedidoId: number | string): Promise<Entrega> {

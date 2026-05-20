@@ -20,8 +20,8 @@ import { EntregadorRepository } from '../../entregador/infrastructure/entregador
 import { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
 import { RestauranteRepository } from '../../restaurante/infrastructure/restauranteRepository.js'
 
-import { RoteamentoAppService } from '../../roteamento/application/roteamentoService.js'
-import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/grpcRoteamentoProvider.js'
+import { RoteamentoAppService } from '../../roteamento/application/services/roteamentoService.js'
+import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'
 
 // inicialização das dependências do módulo
 const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())

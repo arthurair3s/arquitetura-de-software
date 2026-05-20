@@ -1,6 +1,6 @@
 import type { IEntregadorRepository } from '../domain/IEntregadorRepository.js'
 import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import type { IRoteamentoProvider } from '../../roteamento/domain/IRoteamentoProvider.js'
+import type { IRoteamentoProvider } from '../../roteamento/domain/ports/IRoteamentoProvider.js'
 import { Entregador, EntregadorInvalidoError } from '../domain/Entregador.js'
 import { logger } from '../../shared/utils/logger.js'
 
