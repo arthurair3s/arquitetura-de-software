@@ -6,6 +6,7 @@ import {
   editarUsuarioSchema,
   atualizarEnderecoSchema
 } from '../application/usuarioValidation.js'
+import { withDomainErrorHandling } from '../../shared/utils/errorHandler.js'
 
 export const createUsuarioMutation = (service: UsuarioAppService) => ({
   login: async (_: any, args: any) => {
@@ -13,7 +14,7 @@ export const createUsuarioMutation = (service: UsuarioAppService) => ({
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return service.login(parsed.data.email, parsed.data.senha)
+    return withDomainErrorHandling(() => service.login(parsed.data.email, parsed.data.senha))
   },
 
   criarUsuario: async (_: any, args: any) => {
@@ -21,7 +22,7 @@ export const createUsuarioMutation = (service: UsuarioAppService) => ({
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return service.criar(parsed.data)
+    return withDomainErrorHandling(() => service.criar(parsed.data))
   },
 
   editarUsuario: async (_: any, args: any) => {
@@ -30,7 +31,7 @@ export const createUsuarioMutation = (service: UsuarioAppService) => ({
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
     const { id, ...dados } = parsed.data as any
-    return service.editarPorId(id, dados)
+    return withDomainErrorHandling(() => service.editarPorId(id, dados))
   },
 
   atualizarEndereco: async (_: any, args: any, context: any) => {
@@ -41,9 +42,9 @@ export const createUsuarioMutation = (service: UsuarioAppService) => ({
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return service.atualizarEndereco(context.user.id, parsed.data)
+    return withDomainErrorHandling(() => service.atualizarEndereco(context.user.id, parsed.data))
   },
 
   deletarUsuario: async (_: any, { id }: { id: string }) =>
-    !!(await service.deletar(id))
+    withDomainErrorHandling(async () => !!(await service.deletar(id)))
 })

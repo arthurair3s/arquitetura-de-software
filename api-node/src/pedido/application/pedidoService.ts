@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql'
 import type { IPedidoRepository } from '../domain/IPedidoRepository.js'
 import type { UsuarioAppService } from '../../usuario/application/usuarioService.js'
 import { Pedido, PedidoInvalidoError } from '../domain/Pedido.js'
@@ -35,11 +34,11 @@ export class PedidoAppService {
 
     if (destino_latitude == null || destino_longitude == null) {
       const usuario = await this.usuarioService.buscarPorId(usuario_id)
-      if (!usuario || usuario.latitude == null || usuario.longitude == null) {
-        throw new GraphQLError('Endereço de entrega não definido no perfil do usuário.', { extensions: { code: 'BAD_USER_INPUT' } })
+      if (!usuario || usuario.coordenada?.latitude == null || usuario.coordenada?.longitude == null) {
+        throw new PedidoInvalidoError('Endereço de entrega não definido no perfil do usuário.')
       }
-      destino_latitude = usuario.latitude
-      destino_longitude = usuario.longitude
+      destino_latitude = usuario.coordenada.latitude
+      destino_longitude = usuario.coordenada.longitude
     }
 
     const destino = new Coordenada(Number(destino_latitude), Number(destino_longitude))
@@ -66,13 +65,13 @@ export class PedidoAppService {
       throw new PedidoInvalidoError('Pedido não encontrado')
     }
 
-    if (dados.status !== undefined) pedidoAtual.status = dados.status
-    if (dados.valor_total !== undefined) pedidoAtual.valor = new Dinheiro(Number(dados.valor_total))
+    if (dados.status !== undefined) pedidoAtual.alterarStatus(new StatusPedido(dados.status))
+    if (dados.valor_total !== undefined) pedidoAtual.atualizarValor(new Dinheiro(Number(dados.valor_total)))
     
     if (dados.destino_latitude !== undefined || dados.destino_longitude !== undefined) {
-      const lat = dados.destino_latitude !== undefined ? Number(dados.destino_latitude) : pedidoAtual.destino_latitude
-      const lon = dados.destino_longitude !== undefined ? Number(dados.destino_longitude) : pedidoAtual.destino_longitude
-      pedidoAtual.destino = new Coordenada(lat, lon)
+      const lat = dados.destino_latitude !== undefined ? Number(dados.destino_latitude) : pedidoAtual.destino.latitude
+      const lon = dados.destino_longitude !== undefined ? Number(dados.destino_longitude) : pedidoAtual.destino.longitude
+      pedidoAtual.atualizarEnderecoEntrega(new Coordenada(lat, lon))
     }
 
     return this.repository.editarPedidoPorId(id, pedidoAtual)
