@@ -1,27 +1,27 @@
 import { createEntregaQuery } from './entregaQuery.js'
 import { createEntregaMutation } from './entregaMutation.js'
 
-import { EntregaRepository } from '../infrastructure/entregaRepository.js'
-import { EntregaAppService } from '../application/entregaService.js'
-import { RotaEntregaService } from '../application/rotaEntregaService.js'
-import { AtribuicaoEntregaService } from '../application/atribuicaoEntregaService.js'
-import { SimuladorDeslocamentoService } from '../application/simuladorDeslocamentoService.js'
+import { EntregaRepository } from '../../infrastructure/adapters/entregaRepository.js'
+import { EntregaAppService } from '../../application/services/entregaService.js'
+import { RotaEntregaService } from '../../application/services/rotaEntregaService.js'
+import { AtribuicaoEntregaService } from '../../application/services/atribuicaoEntregaService.js'
+import { SimuladorDeslocamentoService } from '../../application/services/simuladorDeslocamentoService.js'
 
-import { PedidoAppService } from '../../pedido/application/pedidoService.js'
-import { PedidoRepository } from '../../pedido/infrastructure/pedidoRepository.js'
+import { PedidoAppService } from '../../../pedido/application/services/pedidoService.js'
+import { PedidoRepository } from '../../../pedido/infrastructure/adapters/pedidoRepository.js'
 
-import { UsuarioAppService } from '../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../shared/infrastructure/JwtTokenService.js'
-import { UsuarioRepository } from '../../usuario/infrastructure/adapters/usuarioRepository.js'
+import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
+import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
+import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
 
-import { EntregadorAppService } from '../../entregador/application/entregadorService.js'
-import { EntregadorRepository } from '../../entregador/infrastructure/entregadorRepository.js'
+import { EntregadorAppService } from '../../../entregador/application/entregadorService.js'
+import { EntregadorRepository } from '../../../entregador/infrastructure/entregadorRepository.js'
 
-import { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import { RestauranteRepository } from '../../restaurante/infrastructure/restauranteRepository.js'
+import { RestauranteAppService } from '../../../restaurante/application/restauranteService.js'
+import { RestauranteRepository } from '../../../restaurante/infrastructure/restauranteRepository.js'
 
-import { RoteamentoAppService } from '../../roteamento/application/services/roteamentoService.js'
-import { GrpcRoteamentoProvider } from '../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'
+import { RoteamentoAppService } from '../../../roteamento/application/services/roteamentoService.js'
+import { GrpcRoteamentoProvider } from '../../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'
 
 // inicialização das dependências do módulo
 const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())

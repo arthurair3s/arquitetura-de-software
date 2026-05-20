@@ -1,15 +1,15 @@
-import type { EntregaAppService } from '../application/services/entregaService.js'
-import type { PedidoAppService } from '../../pedido/application/services/pedidoService.js'
-import type { EntregadorAppService } from '../../entregador/application/entregadorService.js'
-import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
-import type { IRoteamentoService } from '../../roteamento/application/ports/IRoteamentoService.js'
-import { Entrega, EntregaInvalidaError } from '../../entrega/domain/Entrega.js'
-import { logger } from '../../shared/utils/logger.js'
+import type { EntregaAppService } from './entregaService.js'
+import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
+import type { EntregadorAppService } from '../../../entregador/application/entregadorService.js'
+import type { RestauranteAppService } from '../../../restaurante/application/restauranteService.js'
+import type { IRoteamentoService } from '../../../roteamento/application/ports/IRoteamentoService.js'
+import { Entrega, EntregaInvalidaError } from '../../domain/Entrega.js'
+import { logger } from '../../../shared/utils/logger.js'
 
 export class AtribuicaoEntregaService {
   constructor(
     private readonly entregaService: EntregaAppService,
-    private readonly pedidoService: PedidoAppService,
+    private readonly pedidoService: IPedidoService,
     private readonly restauranteService: RestauranteAppService,
     private readonly entregadorService: EntregadorAppService,
     private readonly roteamentoService: IRoteamentoService

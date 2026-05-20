@@ -1,4 +1,4 @@
-import { Entrega } from './Entrega.js'
+import { Entrega } from '../Entrega.js'
 
 export interface IEntregaRepository {
   listarEntregas(): Promise<Entrega[]>

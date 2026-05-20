@@ -1,6 +1,6 @@
-import { prisma } from '../../infra/database/connection.js'
-import { Entrega } from '../domain/Entrega.js'
-import type { IEntregaRepository } from '../domain/IEntregaRepository.js'
+import { prisma } from '../../../infra/database/connection.js'
+import { Entrega } from '../../domain/Entrega.js'
+import type { IEntregaRepository } from '../../domain/ports/IEntregaRepository.js'
 
 export class EntregaRepository implements IEntregaRepository {
   async listarEntregas(): Promise<Entrega[]> {

@@ -1,11 +1,11 @@
-import type { EntregaAppService } from '../application/entregaService.js'
-import type { SimuladorDeslocamentoService } from '../application/simuladorDeslocamentoService.js'
-import type { AtribuicaoEntregaService } from '../application/atribuicaoEntregaService.js'
+import type { IEntregaService } from '../../application/ports/IEntregaService.js'
+import type { SimuladorDeslocamentoService } from '../../application/services/simuladorDeslocamentoService.js'
+import type { AtribuicaoEntregaService } from '../../application/services/atribuicaoEntregaService.js'
 import { GraphQLError } from 'graphql'
-import { criarEntregaSchema, editarEntregaSchema } from '../application/entregaValidation.js'
+import { criarEntregaSchema, editarEntregaSchema } from '../../application/entregaValidation.js'
 
 export const createEntregaMutation = (
-  service: EntregaAppService,
+  service: IEntregaService,
   simuladorService: SimuladorDeslocamentoService,
   atribuicaoService: AtribuicaoEntregaService
 ) => ({

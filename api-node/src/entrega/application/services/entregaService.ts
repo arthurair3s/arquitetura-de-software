@@ -1,9 +1,10 @@
-import type { IEntregaRepository } from '../domain/IEntregaRepository.js'
-import { Entrega, EntregaInvalidaError } from '../domain/Entrega.js'
-import { logger } from '../../shared/utils/logger.js'
-import { StatusEntrega } from '../domain/StatusEntrega.js'
+import type { IEntregaRepository } from '../../domain/ports/IEntregaRepository.js'
+import type { IEntregaService } from '../ports/IEntregaService.js'
+import { Entrega, EntregaInvalidaError } from '../../domain/Entrega.js'
+import { logger } from '../../../shared/utils/logger.js'
+import { StatusEntrega } from '../../domain/StatusEntrega.js'
 
-export class EntregaAppService {
+export class EntregaAppService implements IEntregaService {
   constructor(
     private readonly repository: IEntregaRepository
   ) {}

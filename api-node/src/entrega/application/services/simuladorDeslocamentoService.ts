@@ -1,17 +1,17 @@
 import type { EntregaAppService } from './entregaService.js'
-import type { PedidoAppService } from '../../pedido/application/pedidoService.js'
-import type { EntregadorAppService } from '../../entregador/application/entregadorService.js'
-import type { RestauranteAppService } from '../../restaurante/application/restauranteService.js'
+import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
+import type { EntregadorAppService } from '../../../entregador/application/entregadorService.js'
+import type { RestauranteAppService } from '../../../restaurante/application/restauranteService.js'
 import type { RotaEntregaService } from './rotaEntregaService.js'
-import { EntregaInvalidaError } from '../domain/Entrega.js'
-import { logger } from '../../shared/utils/logger.js'
+import { EntregaInvalidaError } from '../../domain/Entrega.js'
+import { logger } from '../../../shared/utils/logger.js'
 
 export class SimuladorDeslocamentoService {
   private activeSimulations = new Map<number, NodeJS.Timeout>();
 
   constructor(
     private readonly entregaService: EntregaAppService,
-    private readonly pedidoService: PedidoAppService,
+    private readonly pedidoService: IPedidoService,
     private readonly entregadorService: EntregadorAppService,
     private readonly restauranteService: RestauranteAppService,
     private readonly rotaService: RotaEntregaService
