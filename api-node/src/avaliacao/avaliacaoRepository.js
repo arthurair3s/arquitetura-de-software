@@ -1,4 +1,4 @@
-import { prisma } from '../database/connection.js'
+import { prisma } from '../infra/database/connection.js'
 
 export const listarAvaliacoes = async () => {
   return await prisma.avaliacoes.findMany()

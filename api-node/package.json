@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node ./src/index.js",
+    "dev": "tsx watch ./src/index.ts",
     "seed": "node ./prisma/seed.js"
   },
   "keywords": [],
@@ -33,8 +33,10 @@
     "seed": "node ./prisma/seed.js"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.6.0",
     "dotenv": "^17.3.1",
-    "prisma": "^7.5.0"
+    "prisma": "^7.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
   }
 }
