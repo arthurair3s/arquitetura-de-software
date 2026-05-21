@@ -1,4 +1,5 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
 
 export class RestauranteInvalidoError extends DomainError {
   constructor(message: string) {
@@ -12,23 +13,20 @@ export class Restaurante {
   private _nome: string;
   private _descricao: string | null;
   private _endereco: string | null;
-  private _latitude: number | null;
-  private _longitude: number | null;
+  private _coordenada: Coordenada | null;
 
   constructor(
     nome: string,
     descricao: string | null = null,
     endereco: string | null = null,
-    latitude: number | null = null,
-    longitude: number | null = null,
+    coordenada: Coordenada | null = null,
     id?: number
   ) {
     this.id = id;
     this._nome = nome;
     this._descricao = descricao;
     this._endereco = endereco;
-    this._latitude = latitude;
-    this._longitude = longitude;
+    this._coordenada = coordenada;
 
     this.validar();
   }
@@ -60,22 +58,22 @@ export class Restaurante {
     this.validar();
   }
 
-  get latitude(): number | null {
-    return this._latitude;
+  get coordenada(): Coordenada | null {
+    return this._coordenada;
   }
 
-  set latitude(novaLat: number | null) {
-    this._latitude = novaLat;
+  set coordenada(novaCoordenada: Coordenada | null) {
+    this._coordenada = novaCoordenada;
     this.validar();
+  }
+
+  // atalhos para compatibilidade (podem ser removidos futuramente se tudo usar .coordenada)
+  get latitude(): number | null {
+    return this._coordenada?.latitude ?? null;
   }
 
   get longitude(): number | null {
-    return this._longitude;
-  }
-
-  set longitude(novaLong: number | null) {
-    this._longitude = novaLong;
-    this.validar();
+    return this._coordenada?.longitude ?? null;
   }
 
   private validar(): void {
@@ -84,18 +82,6 @@ export class Restaurante {
     }
     if (this._nome.length > 150) {
       throw new RestauranteInvalidoError('O nome do restaurante não pode exceder 150 caracteres.');
-    }
-
-    if (this._latitude !== null && this._latitude !== undefined) {
-      if (this._latitude < -90 || this._latitude > 90) {
-        throw new RestauranteInvalidoError('A latitude deve estar entre -90 e 90.');
-      }
-    }
-
-    if (this._longitude !== null && this._longitude !== undefined) {
-      if (this._longitude < -180 || this._longitude > 180) {
-        throw new RestauranteInvalidoError('A longitude deve estar entre -180 e 180.');
-      }
     }
   }
 
@@ -107,12 +93,16 @@ export class Restaurante {
     longitude?: any;
     id?: number;
   }): Restaurante {
+    let coordenada = null;
+    if (dados.latitude != null && dados.longitude != null) {
+      coordenada = new Coordenada(Number(dados.latitude), Number(dados.longitude));
+    }
+
     return new Restaurante(
       dados.nome,
       dados.descricao || null,
       dados.endereco || null,
-      dados.latitude != null ? Number(dados.latitude) : null,
-      dados.longitude != null ? Number(dados.longitude) : null,
+      coordenada,
       dados.id
     );
   }

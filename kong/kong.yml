@@ -23,17 +23,6 @@ services:
           - /graphql
         strip_path: false
 
-  - name: web
-    url: http://web:5173/
-    connect_timeout: 5000
-    read_timeout: 30000
-    write_timeout: 30000
-    routes:
-      - name: web-route
-        paths:
-          - /
-        strip_path: false
-
 plugins:
   - name: cors
     config:

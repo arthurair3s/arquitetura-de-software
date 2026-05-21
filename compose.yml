@@ -108,8 +108,8 @@ services:
     build:
       context: ./frontend-web
       dockerfile: Dockerfile
-    expose:
-      - '5173'
+    ports:
+      - '5173:5173'
     depends_on:
       - api
     volumes:

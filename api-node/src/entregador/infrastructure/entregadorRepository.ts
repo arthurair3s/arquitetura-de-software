@@ -2,6 +2,7 @@ import entregadorClient from '../../grpc/entregadorClient.js'
 import { Entregador } from '../domain/Entregador.js'
 import { logger } from '../../shared/utils/logger.js'
 import type { IEntregadorRepository } from '../domain/IEntregadorRepository.js'
+import { StatusEntregador } from '../domain/StatusEntregador.js'
 
 const STATUS_MAP: Record<string, number> = {
   OFFLINE: 0,
@@ -20,7 +21,7 @@ export class EntregadorRepository implements IEntregadorRepository {
         },
         (error, response) => {
           if (error) return reject(error)
-          resolve(Entregador.criar(response))
+          resolve(Entregador.criar({ ...response, statusObj: StatusEntregador.deGrpc(response.status) }))
         }
       )
     })
@@ -33,7 +34,7 @@ export class EntregadorRepository implements IEntregadorRepository {
         (error, response) => {
           if (error) return reject(error)
           const lista = response.entregadores || []
-          resolve(lista.map((e: any) => Entregador.criar(e)))
+          resolve(lista.map((e: any) => Entregador.criar({ ...e, statusObj: StatusEntregador.deGrpc(e.status) })))
         }
       )
     })
@@ -48,7 +49,7 @@ export class EntregadorRepository implements IEntregadorRepository {
             if (error.code === 5) return resolve(null); // NOT_FOUND
             return reject(error);
           }
-          resolve(Entregador.criar(response))
+          resolve(Entregador.criar({ ...response, statusObj: StatusEntregador.deGrpc(response.status) }))
         }
       )
     })
@@ -65,7 +66,7 @@ export class EntregadorRepository implements IEntregadorRepository {
         },
         (error, response) => {
           if (error) return reject(error)
-          resolve(Entregador.criar(response))
+          resolve(Entregador.criar({ ...response, statusObj: StatusEntregador.deGrpc(response.status) }))
         }
       )
     })
@@ -88,7 +89,7 @@ export class EntregadorRepository implements IEntregadorRepository {
       entregadorClient.ListarTodosEntregadores({}, (error, response) => {
         if (error) return reject(error)
         const lista = response.entregadores || []
-        resolve(lista.map((e: any) => Entregador.criar(e)))
+        resolve(lista.map((e: any) => Entregador.criar({ ...e, statusObj: StatusEntregador.deGrpc(e.status) })))
       })
     })
   }
@@ -100,7 +101,7 @@ export class EntregadorRepository implements IEntregadorRepository {
         { id: Number(id), novo_status: statusEnum },
         (error, response) => {
           if (error) return reject(error);
-          resolve(Entregador.criar(response));
+          resolve(Entregador.criar({ ...response, statusObj: StatusEntregador.deGrpc(response.status) }));
         }
       );
     });

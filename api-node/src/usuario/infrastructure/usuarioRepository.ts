@@ -67,11 +67,17 @@ export class UsuarioRepository implements IUsuarioRepository {
     longitude?: number | null
     endereco?: string | null
   }): Promise<Usuario> {
+    const idNum = Number(id)
+    const lat = dados.latitude != null ? Number(dados.latitude) : null
+    const lon = dados.longitude != null ? Number(dados.longitude) : null
+    
+    console.log(`[UsuarioRepository] Atualizando ID ${idNum}: Lat=${lat}, Lon=${lon}, End=${dados.endereco}`)
+    
     const usuarioAtualizado = await prisma.usuarios.update({
-      where: { id: Number(id) },
+      where: { id: idNum },
       data: {
-        latitude: dados.latitude != null ? Number(dados.latitude) : null,
-        longitude: dados.longitude != null ? Number(dados.longitude) : null,
+        latitude: lat,
+        longitude: lon,
         endereco: dados.endereco
       }
     })

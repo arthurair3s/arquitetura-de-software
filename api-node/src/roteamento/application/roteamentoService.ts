@@ -1,14 +1,15 @@
 import type { IRoteamentoProvider, ResumoRota, GeometriaRota, PontoRota } from '../domain/IRoteamentoProvider.js'
+import { Coordenada } from '../../shared/domain/value-objects/Coordenada.js';
 
 export class RoteamentoAppService {
   constructor(private readonly provider: IRoteamentoProvider) {}
 
-  async calcularResumo(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<ResumoRota> {
-    return this.provider.calcularResumo(origemLat, origemLon, destinoLat, destinoLon)
+  async calcularResumo(origem: Coordenada, destino: Coordenada): Promise<ResumoRota> {
+    return this.provider.calcularResumo(origem, destino)
   }
 
-  async obterGeometria(origemLat: number, origemLon: number, destinoLat: number, destinoLon: number): Promise<GeometriaRota> {
-    return this.provider.obterGeometria(origemLat, origemLon, destinoLat, destinoLon)
+  async obterGeometria(origem: Coordenada, destino: Coordenada): Promise<GeometriaRota> {
+    return this.provider.obterGeometria(origem, destino)
   }
 
   async calcularMultiplosPontos(pontos: PontoRota[]): Promise<GeometriaRota> {

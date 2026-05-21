@@ -1,4 +1,5 @@
 import { DomainError } from '../../shared/errors/DomainError.js';
+import { Dinheiro } from '../../shared/domain/value-objects/Dinheiro.js';
 
 export class ProdutoInvalidoError extends DomainError {
   constructor(message: string) {
@@ -11,12 +12,12 @@ export class Produto {
   public readonly id?: number;
   private _nome: string;
   private _descricao: string | null;
-  private _preco: number;
+  private _preco: Dinheiro;
   public readonly categoria_id: number | null;
 
   constructor(
     nome: string,
-    preco: number,
+    preco: Dinheiro,
     id?: number,
     descricao: string | null = null,
     categoria_id: number | null = null
@@ -38,13 +39,18 @@ export class Produto {
     this.validar();
   }
 
-  get preco(): number {
+  get precoObj(): Dinheiro {
     return this._preco;
   }
 
-  set preco(novoPreco: number) {
+  set precoObj(novoPreco: Dinheiro) {
     this._preco = novoPreco;
     this.validar();
+  }
+
+  // Atalho para compatibilidade
+  get preco(): number {
+    return this._preco.valor;
   }
 
   get descricao(): string | null {
@@ -60,7 +66,7 @@ export class Produto {
     if (!this._nome || this._nome.trim().length === 0) {
       throw new ProdutoInvalidoError('O nome do produto não pode ser vazio.');
     }
-    if (this._preco <= 0) {
+    if (this._preco.valor <= 0) {
       throw new ProdutoInvalidoError('O preço do produto deve ser maior que zero.');
     }
     if (this._nome.length > 150) {
@@ -77,7 +83,7 @@ export class Produto {
   }): Produto {
     return new Produto(
       dados.nome,
-      Number(dados.preco),
+      new Dinheiro(Number(dados.preco)),
       dados.id,
       dados.descricao,
       dados.categoria_id
