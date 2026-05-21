@@ -40,48 +40,32 @@ export class Usuario {
   }
 
   get nome(): string { return this._nome; }
-  set nome(novoNome: string) {
-    this._nome = novoNome;
-    this.validar();
-  }
 
   get emailObj(): Email { return this._email; }
-  set emailObj(novoEmail: Email) {
-    this._email = novoEmail;
-    this.validar();
-  }
-
-  // atalho para compatibilidade
-  get email(): string { return this._email.valor; }
 
   get telefone(): string | null { return this._telefone; }
-  set telefone(novoTelefone: string | null) {
-    this._telefone = novoTelefone;
+
+  get senhaObj(): SenhaHash | null { return this._senha; }
+
+  public atualizarPerfil(nome: string, email: Email, telefone: string | null): void {
+    this._nome = nome;
+    this._email = email;
+    this._telefone = telefone;
     this.validar();
   }
 
-  get senhaObj(): SenhaHash | null { return this._senha; }
-  set senhaObj(novaSenha: SenhaHash | null) {
+  public alterarSenha(novaSenha: SenhaHash): void {
     this._senha = novaSenha;
     this.validar();
   }
 
-  // atalho para compatibilidade
-  get senha(): string | null { return this._senha?.valor ?? null; }
-
   get coordenada(): Coordenada | null { return this._coordenada; }
-  set coordenada(novaCoord: Coordenada | null) {
-    this._coordenada = novaCoord;
-    this.validar();
-  }
-
-  // atalhos para compatibilidade
-  get latitude(): number | null { return this._coordenada?.latitude ?? null; }
-  get longitude(): number | null { return this._coordenada?.longitude ?? null; }
 
   get endereco(): string | null { return this._endereco; }
-  set endereco(novoEndereco: string | null) {
-    this._endereco = novoEndereco;
+
+  public atualizarEndereco(coordenada: Coordenada | null, endereco: string | null): void {
+    this._coordenada = coordenada;
+    this._endereco = endereco;
     this.validar();
   }
 
