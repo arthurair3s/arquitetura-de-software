@@ -1,14 +1,20 @@
-import * as entregaService from '../entregaService.js'
+import type { EntregaAppService } from '../application/entregaService.js'
+import type { SimuladorDeslocamentoService } from '../application/simuladorDeslocamentoService.js'
+import type { AtribuicaoEntregaService } from '../application/atribuicaoEntregaService.js'
 import { GraphQLError } from 'graphql'
-import { criarEntregaSchema, editarEntregaSchema } from '../entregaValidation.js'
+import { criarEntregaSchema, editarEntregaSchema } from '../application/entregaValidation.js'
 
-export const Mutation = {
+export const createEntregaMutation = (
+  service: EntregaAppService,
+  simuladorService: SimuladorDeslocamentoService,
+  atribuicaoService: AtribuicaoEntregaService
+) => ({
   criarEntrega: async (_: any, args: any) => {
     const parsed = criarEntregaSchema.safeParse(args)
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return entregaService.criar(parsed.data as any)
+    return service.criar(parsed.data as any)
   },
 
   editarEntrega: async (_: any, args: any) => {
@@ -17,16 +23,16 @@ export const Mutation = {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
     const { id, ...dados } = parsed.data as any
-    return entregaService.editarPorId(id, dados)
+    return service.editarPorId(id, dados)
   },
 
-  deletarEntrega: async (_: any, { id }: { id: string }) => !!(await entregaService.deletar(id)),
+  deletarEntrega: async (_: any, { id }: { id: string }) => !!(await service.deletar(id)),
 
   simularDeslocamento: async (_: any, { id }: { id: string }) => {
-    return entregaService.simularDeslocamento(id)
+    return simuladorService.simularDeslocamento(id)
   },
 
   atribuirEntregador: async (_: any, { pedido_id }: { pedido_id: string }) => {
-    return entregaService.atribuirMelhorEntregador(pedido_id)
+    return atribuicaoService.atribuirMelhorEntregador(pedido_id)
   }
-}
+})

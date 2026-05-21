@@ -1,13 +1,13 @@
-import * as roteamentoService from '../roteamentoService.js'
+import type { RoteamentoAppService } from '../application/roteamentoService.js'
 
-export const Query = {
+export const createRoteamentoQuery = (service: RoteamentoAppService) => ({
   calcularResumoRota: async (_: any, { origemLat, origemLon, destinoLat, destinoLon }: any) => {
-    return roteamentoService.calcularResumo(origemLat, origemLon, destinoLat, destinoLon)
+    return service.calcularResumo(origemLat, origemLon, destinoLat, destinoLon)
   },
   obterGeometriaRota: async (_: any, { origemLat, origemLon, destinoLat, destinoLon }: any) => {
-    return roteamentoService.obterGeometria(origemLat, origemLon, destinoLat, destinoLon)
+    return service.obterGeometria(origemLat, origemLon, destinoLat, destinoLon)
   },
   calcularRotaMultiplosPontos: async (_: any, { pontos }: any) => {
-    return roteamentoService.calcularMultiplosPontos(pontos)
+    return service.calcularMultiplosPontos(pontos)
   }
-}
+})

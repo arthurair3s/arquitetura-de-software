@@ -1,6 +1,6 @@
-import * as categoriaService from '../categoriaService.js'
+import type { CategoriaAppService } from '../application/categoriaService.js'
 
-export const Query = {
-  categorias: async () => categoriaService.listar(),
-  categoria: async (_: any, { id }: { id: string }) => categoriaService.buscarPorId(id)
-}
+export const createCategoriaQuery = (service: CategoriaAppService) => ({
+  categorias: async () => service.listar(),
+  categoria: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+})

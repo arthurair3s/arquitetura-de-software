@@ -1,22 +1,34 @@
-import * as entregadorService from '../entregadorService.js'
+import type { EntregadorAppService } from '../application/entregadorService.js'
+import { GraphQLError } from 'graphql'
+import { criarEntregadorSchema, editarEntregadorSchema } from '../application/entregadorValidation.js'
 
-export const Mutation = {
-  criarEntregador: async (_: any, args: any) => entregadorService.criar(args),
-
-  editarEntregador: async (_: any, args: any) => {
-    const { id, ...dados } = args
-    return entregadorService.editarPorId(id, dados)
+export const createEntregadorMutation = (service: EntregadorAppService) => ({
+  criarEntregador: async (_: any, args: any) => {
+    const parsed = criarEntregadorSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
+    }
+    return service.criar(parsed.data)
   },
 
-  deletarEntregador: async (_: any, { id }: { id: string }) => !!(await entregadorService.deletar(id)),
+  editarEntregador: async (_: any, args: any) => {
+    const parsed = editarEntregadorSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
+    }
+    const { id, ...dados } = parsed.data as any
+    return service.editarPorId(id, dados)
+  },
+
+  deletarEntregador: async (_: any, { id }: { id: string }) => !!(await service.deletar(id)),
 
   atualizarStatusEntregador: async (_: any, { id, novoStatus }: { id: string; novoStatus: string }) => {
-    return entregadorService.atualizarStatus(id, novoStatus)
+    return service.atualizarStatus(id, novoStatus)
   },
 
   atualizarLocalizacaoEntregador: async (_: any, { id, latitude, longitude }: { id: string; latitude: number; longitude: number }) => {
-    return entregadorService.atualizarLocalizacao(id, latitude, longitude)
+    return service.atualizarLocalizacao(id, latitude, longitude)
   },
 
-  povoarFrota: async () => entregadorService.povoarFrota()
-}
+  povoarFrota: async () => service.povoarFrota()
+})

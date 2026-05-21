@@ -1,6 +1,6 @@
-import * as pedidoService from '../pedidoService.js'
+import type { PedidoAppService } from '../application/pedidoService.js'
 
-export const Query = {
-  pedidos: async () => pedidoService.listar(),
-  pedido: async (_: any, { id }: { id: string }) => pedidoService.buscarPorId(id)
-}
+export const createPedidoQuery = (service: PedidoAppService) => ({
+  pedidos: async () => service.listar(),
+  pedido: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+})

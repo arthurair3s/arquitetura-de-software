@@ -1,6 +1,6 @@
-import * as pagamentoService from '../pagamentoService.js'
+import type { PagamentoAppService } from '../application/pagamentoService.js'
 
-export const Query = {
-  pagamentos: async () => pagamentoService.listar(),
-  pagamento: async (_: any, { id }: { id: string }) => pagamentoService.buscarPorId(id)
-}
+export const createPagamentoQuery = (service: PagamentoAppService) => ({
+  pagamentos: async () => service.listar(),
+  pagamento: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+})

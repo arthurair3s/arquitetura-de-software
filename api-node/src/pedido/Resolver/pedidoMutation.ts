@@ -1,14 +1,14 @@
-import * as pedidoService from '../pedidoService.js'
+import type { PedidoAppService } from '../application/pedidoService.js'
 import { GraphQLError } from 'graphql'
-import { criarPedidoSchema, editarPedidoSchema } from '../pedidoValidation.js'
+import { criarPedidoSchema, editarPedidoSchema } from '../application/pedidoValidation.js'
 
-export const Mutation = {
+export const createPedidoMutation = (service: PedidoAppService) => ({
   criarPedido: async (_: any, args: any) => {
     const parsed = criarPedidoSchema.safeParse(args)
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return pedidoService.criar(parsed.data as any)
+    return service.criar(parsed.data as any)
   },
 
   editarPedido: async (_: any, args: any) => {
@@ -17,8 +17,8 @@ export const Mutation = {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
     const { id, ...dados } = parsed.data as any
-    return pedidoService.editarPorId(id, dados)
+    return service.editarPorId(id, dados)
   },
 
-  deletarPedido: async (_: any, { id }: { id: string }) => !!(await pedidoService.deletar(id))
-}
+  deletarPedido: async (_: any, { id }: { id: string }) => !!(await service.deletar(id))
+})

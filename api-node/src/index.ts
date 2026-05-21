@@ -7,7 +7,7 @@ import { loadFilesSync } from '@graphql-tools/load-files';
 import { mergeTypeDefs } from '@graphql-tools/merge';
 
 import { resolvers } from './resolvers.js';
-import { verificarToken } from './usuario/usuarioService.js';
+import { verificarToken } from './usuario/application/usuarioService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

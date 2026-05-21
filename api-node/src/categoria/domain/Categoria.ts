@@ -37,7 +37,7 @@ export class Categoria {
     }
   }
 
-  // Mapper simples para construir a partir dos dados do banco/inputs
+  // criação da instância a partir de dados brutos
   static criar(dados: { nome: string; id?: number; restaurante_id?: number | null }): Categoria {
     return new Categoria(dados.nome, dados.id, dados.restaurante_id);
   }
