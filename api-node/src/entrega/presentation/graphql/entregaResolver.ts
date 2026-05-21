@@ -14,11 +14,11 @@ import { UsuarioAppService } from '../../../usuario/application/services/usuario
 import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
 import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
 
-import { EntregadorAppService } from '../../../entregador/application/entregadorService.js'
-import { EntregadorRepository } from '../../../entregador/infrastructure/entregadorRepository.js'
+import { EntregadorAppService } from '../../../entregador/application/services/entregadorService.js'
+import { EntregadorRepository } from '../../../entregador/infrastructure/adapters/entregadorRepository.js'
 
-import { RestauranteAppService } from '../../../restaurante/application/restauranteService.js'
-import { RestauranteRepository } from '../../../restaurante/infrastructure/restauranteRepository.js'
+import { RestauranteAppService } from '../../../restaurante/application/services/restauranteService.js'
+import { RestauranteRepository } from '../../../restaurante/infrastructure/adapters/restauranteRepository.js'
 
 import { RoteamentoAppService } from '../../../roteamento/application/services/roteamentoService.js'
 import { GrpcRoteamentoProvider } from '../../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'

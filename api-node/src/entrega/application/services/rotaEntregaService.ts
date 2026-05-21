@@ -1,7 +1,7 @@
 import type { EntregaAppService } from './entregaService.js'
 import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
-import type { EntregadorAppService } from '../../../entregador/application/entregadorService.js'
-import type { RestauranteAppService } from '../../../restaurante/application/restauranteService.js'
+import type { IEntregadorService } from '../../../entregador/application/ports/IEntregadorService.js'
+import type { IRestauranteService } from '../../../restaurante/application/ports/IRestauranteService.js'
 import type { IRoteamentoService } from '../../../roteamento/application/ports/IRoteamentoService.js'
 import { logger } from '../../../shared/utils/logger.js'
 import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
@@ -12,8 +12,8 @@ export class RotaEntregaService {
   constructor(
     private readonly entregaService: EntregaAppService,
     private readonly pedidoService: IPedidoService,
-    private readonly entregadorService: EntregadorAppService,
-    private readonly restauranteService: RestauranteAppService,
+    private readonly entregadorService: IEntregadorService,
+    private readonly restauranteService: IRestauranteService,
     private readonly roteamentoService: IRoteamentoService
   ) {}
 
