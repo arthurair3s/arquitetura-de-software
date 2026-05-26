@@ -6,86 +6,134 @@ Este projeto é um ecossistema de alta performance projetado para demonstrar a a
 
 ## 🏛️ Arquitetura do Sistema (Modelo C4)
 
-Utilizamos o Modelo C4 para descrever a estrutura do sistema, permitindo visualizar desde a interação do usuário até os detalhes técnicos dos serviços.
+Utilizamos o Modelo C4 para descrever a estrutura do sistema, permitindo visualizar desde a interação de alto nível do usuário até os detalhes de componentes e Clean Architecture de forma nativa e integrada.
 
 ### Nível 1: Contexto do Sistema (System Context)
 O sistema atua como o orquestrador central entre os usuários finais, a frota de entregadores simulada e o motor de roteamento geográfico (OSRM).
 
-> [!TIP]
-> **Visualização Rica (C4 PlantUML):**
-> ![Diagrama de Contexto L1](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l1_context.puml)
-
 ```mermaid
 graph TD
-    subgraph "Atores e Sistemas Externos"
-        Customer((Cliente / Usuário))
-        Driver((Entregador Simulado))
-        OSRM["OSRM (Routing Engine)"]
-        OSM["OpenStreetMap Data"]
-    end
+    %% Estilos de Elemento C4
+    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#ffffff;
+    classDef system fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#ffffff;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
 
-    System[("Express Delivery System")]
+    cliente["Cliente<br/>(Utiliza o sistema para pedir e rastrear entregas em tempo real)"]
+    entregador["Entregador<br/>(Atualiza GPS e gerencia status de suas entregas)"]
+    express_delivery["Sistema Express Delivery<br/>(Orquestra pedidos, rotas, frotas e pagamentos)"]
+    osrm_server["Servidor OSRM<br/>[Sistema Externo]<br/>Calcula rotas ideais sobre dados do OpenStreetMap"]
 
-    Customer -- "Faz pedidos e acompanha em tempo real" --> System
-    Driver -- "Recebe rotas e atualiza GPS" --> System
-    System -- "Calcula trajetórias e tempos" --> OSRM
-    OSRM -- "Baseado em" --> OSM
+    cliente -->|Visualiza cardápios, faz pedidos| express_delivery
+    entregador -->|Envia localização, status de entregas| express_delivery
+    express_delivery -->|Consulta rotas ideais e estimativas| osrm_server
+
+    class cliente,entregador person;
+    class express_delivery system;
+    class osrm_server ext;
 ```
 
 ### Nível 2: Contêineres (Containers)
-Abaixo, a topologia de rede do ecossistema Docker. Todo o tráfego externo é centralizado pelo **API Gateway (Kong)**, que atua como o ponto de entrada único (Single Point of Entry) na porta 8000, roteando as requisições para o Frontend ou para a API conforme o path.
-
-> [!TIP]
-> **Visualização Rica (C4 PlantUML):**
-> ![Diagrama de Containers L2](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l2_container.puml)
+Detalhamento da topologia de containers do ecossistema. Todo o tráfego externo é centralizado pelo **API Gateway (Kong)**, que atua como o ponto de entrada único (Single Point of Entry) na porta 8000, roteando as requisições para o Frontend ou para a API conforme o path.
 
 ```mermaid
 graph TB
-    Customer((Usuário Final))
+    %% Estilos de Elemento C4
+    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#ffffff;
+    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#ffffff;
+    classDef database fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#ffffff;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
 
-    subgraph "Core Infrastructure (Gateway)"
-        Gateway["API Gateway (Kong)"]
+    cliente["Cliente<br/>(Visualiza cardápios e faz pedidos)"]
+    entregador["Entregador<br/>(Atualiza GPS e aceita corridas)"]
+
+    subgraph express_delivery ["Fronteira do Sistema Express Delivery"]
+        frontend["Frontend Web<br/>[React + Vite]<br/>Interface de usuário SPA moderna"]
+        gateway["API Gateway<br/>[Kong]<br/>Autenticação JWT, CORS e Roteamento"]
+        api_node["Backend Core (API Node)<br/>[TypeScript / GraphQL / Prisma]<br/>Regras de negócio e gRPC client principal"]
+        ms_entregadores["MS Entregadores<br/>[C# / .NET 10 / gRPC]<br/>Gerencia frota e posições geográficas"]
+        ms_roteamento["MS Roteamento<br/>[C# / .NET 10 / gRPC]<br/>Calcula trajetos ótimos e estimativas"]
+        db_postgres[("PostgreSQL<br/>[Dados Relacionais]<br/>Persistência de pedidos, usuários e cadastros")]
+        db_redis[("Redis Cache<br/>[Geoprocessamento]<br/>Localizações geográficas de alta frequência")]
     end
 
-    subgraph "Application Layer"
-        Web["Frontend Web (React + Leaflet)"]
-        API["Node.js API (Apollo/GraphQL)"]
+    subgraph infra_osrm ["Infraestrutura de Mapas"]
+        osrm_server["Servidor OSRM<br/>[C++ Engine]<br/>Processa matrizes geográficas e rotas"]
     end
 
-    subgraph "Microservices Layer (gRPC)"
-        MS_ENT["ms_entregadores (.NET 10)"]
-        MS_ROT["ms_roteamento (.NET 10)"]
-    end
+    cliente -->|Interage| frontend
+    frontend -->|Requisições GraphQL| gateway
+    entregador -->|gRPC Coordinates Stream| ms_entregadores
+    gateway -->|Roteia /graphql| api_node
+    api_node -->|Consultas e Escrita| db_postgres
+    api_node -->|gRPC: Atribuir entregador| ms_entregadores
+    api_node -->|gRPC: Solicitar rota| ms_roteamento
+    ms_entregadores -->|Persiste cadastros| db_postgres
+    ms_entregadores -->|Cache de posições rápidas| db_redis
+    ms_roteamento -->|Cálculo de caminhos e distâncias| osrm_server
 
-    subgraph "Persistence & Intelligence"
-        DB[("PostgreSQL")]
-        Redis[("Redis - Tracking")]
-        OSRM_SRV["osrm_server (Engine)"]
-    end
-
-    %% Flows
-    Customer -- "Acessa porta 8000" --> Gateway
-    
-    Gateway -- "Roteia /" --> Web
-    Gateway -- "Roteia /graphql" --> API
-    
-    Web -- "Chamadas API via Gateway" --> Gateway
-    
-    API -- "gRPC" --> MS_ENT
-    API -- "gRPC" --> MS_ROT
-    MS_ROT -- "HTTP" --> OSRM_SRV
-    
-    API -- "Prisma" --> DB
-    MS_ENT -- "EF Core" --> DB
-    MS_ENT -- "Redis Client" --> Redis
+    class cliente,entregador person;
+    class frontend,gateway,api_node,ms_entregadores,ms_roteamento container;
+    class db_postgres,db_redis database;
+    class osrm_server ext;
 ```
 
 ### Nível 3: Componentes (Components)
-Detalhamento interno do container **Backend Core (API Node)**, ilustrando como a arquitetura limpa (Clean Architecture) e o isolamento de domínio (DDD) são estruturados.
+Detalhamento interno do container **Backend Core (API Node)**, ilustrando como a arquitetura limpa (Clean Architecture) e o isolamento de domínio (DDD) são estruturados em camadas independentes.
 
-> [!TIP]
-> **Visualização Rica (C4 PlantUML):**
-> ![Diagrama de Componentes L3](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l3_component.puml)
+```mermaid
+graph TB
+    %% Estilos de Elemento C4
+    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#ffffff;
+    classDef component fill:#85bbf0,stroke:#6699cc,stroke-width:2px,color:#000000;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
+
+    gateway["API Gateway (Kong)"]
+    db_postgres[("PostgreSQL")]
+    ms_entregadores["MS Entregadores"]
+    ms_roteamento["MS Roteamento"]
+
+    subgraph api_node ["Backend Core (API Node)"]
+        subgraph layer_pres ["Camada de Apresentação"]
+            resolvers["GraphQL Resolvers<br/>[Apollo Server]<br/>Trata queries e mutations de entrada"]
+        end
+
+        subgraph layer_app ["Camada de Aplicação"]
+            validators["Validadores Zod<br/>[Schema Parsing]<br/>Garante integridade de inputs"]
+            app_services["Serviços de Aplicação<br/>[TypeScript Classes]<br/>Orquestram os fluxos e casos de uso"]
+        end
+
+        subgraph layer_domain ["Camada de Domínio (Core)"]
+            entities["Entidades de Domínio<br/>[Entities]<br/>Usuario, Pedido, Restaurante ricos"]
+            value_objects["Value Objects<br/>[Value Objects]<br/>Email, Coordenada, Dinheiro imutáveis"]
+            domain_ports["Portas / Interfaces<br/>[Ports]<br/>Contratos abstratos de repositórios/gRPC"]
+        end
+
+        subgraph layer_infra ["Camada de Infraestrutura"]
+            prisma_adapters["Prisma Adapters<br/>[Repositories]<br/>Implementa portas de banco no Postgres"]
+            grpc_providers["gRPC Providers<br/>[gRPC Clients]<br/>Implementa portas gRPC com microserviços"]
+            token_service["Token Service<br/>[jsonwebtoken]<br/>Geração e verificação de JWTs"]
+        end
+    end
+
+    gateway -->|Requisições HTTP GraphQL| resolvers
+    resolvers -->|Valida parâmetros| validators
+    resolvers -->|Invoca fluxos de aplicação| app_services
+    app_services -->|Manipula entidades ricas| entities
+    app_services -->|Valida e instancia| value_objects
+    app_services -->|Interface de injeção| domain_ports
+
+    prisma_adapters -.->|Realiza Herança/Implements| domain_ports
+    grpc_providers -.->|Realiza Herança/Implements| domain_ports
+    token_service -.->|Realiza Herança/Implements| domain_ports
+
+    prisma_adapters -->|Prisma Client SQL| db_postgres
+    grpc_providers -->|gRPC Channel| ms_entregadores
+    grpc_providers -->|gRPC Channel| ms_roteamento
+
+    class gateway,ms_entregadores,ms_roteamento container;
+    class db_postgres ext;
+    class resolvers,validators,app_services,entities,value_objects,domain_ports,prisma_adapters,grpc_providers,token_service component;
+```
 
 ---
 
