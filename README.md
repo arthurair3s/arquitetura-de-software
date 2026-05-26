@@ -11,6 +11,10 @@ Utilizamos o Modelo C4 para descrever a estrutura do sistema, permitindo visuali
 ### Nível 1: Contexto do Sistema (System Context)
 O sistema atua como o orquestrador central entre os usuários finais, a frota de entregadores simulada e o motor de roteamento geográfico (OSRM).
 
+> [!TIP]
+> **Visualização Rica (C4 PlantUML):**
+> ![Diagrama de Contexto L1](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l1_context.puml)
+
 ```mermaid
 graph TD
     subgraph "Atores e Sistemas Externos"
@@ -30,6 +34,10 @@ graph TD
 
 ### Nível 2: Contêineres (Containers)
 Abaixo, a topologia de rede do ecossistema Docker. Todo o tráfego externo é centralizado pelo **API Gateway (Kong)**, que atua como o ponto de entrada único (Single Point of Entry) na porta 8000, roteando as requisições para o Frontend ou para a API conforme o path.
+
+> [!TIP]
+> **Visualização Rica (C4 PlantUML):**
+> ![Diagrama de Containers L2](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l2_container.puml)
 
 ```mermaid
 graph TB
@@ -71,6 +79,13 @@ graph TB
     MS_ENT -- "EF Core" --> DB
     MS_ENT -- "Redis Client" --> Redis
 ```
+
+### Nível 3: Componentes (Components)
+Detalhamento interno do container **Backend Core (API Node)**, ilustrando como a arquitetura limpa (Clean Architecture) e o isolamento de domínio (DDD) são estruturados.
+
+> [!TIP]
+> **Visualização Rica (C4 PlantUML):**
+> ![Diagrama de Componentes L3](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/arthurair3s/express-delivery-system/main/doc/c4_l3_component.puml)
 
 ---
 

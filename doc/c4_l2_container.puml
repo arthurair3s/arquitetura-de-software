@@ -1,0 +1,73 @@
+@startuml C4_L2_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Containers (L2) - Express Delivery
+
+' -------------------------------------------------------------
+' ATORES / PESSOAS
+' -------------------------------------------------------------
+Person(cliente, "Cliente", "Utiliza o sistema para visualizar cardápios, realizar pedidos e acompanhar entregas em tempo real.")
+Person(entregador, "Entregador", "Utiliza o sistema para atualizar sua localização geográfica e gerenciar o status das entregas.")
+
+' -------------------------------------------------------------
+' SISTEMA EXPRESS DELIVERY (FRONTEIRA DE CONTAINERS)
+' -------------------------------------------------------------
+System_Boundary(express_delivery, "Sistema Express Delivery") {
+    
+    ' Frontend Container
+    Container(frontend, "Frontend Web", "React + Vite, TailwindCSS", "Interface Web SPA de alta performance que fornece as telas para Clientes e fluxo básico de simulação.")
+
+    ' API Gateway Container
+    Container(gateway, "API Gateway (Kong)", "Kong 3.4 (DB-less)", "Gerencia autenticação JWT, CORS, Rate Limiting e roteamento unificado de requisições.")
+
+    ' Core Backend Container (GraphQL API)
+    Container(api_node, "Backend Core (API Node)", "TypeScript, Node.js, GraphQL, Prisma", "Orquestrador principal da aplicação. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e integrações gRPC.")
+
+    ' Microserviço de Entregadores (.NET 10)
+    Container(ms_entregadores, "Microserviço de Entregadores", "C#, .NET 10, gRPC", "Gerencia o ciclo de vida, disponibilidade e o rastreamento em tempo real da frota de entregadores.")
+
+    ' Microserviço de Roteamento (.NET 10)
+    Container(ms_roteamento, "Microserviço de Roteamento", "C#, .NET 10, gRPC", "Responsável pelo cálculo de rotas ideais, estimativas de tempos e trajetos de coleta/entrega.")
+
+    ' Armazenamento de Dados Relacional
+    ContainerDb(db_postgres, "Banco de Dados (PostgreSQL)", "PostgreSQL 15", "Armazena dados transacionais de usuários, restaurantes, produtos, pedidos, pagamentos e avaliações.")
+
+    ' Armazenamento Cache e In-Memory (Redis)
+    ContainerDb(db_redis, "Cache de Posições (Redis)", "Redis 7", "Armazena localizações geográficas em tempo real da frota de entregadores para atualizações gRPC de baixa latência.")
+}
+
+' -------------------------------------------------------------
+' SISTEMAS EXTERNOS / DEPENDÊNCIAS
+' -------------------------------------------------------------
+System_Boundary(infra_osrm, "Infraestrutura de Mapas") {
+    Container(osrm_server, "Servidor de Roteamento (OSRM)", "C++ (OSRM Backend)", "Servidor OSRM que resolve caminhos geométricos e distâncias ótimas com base nos mapas OpenStreetMap.")
+}
+
+' -------------------------------------------------------------
+' RELACIONAMENTOS / FLUXOS DE COMUNICAÇÃO
+' -------------------------------------------------------------
+
+' Fluxo do Cliente
+Rel(cliente, frontend, "Interage com a interface (Visualiza Menu, Cria Pedido)", "HTTPS / SPA")
+Rel(frontend, gateway, "Envia requisições GraphQL (com ou sem JWT)", "HTTPS / JSON (Port 8000)")
+
+' Fluxo do Entregador
+Rel(entregador, ms_entregadores, "Transmite fluxo de coordenadas em tempo real", "gRPC Stream (Port 5001)")
+
+' Fluxo do Gateway
+Rel(gateway, api_node, "Encaminha requisições validadas para /graphql", "HTTP / GraphQL (Port 4000)")
+
+' Fluxo do API Node
+Rel(api_node, db_postgres, "Persiste usuários, pedidos, restaurantes e pagamentos", "Prisma Client (TCP Port 5433)")
+Rel(api_node, ms_entregadores, "Consulta entregadores próximos e atribui pedidos", "gRPC Client (Port 5001)")
+Rel(api_node, ms_roteamento, "Solicita cálculo de rota e estimativa para a entrega", "gRPC Client (Port 5002)")
+
+' Fluxo dos Microserviços
+Rel(ms_entregadores, db_postgres, "Consulta dados cadastrais dos entregadores", "ADO.NET / Entity Framework")
+Rel(ms_entregadores, db_redis, "Grava e lê coordenadas geográficas de alta frequência", "Redis Geo Commands (Port 6379)")
+
+Rel(ms_roteamento, osrm_server, "Consulta matrizes de distância e caminhos geométricos", "HTTP / JSON (Port 5080)")
+
+@enduml

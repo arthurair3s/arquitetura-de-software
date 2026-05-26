@@ -1,0 +1,75 @@
+@startuml C4_L3_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Backend Core (API Node)
+
+' -------------------------------------------------------------
+' CONTAINERS EXTERNOS AO DIAGRAMA DE COMPONENTES
+' -------------------------------------------------------------
+Container(gateway, "API Gateway (Kong)", "Kong 3.4", "Encaminha requisições GraphQL autorizadas.")
+ContainerDb(db_postgres, "Banco de Dados (PostgreSQL)", "PostgreSQL 15", "Armazena dados transacionais do sistema.")
+Container(ms_entregadores, "Microserviço de Entregadores", "C# / gRPC", "Gerencia a frota de entregadores no Redis.")
+Container(ms_roteamento, "Microserviço de Roteamento", "C# / gRPC", "Calcula rotas e caminhos via OSRM.")
+
+' -------------------------------------------------------------
+' CAMADAS DO BACKEND CORE (API NODE)
+' -------------------------------------------------------------
+Container_Boundary(api_node, "Backend Core (API Node)") {
+
+    ' 1. Camada de Apresentação (Presentation Layer)
+    Boundary(layer_presentation, "Camada de Apresentação") {
+        Component(resolvers, "GraphQL Resolvers", "Apollo Resolvers (TS)", "Recebe as consultas e mutações (ex: login, me, criarPedido, atribuirEntregador).")
+    }
+
+    ' 2. Camada de Aplicação (Application Layer)
+    Boundary(layer_application, "Camada de Aplicação") {
+        Component(app_services, "Serviços de Aplicação", "TypeScript Classes", "Implementam as portas de serviço (ex: UsuarioAppService, PedidoService). Orquestram fluxos de negócio.")
+        Component(validators, "Validadores (Zod)", "Zod Schemas", "Validam as payloads de entrada do GraphQL (ex: loginSchema, criarUsuarioSchema) antes da execução.")
+    }
+
+    ' 3. Camada de Domínio (Domain Layer)
+    Boundary(layer_domain, "Camada de Domínio (Core)") {
+        Component(entities, "Entidades de Domínio", "TypeScript Class Entities", "Modelos ricos com regras de negócio e validações intrínsecas (ex: Usuario, Pedido, Restaurante, Entrega).")
+        Component(value_objects, "Value Objects", "TypeScript Classes", "Objetos imutáveis que garantem tipos ricos autovalidados (ex: Email, Coordenada, Dinheiro, SenhaHash).")
+        Component(domain_ports, "Portas (Interfaces)", "TypeScript Interfaces", "Definem contratos abstratos para Repositórios (ex: IUsuarioRepository) e Integrações (ex: IRoteamentoProvider).")
+    }
+
+    ' 4. Camada de Infraestrutura (Infrastructure Layer)
+    Boundary(layer_infrastructure, "Camada de Infraestrutura") {
+        Component(prisma_adapters, "Adaptores de Repositório (Prisma)", "TypeScript Adapters", "Implementam as interfaces de repositório do domínio utilizando o Prisma Client.")
+        Component(grpc_providers, "Provedores gRPC (Clients)", "TypeScript gRPC Clients", "Implementam as interfaces de comunicação gRPC com os microserviços externos.")
+        Component(token_service, "Serviço de Token (JWT)", "jsonwebtoken library", "Implementa ITokenService para geração e validação de tokens JWT de autenticação.")
+    }
+}
+
+' -------------------------------------------------------------
+' RELACIONAMENTOS / DEPENDÊNCIAS
+' -------------------------------------------------------------
+
+' Entrada via Gateway
+Rel(gateway, resolvers, "Encaminha consultas GraphQL", "HTTP / POST /graphql")
+
+' Camada de Apresentação -> Camada de Aplicação
+Rel(resolvers, validators, "Valida inputs de entrada", "SafeParse")
+Rel(resolvers, app_services, "Orquestra ações de negócio", "Method calls (Service Ports)")
+
+' Camada de Aplicação -> Camada de Domínio
+Rel(app_services, entities, "Instancia e manipula entidades", "Entities constructors")
+Rel(app_services, value_objects, "Instancia Value Objects", "Value Object factory / constructors")
+
+' Camada de Aplicação -> Portas de Infraestrutura (Injeção de Dependências via Container)
+Rel(app_services, domain_ports, "Usa abstrações (Inversão de Dependência)", "Interfaces")
+
+' Implementações da Infraestrutura
+Rel(prisma_adapters, domain_ports, "Implementa contratos de persistência", "Implements")
+Rel(grpc_providers, domain_ports, "Implementa contratos de integração", "Implements")
+Rel(token_service, domain_ports, "Implementa ITokenService", "Implements")
+
+' Infraestrutura -> Recursos Externos
+Rel(prisma_adapters, db_postgres, "Lê e grava dados", "SQL / Prisma Client (TCP Port 5433)")
+Rel(grpc_providers, ms_entregadores, "Busca entregadores e gerencia frotas", "gRPC / Protobuf (Port 5001)")
+Rel(grpc_providers, ms_roteamento, "Solicita cálculo de trajeto ótimo", "gRPC / Protobuf (Port 5002)")
+
+@enduml
