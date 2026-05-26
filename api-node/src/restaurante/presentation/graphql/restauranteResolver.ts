@@ -1,11 +1,8 @@
-import { RestauranteRepository } from '../../infrastructure/adapters/restauranteRepository.js'
-import { RestauranteAppService } from '../../application/services/restauranteService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createRestauranteQuery } from './restauranteQuery.js'
 import { createRestauranteMutation } from './restauranteMutation.js'
 
-// inicialização das dependências do módulo
-const repository = new RestauranteRepository()
-const service = new RestauranteAppService(repository)
+const service = diContainer.getRestauranteService()
 
 export const restauranteResolver = {
   Query: createRestauranteQuery(service),

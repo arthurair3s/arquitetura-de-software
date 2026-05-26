@@ -1,20 +1,11 @@
-import { AvaliacaoRepository } from '../../infrastructure/adapters/avaliacaoRepository.js'
-import { AvaliacaoAppService } from '../../application/services/avaliacaoService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createAvaliacaoQuery } from './avaliacaoQuery.js'
 import { createAvaliacaoMutation } from './avaliacaoMutation.js'
-import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
-import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
-import { RestauranteAppService } from '../../../restaurante/application/services/restauranteService.js'
-import { RestauranteRepository } from '../../../restaurante/infrastructure/adapters/restauranteRepository.js'
 import { Avaliacao } from '../../domain/Avaliacao.js'
-import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
 
-const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
-const restauranteService = new RestauranteAppService(new RestauranteRepository())
-
-// inicialização das dependências do módulo
-const repository = new AvaliacaoRepository()
-const service = new AvaliacaoAppService(repository)
+const service = diContainer.getAvaliacaoService()
+const usuarioService = diContainer.getUsuarioService()
+const restauranteService = diContainer.getRestauranteService()
 
 export const avaliacaoResolver = {
   Query: createAvaliacaoQuery(service),

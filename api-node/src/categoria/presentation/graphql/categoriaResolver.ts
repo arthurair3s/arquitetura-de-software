@@ -1,19 +1,11 @@
-import { CategoriaRepository } from '../../infrastructure/adapters/categoriaRepository.js'
-import { CategoriaAppService } from '../../application/services/categoriaService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createCategoriaQuery } from './categoriaQuery.js'
 import { createCategoriaMutation } from './categoriaMutation.js'
-import { RestauranteAppService } from '../../../restaurante/application/services/restauranteService.js'
-import { RestauranteRepository } from '../../../restaurante/infrastructure/adapters/restauranteRepository.js'
-import { ProdutoAppService } from '../../../produto/application/services/produtoService.js'
-import { ProdutoRepository } from '../../../produto/infrastructure/adapters/produtoRepository.js'
 import { Categoria } from '../../domain/Categoria.js'
 
-const restauranteService = new RestauranteAppService(new RestauranteRepository())
-const produtoService = new ProdutoAppService(new ProdutoRepository())
-
-// inicialização das dependências do módulo
-const repository = new CategoriaRepository()
-const service = new CategoriaAppService(repository)
+const service = diContainer.getCategoriaService()
+const restauranteService = diContainer.getRestauranteService()
+const produtoService = diContainer.getProdutoService()
 
 export const categoriaResolver = {
   Query: createCategoriaQuery(service),

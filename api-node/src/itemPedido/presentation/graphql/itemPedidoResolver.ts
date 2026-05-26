@@ -1,25 +1,10 @@
-import { ItemPedidoRepository } from '../../infrastructure/adapters/itemPedidoRepository.js'
-import { ItemPedidoAppService } from '../../application/services/itemPedidoService.js'
-import { ProdutoRepository } from '../../../produto/infrastructure/adapters/produtoRepository.js'
-import { ProdutoAppService } from '../../../produto/application/services/produtoService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createItemPedidoQuery } from './itemPedidoQuery.js'
 import { createItemPedidoMutation } from './itemPedidoMutation.js'
-import { PedidoAppService } from '../../../pedido/application/services/pedidoService.js'
-import { PedidoRepository } from '../../../pedido/infrastructure/adapters/pedidoRepository.js'
-import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
-import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
-const pedidoService = new PedidoAppService(
-  new PedidoRepository(),
-  new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
-)
 
-// inicialização das dependências do módulo
-const repository = new ItemPedidoRepository()
-const service = new ItemPedidoAppService(repository)
-
-// serviço de produto para associações
-const produtoService = new ProdutoAppService(new ProdutoRepository())
+const service = diContainer.getItemPedidoService()
+const pedidoService = diContainer.getPedidoService()
+const produtoService = diContainer.getProdutoService()
 
 export const itemPedidoResolver = {
   Query: createItemPedidoQuery(service),

@@ -86,6 +86,10 @@ export class EntregadorAppService implements IEntregadorService {
     return this.repository.atualizarLocalizacao(id, latitude, longitude);
   }
 
+  finalizarStreamLocalizacao(id: number | string): void {
+    this.repository.finalizarStreamLocalizacao(id);
+  }
+
   async povoarFrota(): Promise<boolean> {
     if (simulacaoInterval) return true;
 
@@ -108,12 +112,12 @@ export class EntregadorAppService implements IEntregadorService {
       entregadores = await this.listar();
     }
 
-    simulacaoInterval = setInterval(async () => {
+    const runSimulationTick = async () => {
       try {
         const atuais = await this.listar();
-        atuais.forEach(async (e: Entregador) => {
-          if (e.status !== 'DISPONIVEL') return;
-          if (e.id == null || this.estaEmSimulacao(e.id)) return;
+        for (const e of atuais) {
+          if (e.status !== 'DISPONIVEL') continue;
+          if (e.id == null || this.estaEmSimulacao(e.id)) continue;
 
           if (!motoristasBases.has(e.id)) {
             const hub = HUBS_RJ[Math.floor(Math.random() * HUBS_RJ.length)];
@@ -132,19 +136,21 @@ export class EntregadorAppService implements IEntregadorService {
           const latRaw = base.lat + jumpLat;
           const lngRaw = base.lng + jumpLng;
 
-          const snapped = await this.roteamentoProvider.encaixarNaEstrada(latRaw, lngRaw)
-
           try {
+            const snapped = await this.roteamentoProvider.encaixarNaEstrada(latRaw, lngRaw);
             await this.atualizarLocalizacao(e.id, snapped.latitude, snapped.longitude);
           } catch (err) {
-            // ignore
+            // ignore individual errors
           }
-        });
+        }
       } catch (err: any) {
-         logger.error(`Falha ao consultar lista na simulação: ${err.message}`, 'Simulação');
+         logger.error(`Falha na simulação de frota: ${err.message}`, 'Simulação');
       }
-    }, 3000);
 
+      simulacaoInterval = setTimeout(runSimulationTick, 3000);
+    };
+
+    simulacaoInterval = setTimeout(runSimulationTick, 3000);
     return true;
   }
 }

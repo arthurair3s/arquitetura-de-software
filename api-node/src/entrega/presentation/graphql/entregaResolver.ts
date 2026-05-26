@@ -1,68 +1,13 @@
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createEntregaQuery } from './entregaQuery.js'
 import { createEntregaMutation } from './entregaMutation.js'
 
-import { EntregaRepository } from '../../infrastructure/adapters/entregaRepository.js'
-import { EntregaAppService } from '../../application/services/entregaService.js'
-import { RotaEntregaService } from '../../application/services/rotaEntregaService.js'
-import { AtribuicaoEntregaService } from '../../application/services/atribuicaoEntregaService.js'
-import { SimuladorDeslocamentoService } from '../../application/services/simuladorDeslocamentoService.js'
-
-import { PedidoAppService } from '../../../pedido/application/services/pedidoService.js'
-import { PedidoRepository } from '../../../pedido/infrastructure/adapters/pedidoRepository.js'
-
-import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
-import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
-
-import { EntregadorAppService } from '../../../entregador/application/services/entregadorService.js'
-import { EntregadorRepository } from '../../../entregador/infrastructure/adapters/entregadorRepository.js'
-
-import { RestauranteAppService } from '../../../restaurante/application/services/restauranteService.js'
-import { RestauranteRepository } from '../../../restaurante/infrastructure/adapters/restauranteRepository.js'
-
-import { RoteamentoAppService } from '../../../roteamento/application/services/roteamentoService.js'
-import { GrpcRoteamentoProvider } from '../../../roteamento/infrastructure/adapters/grpcRoteamentoProvider.js'
-
-// inicialização das dependências do módulo
-const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
-const pedidoService = new PedidoAppService(new PedidoRepository(), usuarioService)
-
-const restauranteService = new RestauranteAppService(new RestauranteRepository())
-const roteamentoService = new RoteamentoAppService(new GrpcRoteamentoProvider())
-
-const entregadorService = new EntregadorAppService(
-  new EntregadorRepository(),
-  restauranteService,
-  new GrpcRoteamentoProvider()
-)
-
-const service = new EntregaAppService(
-  new EntregaRepository()
-)
-
-const rotaService = new RotaEntregaService(
-  service,
-  pedidoService,
-  entregadorService,
-  restauranteService,
-  roteamentoService
-)
-
-const atribuicaoService = new AtribuicaoEntregaService(
-  service,
-  pedidoService,
-  restauranteService,
-  entregadorService,
-  roteamentoService
-)
-
-const simuladorService = new SimuladorDeslocamentoService(
-  service,
-  pedidoService,
-  entregadorService,
-  restauranteService,
-  rotaService
-)
+const service = diContainer.getEntregaService()
+const simuladorService = diContainer.getSimuladorDeslocamentoService()
+const atribuicaoService = diContainer.getAtribuicaoEntregaService()
+const pedidoService = diContainer.getPedidoService()
+const entregadorService = diContainer.getEntregadorService()
+const rotaService = diContainer.getRotaEntregaService()
 
 export const entregaResolver = {
   Query: createEntregaQuery(service),

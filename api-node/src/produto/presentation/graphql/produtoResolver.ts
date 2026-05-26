@@ -1,17 +1,10 @@
-import { ProdutoRepository } from '../../infrastructure/adapters/produtoRepository.js'
-import { ProdutoAppService } from '../../application/services/produtoService.js'
-import { CategoriaRepository } from '../../../categoria/infrastructure/adapters/categoriaRepository.js'
-import { CategoriaAppService } from '../../../categoria/application/services/categoriaService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createProdutoQuery } from './produtoQuery.js'
 import { createProdutoMutation } from './produtoMutation.js'
 import { Produto } from '../../domain/Produto.js'
 
-// inicialização das dependências do módulo
-const repository = new ProdutoRepository()
-const service = new ProdutoAppService(repository)
-
-// serviço de categoria para busca de relações
-const categoriaService = new CategoriaAppService(new CategoriaRepository())
+const service = diContainer.getProdutoService()
+const categoriaService = diContainer.getCategoriaService()
 
 export const produtoResolver = {
   Query: createProdutoQuery(service),

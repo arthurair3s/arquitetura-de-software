@@ -9,4 +9,5 @@ export interface IEntregadorRepository {
   listarEntregadores(): Promise<Entregador[]>
   atualizarStatus(id: number | string, novoStatus: string): Promise<Entregador>
   atualizarLocalizacao(id: number | string, latitude: number, longitude: number): Promise<boolean>
+  finalizarStreamLocalizacao(id: number | string): void
 }

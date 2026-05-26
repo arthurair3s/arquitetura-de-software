@@ -60,9 +60,8 @@ export class SimuladorDeslocamentoService {
     const pontos = [...rota.caminho];
     logger.info(`Rota carregada: ${pontos.length} pontos disponíveis.`, 'Simulação');
 
-    const interval = setInterval(async () => {
+    const tick = async () => {
       if (pontos.length === 0) {
-        clearInterval(interval);
         this.activeSimulations.delete(entregaIdNum);
         
         if (currentStatus === 'ATRIBUIDA') {
@@ -73,24 +72,30 @@ export class SimuladorDeslocamentoService {
           await this.entregaService.editarPorId(entregaId, { status: 'ENTREGUE' });
           await this.entregadorService.atualizarStatus(motorista.id!, 'DISPONIVEL');
           this.entregadorService.liberarDeSimulacao(motorista.id!);
+          // Finaliza o stream gRPC persistente
+          this.entregadorService.finalizarStreamLocalizacao(motorista.id!);
         }
         return;
       }
 
       const ponto = pontos.shift();
-      if (!ponto) return;
-
-      try {
-        if (pontos.length % 5 === 0) {
-          logger.debug(`Motoboy ${motorista.nome} em: ${ponto.latitude.toFixed(5)}, ${ponto.longitude.toFixed(5)} (${pontos.length} restantes)`, 'Simulação');
+      if (ponto) {
+        try {
+          if (pontos.length % 5 === 0) {
+            logger.debug(`Motoboy ${motorista.nome} em: ${ponto.latitude.toFixed(5)}, ${ponto.longitude.toFixed(5)} (${pontos.length} restantes)`, 'Simulação');
+          }
+          await this.entregadorService.atualizarLocalizacao(motorista.id!, ponto.latitude, ponto.longitude);
+        } catch (e: any) {
+          logger.error(`Erro no deslocamento simulado: ${e.message}`, 'Simulação');
         }
-        await this.entregadorService.atualizarLocalizacao(motorista.id!, ponto.latitude, ponto.longitude);
-      } catch (e: any) {
-        logger.error(`Erro no deslocamento simulado: ${e.message}`, 'Simulação');
       }
-    }, 1000);
 
-    this.activeSimulations.set(entregaIdNum, interval);
+      const timeoutId = setTimeout(tick, 1000);
+      this.activeSimulations.set(entregaIdNum, timeoutId);
+    };
+
+    const timeoutId = setTimeout(tick, 1000);
+    this.activeSimulations.set(entregaIdNum, timeoutId);
     return true;
   }
 }

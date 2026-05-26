@@ -1,20 +1,9 @@
-import { PagamentoRepository } from '../../infrastructure/adapters/pagamentoRepository.js'
-import { PagamentoAppService } from '../../application/services/pagamentoService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createPagamentoQuery } from './pagamentoQuery.js'
 import { createPagamentoMutation } from './pagamentoMutation.js'
-import { PedidoAppService } from '../../../pedido/application/services/pedidoService.js'
-import { PedidoRepository } from '../../../pedido/infrastructure/adapters/pedidoRepository.js'
-import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
-import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
-const pedidoService = new PedidoAppService(
-  new PedidoRepository(),
-  new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
-)
 
-// inicialização das dependências do módulo
-const repository = new PagamentoRepository()
-const service = new PagamentoAppService(repository)
+const service = diContainer.getPagamentoService()
+const pedidoService = diContainer.getPedidoService()
 
 export const pagamentoResolver = {
   Query: createPagamentoQuery(service),

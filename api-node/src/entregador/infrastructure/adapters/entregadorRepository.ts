@@ -107,16 +107,48 @@ export class EntregadorRepository implements IEntregadorRepository {
     });
   }
 
+  private activeStreams = new Map<number, any>();
+
   atualizarLocalizacao(id: number | string, latitude: number, longitude: number): Promise<boolean> {
+    const entregador_id = Number(id);
     return new Promise((resolve, reject) => {
-      const stream = entregadorClient.AtualizarLocalizacaoStream((error, response) => {
-        if (error) return reject(error);
-        resolve(response?.sucesso || false);
-      });
-      const entregador_id = Number(id);
-      logger.debug(`Enviando localidade -> ID: ${entregador_id}, Lat: ${latitude}, Lon: ${longitude}`, 'GRPC-STREAM');
+      let stream = this.activeStreams.get(entregador_id);
+      
+      if (!stream) {
+        stream = entregadorClient.AtualizarLocalizacaoStream((error, response) => {
+          if (error) {
+            logger.error(`Erro no stream gRPC para entregador ${entregador_id}: ${error.message}`, 'GRPC-STREAM');
+            this.activeStreams.delete(entregador_id);
+            return reject(error);
+          }
+          resolve(response?.sucesso || false);
+        });
+
+        stream.on('error', (err: any) => {
+          logger.error(`Erro de conexão no stream do entregador ${entregador_id}: ${err.message}`, 'GRPC-STREAM');
+          this.activeStreams.delete(entregador_id);
+        });
+
+        stream.on('close', () => {
+          this.activeStreams.delete(entregador_id);
+        });
+
+        this.activeStreams.set(entregador_id, stream);
+      }
+
+      logger.debug(`Enviando localidade persistente -> ID: ${entregador_id}, Lat: ${latitude}, Lon: ${longitude}`, 'GRPC-STREAM');
       stream.write({ entregador_id, latitude, longitude });
-      stream.end();
+      resolve(true);
     });
+  }
+
+  finalizarStreamLocalizacao(id: number | string): void {
+    const entregador_id = Number(id);
+    const stream = this.activeStreams.get(entregador_id);
+    if (stream) {
+      logger.info(`Finalizando stream gRPC de telemetria do entregador ${entregador_id}`, 'GRPC-STREAM');
+      stream.end();
+      this.activeStreams.delete(entregador_id);
+    }
   }
 }

@@ -7,7 +7,6 @@ import { loadFilesSync } from '@graphql-tools/load-files';
 import { mergeTypeDefs } from '@graphql-tools/merge';
 
 import { resolvers } from './resolvers.js';
-import { JwtTokenService } from './shared/infrastructure/JwtTokenService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +17,8 @@ const typeDefs = mergeTypeDefs(loadedFiles);
 interface MyContext {
   user: any;
 }
+
+import { diContainer } from './shared/infrastructure/container.js';
 
 const server = new ApolloServer<MyContext>({
   typeDefs,
@@ -51,7 +52,7 @@ const server = new ApolloServer<MyContext>({
   }
 });
 
-const tokenService = new JwtTokenService();
+const tokenService = diContainer.getJwtTokenService();
 
 const { url } = await startStandaloneServer(server, {
   listen: { port: 4000, host: '0.0.0.0' },

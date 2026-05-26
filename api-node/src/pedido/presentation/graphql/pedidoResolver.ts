@@ -1,15 +1,9 @@
-import { PedidoRepository } from '../../infrastructure/adapters/pedidoRepository.js'
-import { PedidoAppService } from '../../application/services/pedidoService.js'
-import { UsuarioRepository } from '../../../usuario/infrastructure/adapters/usuarioRepository.js'
-import { UsuarioAppService } from '../../../usuario/application/services/usuarioService.js'
-import { JwtTokenService } from '../../../shared/infrastructure/JwtTokenService.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 import { createPedidoQuery } from './pedidoQuery.js'
 import { createPedidoMutation } from './pedidoMutation.js'
 
-// inicialização das dependências do módulo
-const usuarioService = new UsuarioAppService(new UsuarioRepository(), new JwtTokenService())
-const pedidoRepository = new PedidoRepository()
-const service = new PedidoAppService(pedidoRepository, usuarioService)
+const service = diContainer.getPedidoService()
+const usuarioService = diContainer.getUsuarioService()
 
 export const pedidoResolver = {
   Query: createPedidoQuery(service),
