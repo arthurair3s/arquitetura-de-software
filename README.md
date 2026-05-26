@@ -43,12 +43,13 @@ graph TB
     classDef database fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#ffffff;
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
 
-    cliente["Cliente<br/>(Visualiza cardápios e faz pedidos)"]
+    cliente["Cliente<br/>(Visualiza cardápios e faz pedidos no browser)"]
     entregador["Entregador<br/>(Atualiza GPS e aceita corridas)"]
 
-    subgraph express_delivery ["Fronteira do Sistema Express Delivery"]
-        frontend["Frontend Web<br/>[React + Vite]<br/>Interface de usuário SPA moderna"]
-        gateway["API Gateway<br/>[Kong]<br/>Autenticação JWT, CORS e Roteamento"]
+    frontend["Frontend Web<br/>[React + Vite]<br/>Interface de usuário SPA (Roda no dispositivo do cliente)"]
+
+    subgraph private_backend ["Rede Privada / Servidores de Backend"]
+        gateway["API Gateway (Kong)<br/>[Kong 3.4]<br/>Autenticação JWT, CORS e Roteamento de Borda"]
         api_node["Backend Core (API Node)<br/>[TypeScript / GraphQL / Prisma]<br/>Regras de negócio e gRPC client principal"]
         ms_entregadores["MS Entregadores<br/>[C# / .NET 10 / gRPC]<br/>Gerencia frota e posições geográficas"]
         ms_roteamento["MS Roteamento<br/>[C# / .NET 10 / gRPC]<br/>Calcula trajetos ótimos e estimativas"]
