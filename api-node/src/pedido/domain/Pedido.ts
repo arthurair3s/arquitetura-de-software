@@ -62,6 +62,19 @@ export class Pedido {
     return this._valor_total;
   }
 
+  // Atalhos para compatibilidade
+  get valor_total(): number {
+    return this._valor_total.valor;
+  }
+
+  get destino_latitude(): number {
+    return this._destino.latitude;
+  }
+
+  get destino_longitude(): number {
+    return this._destino.longitude;
+  }
+
   public atualizarValor(novoValor: Dinheiro): void {
     this._valor_total = novoValor;
     this.validar();

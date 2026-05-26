@@ -63,6 +63,13 @@ export class Usuario {
 
   get endereco(): string | null { return this._endereco; }
 
+  // Atalhos para compatibilidade
+  get email(): string { return this._email.valor; }
+
+  get latitude(): number | null { return this._coordenada?.latitude ?? null; }
+
+  get longitude(): number | null { return this._coordenada?.longitude ?? null; }
+
   public atualizarEndereco(coordenada: Coordenada | null, endereco: string | null): void {
     this._coordenada = coordenada;
     this._endereco = endereco;
