@@ -3,6 +3,7 @@ import type { IPagamentoService } from '../ports/IPagamentoService.js'
 import { Pagamento, PagamentoInvalidoError } from '../../domain/Pagamento.js'
 import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 import { StatusPagamento } from '../../domain/StatusPagamento.js'
+import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
 
 export class PagamentoAppService implements IPagamentoService {
   constructor(private readonly repository: IPagamentoRepository) {}
@@ -28,7 +29,21 @@ export class PagamentoAppService implements IPagamentoService {
       new Dinheiro(Number(dados.valor || 0)),
       status
     )
-    return this.repository.criarPagamento(pagamento)
+    const result = await this.repository.criarPagamento(pagamento)
+
+    if (result.status === 'APROVADO') {
+      rabbitMQPublisher.publish('pagamento.aprovado', {
+        id: result.id,
+        pedido_id: result.pedido_id,
+        metodo: result.metodo,
+        valor: result.valor,
+        status: result.status
+      }).catch((err) => {
+        console.error('Erro ao publicar pagamento.aprovado no criar:', err);
+      });
+    }
+
+    return result
   }
 
   async editarPorId(id: number | string, dados: {
@@ -41,10 +56,27 @@ export class PagamentoAppService implements IPagamentoService {
     if (!pagamentoAtual) {
       throw new PagamentoInvalidoError('Pagamento não encontrado')
     }
+    const statusAnterior = pagamentoAtual.status
+
     if (dados.metodo !== undefined) pagamentoAtual.metodo = dados.metodo
     if (dados.status !== undefined) pagamentoAtual.status = dados.status
     if (dados.valor !== undefined) pagamentoAtual.valorObj = new Dinheiro(Number(dados.valor))
-    return this.repository.editarPagamentoPorId(id, pagamentoAtual)
+    
+    const result = await this.repository.editarPagamentoPorId(id, pagamentoAtual)
+
+    if (statusAnterior !== 'APROVADO' && result.status === 'APROVADO') {
+      rabbitMQPublisher.publish('pagamento.aprovado', {
+        id: result.id,
+        pedido_id: result.pedido_id,
+        metodo: result.metodo,
+        valor: result.valor,
+        status: result.status
+      }).catch((err) => {
+        console.error('Erro ao publicar pagamento.aprovado no editar:', err);
+      });
+    }
+
+    return result
   }
 
   async deletar(id: number | string): Promise<boolean> {

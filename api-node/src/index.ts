@@ -19,6 +19,16 @@ interface MyContext {
 }
 
 import { diContainer } from './shared/infrastructure/container.js';
+import { rabbitMQPublisher } from './shared/infrastructure/messaging/rabbitmqPublisher.js';
+import { rabbitMQConsumer } from './shared/infrastructure/messaging/rabbitmqConsumer.js';
+
+rabbitMQPublisher.connect().catch((err) => {
+  console.error('RabbitMQ startup connection error:', err);
+});
+
+rabbitMQConsumer.connect().catch((err) => {
+  console.error('RabbitMQ consumer startup connection error:', err);
+});
 
 const server = new ApolloServer<MyContext>({
   typeDefs,

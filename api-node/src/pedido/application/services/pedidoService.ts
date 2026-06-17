@@ -6,6 +6,8 @@ import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
 import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 import { StatusPedido } from '../../domain/StatusPedido.js'
 
+import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
+
 export class PedidoAppService implements IPedidoService {
   constructor(
     private readonly repository: IPedidoRepository,
@@ -52,7 +54,23 @@ export class PedidoAppService implements IPedidoService {
       destino
     )
 
-    return this.repository.criarPedido(pedido)
+    const result = await this.repository.criarPedido(pedido)
+
+    // Publica o evento pedido.confirmado assincronamente
+    rabbitMQPublisher.publish('pedido.confirmado', {
+      id: result.id,
+      usuario_id: result.usuario_id,
+      restaurante_id: result.restaurante_id,
+      status: result.status,
+      valor_total: result.valor_total,
+      destino_latitude: result.destino_latitude,
+      destino_longitude: result.destino_longitude,
+      data_criacao: result.data_criacao
+    }).catch((err) => {
+      console.error('Erro ao publicar evento pedido.confirmado:', err);
+    });
+
+    return result
   }
 
   async editarPorId(id: number | string, dados: {

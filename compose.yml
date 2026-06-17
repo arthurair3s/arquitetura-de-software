@@ -56,11 +56,17 @@ services:
       ASPNETCORE_URLS: http://+:5001
       ConnectionStrings__DefaultConnection: Host=postgres_entregadores;Database=${DB_ENTREGADORES_NAME};Username=${DB_ENTREGADORES_USER};Password=${DB_ENTREGADORES_PASS}
       ConnectionStrings__RedisConnection: redis:6379
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__Username: ${RABBIT_USER}
+      RabbitMQ__Password: ${RABBIT_PASS}
     depends_on:
       postgres_entregadores:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     ports:
       - '5001:5001'
     restart: unless-stopped
@@ -107,6 +113,9 @@ services:
       ENTREGADORES_SERVICE_URL: ms-entregadores:5001
       ROTEAMENTO_SERVICE_URL: ms-roteamento:5002
       JWT_SECRET: ${JWT_SECRET}
+      RABBIT_USER: ${RABBIT_USER}
+      RABBIT_PASS: ${RABBIT_PASS}
+      RABBIT_HOST: rabbitmq
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -114,6 +123,8 @@ services:
         condition: service_started
       ms-roteamento:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     volumes:
       - ./api-node:/app
       - /app/node_modules
