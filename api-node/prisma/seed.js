@@ -77,7 +77,7 @@ const RESTAURANTES = [
 const USUARIOS = [
   {
     nome: 'Ana Lima',
-    email: 'ana.lima@email.com',
+    email: 'arthuraires0@gmail.com',
     telefone: '11999990001',
     senha: 'senha123'
   },

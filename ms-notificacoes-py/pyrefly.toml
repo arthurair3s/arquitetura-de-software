@@ -1,0 +1,4 @@
+[tool.pyrefly]
+# Impede o Pyrefly de analisar os pacotes instalados no virtualenv
+project-excludes = ["**/.venv/**", "**/venv/**"]
+python-interpreter-path = ".venv/bin/python3"

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagamento Confirmado</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f7f7f7;font-family:'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f7f7;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#ea1d2c;padding:32px 40px;text-align:center;">
+              <p style="margin:0;color:#ffffff;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Express Delivery</p>
+              <h1 style="margin:10px 0 0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">Pagamento Confirmado ✅</h1>
+            </td>
+          </tr>
+
+          <!-- Corpo -->
+          <tr>
+            <td style="padding:40px 40px 24px;">
+              <p style="margin:0 0 16px;font-size:16px;color:#374151;line-height:1.6;">
+                Olá, <strong>{{nome}}</strong>!
+              </p>
+              <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.7;">
+                Seu pagamento foi processado com sucesso. Confira os detalhes abaixo:
+              </p>
+
+              <!-- Card de detalhes -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+                     style="background:#f7f7f7;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;">
+                <tr>
+                  <td style="padding:20px 24px;border-bottom:1px solid #e5e7eb;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:13px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Número do Pedido</td>
+                        <td align="right" style="font-size:15px;color:#111827;font-weight:700;">#{{pedido_id}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:20px 24px;border-bottom:1px solid #e5e7eb;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:13px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Método de Pagamento</td>
+                        <td align="right" style="font-size:15px;color:#111827;font-weight:600;">{{metodo}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:13px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Valor Total</td>
+                        <td align="right" style="font-size:20px;color:#ea1d2c;font-weight:700;">R$ {{valor}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Status badge -->
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <p style="margin:0 0 10px;font-size:14px;color:#6b7280;line-height:1.6;">
+                🚀 Seu pedido já está sendo preparado e logo um motoboy estará a caminho!
+                Você receberá uma nova notificação assim que a entrega for confirmada.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #f0f0f0;margin:0;" />
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:28px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+                Este é um e-mail automático, por favor não responda.<br/>
+                <strong style="color:#ea1d2c;">Express Delivery</strong> &mdash; Entregamos com velocidade e cuidado.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

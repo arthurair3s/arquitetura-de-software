@@ -8,6 +8,7 @@ import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabb
 import { PagamentoPixStrategy } from '../../infrastructure/strategies/PagamentoPixStrategy.js'
 import { PagamentoCartaoStrategy } from '../../infrastructure/strategies/PagamentoCartaoStrategy.js'
 import { PagamentoStripeStrategy } from '../../infrastructure/strategies/PagamentoStripeStrategy.js'
+import { prisma } from '../../../infra/database/connection.js'
 
 export class PagamentoAppService implements IPagamentoService {
   constructor(private readonly repository: IPagamentoRepository) {}
@@ -62,13 +63,7 @@ export class PagamentoAppService implements IPagamentoService {
     const result = await this.repository.criarPagamento(pagamento)
 
     if (result.status === 'APROVADO') {
-      rabbitMQPublisher.publish('pagamento.aprovado', {
-        id: result.id,
-        pedido_id: result.pedido_id,
-        metodo: result.metodo,
-        valor: result.valor,
-        status: result.status
-      }).catch((err) => {
+      this.publicarEventoAprovado(result).catch((err) => {
         console.error('Erro ao publicar pagamento.aprovado no criar:', err);
       });
     }
@@ -95,13 +90,7 @@ export class PagamentoAppService implements IPagamentoService {
     const result = await this.repository.editarPagamentoPorId(id, pagamentoAtual)
 
     if (statusAnterior !== 'APROVADO' && result.status === 'APROVADO') {
-      rabbitMQPublisher.publish('pagamento.aprovado', {
-        id: result.id,
-        pedido_id: result.pedido_id,
-        metodo: result.metodo,
-        valor: result.valor,
-        status: result.status
-      }).catch((err) => {
+      this.publicarEventoAprovado(result).catch((err) => {
         console.error('Erro ao publicar pagamento.aprovado no editar:', err);
       });
     }
@@ -111,5 +100,33 @@ export class PagamentoAppService implements IPagamentoService {
 
   async deletar(id: number | string): Promise<boolean> {
     return this.repository.deletarPagamento(id)
+  }
+
+  private async publicarEventoAprovado(pagamento: Pagamento): Promise<void> {
+    const pedido = await prisma.pedidos.findUnique({
+      where: { id: Number(pagamento.pedido_id) },
+      select: {
+        id: true,
+        usuarios: {
+          select: {
+            nome: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    const nomeUsuario = pedido?.usuarios?.nome ?? 'Cliente'
+    const emailUsuario = pedido?.usuarios?.email ?? null
+
+    await rabbitMQPublisher.publish('pagamento.aprovado', {
+      id: pagamento.id,
+      pedido_id: pagamento.pedido_id,
+      metodo: pagamento.metodo,
+      valor: pagamento.valor,
+      status: pagamento.status,
+      usuario_nome: nomeUsuario,
+      usuario_email: emailUsuario
+    })
   }
 }
