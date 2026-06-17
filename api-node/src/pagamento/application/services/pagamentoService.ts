@@ -1,9 +1,13 @@
 import type { IPagamentoRepository } from '../../domain/ports/IPagamentoRepository.js'
 import type { IPagamentoService } from '../ports/IPagamentoService.js'
+import type { IPagamentoStrategy } from '../ports/IPagamentoStrategy.js'
 import { Pagamento, PagamentoInvalidoError } from '../../domain/Pagamento.js'
 import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 import { StatusPagamento } from '../../domain/StatusPagamento.js'
 import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
+import { PagamentoPixStrategy } from '../../infrastructure/strategies/PagamentoPixStrategy.js'
+import { PagamentoCartaoStrategy } from '../../infrastructure/strategies/PagamentoCartaoStrategy.js'
+import { PagamentoStripeStrategy } from '../../infrastructure/strategies/PagamentoStripeStrategy.js'
 
 export class PagamentoAppService implements IPagamentoService {
   constructor(private readonly repository: IPagamentoRepository) {}
@@ -22,13 +26,39 @@ export class PagamentoAppService implements IPagamentoService {
     status?: string
     valor?: number
   }): Promise<Pagamento> {
-    const status = new StatusPagamento(dados.status || 'PENDENTE');
+    const metodoNorm = (dados.metodo || 'PIX').toUpperCase()
+    let strategy: IPagamentoStrategy
+
+    switch (metodoNorm) {
+      case 'PIX':
+        strategy = new PagamentoPixStrategy()
+        break
+      case 'CARTAO':
+      case 'CREDITO':
+      case 'DEBITO':
+        strategy = new PagamentoCartaoStrategy()
+        break
+      case 'STRIPE':
+        strategy = new PagamentoStripeStrategy()
+        break
+      default:
+        strategy = new PagamentoPixStrategy()
+    }
+
+    const statusStr = dados.status || 'PENDENTE'
+    const statusObj = new StatusPagamento(statusStr)
     const pagamento = new Pagamento(
       Number(dados.pedido_id),
-      dados.metodo || '',
+      dados.metodo || 'PIX',
       new Dinheiro(Number(dados.valor || 0)),
-      status
+      statusObj
     )
+
+    if (statusStr === 'PENDENTE') {
+      const res = await strategy.processar(pagamento)
+      pagamento.status = res.status
+    }
+
     const result = await this.repository.criarPagamento(pagamento)
 
     if (result.status === 'APROVADO') {
