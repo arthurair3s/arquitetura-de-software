@@ -18,6 +18,7 @@ namespace msentregadorescs.Migrations
                     nome character varying(100),
                     telefone character varying(20),
                     veiculo character varying(50),
+                    status character varying(50) DEFAULT 'DISPONIVEL',
                     CONSTRAINT entregadores_pkey PRIMARY KEY (id)
                 );
             ");

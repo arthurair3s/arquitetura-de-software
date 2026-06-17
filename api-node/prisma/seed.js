@@ -230,7 +230,7 @@ async function main() {
   const tables = [
     'avaliacoes', 'itens_pedido', 'pagamentos', 'entregas', 
     'pedidos', 'produtos', 'categorias', 'restaurantes', 
-    'entregadores', 'usuarios'
+    'usuarios'
   ];
   
   for (const table of tables) {

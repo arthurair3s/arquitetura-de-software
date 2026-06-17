@@ -29,6 +29,17 @@ using (var scope = app.Services.CreateScope())
   var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
   var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
 
+  try
+  {
+    logger.LogInformation("Executando migrations no banco de dados...");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Migrations aplicadas com sucesso.");
+  }
+  catch (Exception ex)
+  {
+    logger.LogError(ex, "Erro ao aplicar migrations.");
+  }
+
   var canConnect = await db.Database.CanConnectAsync();
   if (canConnect)
     logger.LogInformation("Conexão com o banco de dados estabelecida com sucesso.");

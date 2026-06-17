@@ -4,15 +4,34 @@ services:
   postgres_db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_MAIN_USER}
+      POSTGRES_PASSWORD: ${DB_MAIN_PASS}
+      POSTGRES_DB: ${DB_MAIN_NAME}
     ports:
-      - '5433:5432'
+      - '5435:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_MAIN_USER} -d ${DB_MAIN_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  postgres_entregadores:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_ENTREGADORES_USER}
+      POSTGRES_PASSWORD: ${DB_ENTREGADORES_PASS}
+      POSTGRES_DB: ${DB_ENTREGADORES_NAME}
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres_entregadores_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_ENTREGADORES_USER} -d ${DB_ENTREGADORES_NAME}']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,7 +42,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
     restart: unless-stopped
     networks:
       - app-network
@@ -35,10 +54,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5001
-      ConnectionStrings__DefaultConnection: Host=postgres_db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+      ConnectionStrings__DefaultConnection: Host=postgres_entregadores;Database=${DB_ENTREGADORES_NAME};Username=${DB_ENTREGADORES_USER};Password=${DB_ENTREGADORES_PASS}
       ConnectionStrings__RedisConnection: redis:6379
     depends_on:
-      postgres_db:
+      postgres_entregadores:
         condition: service_healthy
       redis:
         condition: service_started
@@ -84,7 +103,7 @@ services:
     expose:
       - '4000'
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@postgres_db:5432/${DB_NAME}?schema=public
+      DATABASE_URL: postgresql://${DB_MAIN_USER}:${DB_MAIN_PASS}@postgres_db:5432/${DB_MAIN_NAME}?schema=public
       ENTREGADORES_SERVICE_URL: ms-entregadores:5001
       ROTEAMENTO_SERVICE_URL: ms-roteamento:5002
       JWT_SECRET: ${JWT_SECRET}
@@ -145,3 +164,4 @@ networks:
 
 volumes:
   postgres_data:
+  postgres_entregadores_data:

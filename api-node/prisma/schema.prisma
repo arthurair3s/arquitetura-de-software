@@ -25,25 +25,13 @@ model categorias {
   produtos       produtos[]
 }
 
-model entregadores {
-  id        Int              @id @default(autoincrement())
-  nome      String?          @db.VarChar(100)
-  telefone  String?          @db.VarChar(20)
-  veiculo   String?          @db.VarChar(50)
-  status    String?          @default("DISPONIVEL") @db.VarChar(50)
-  latitude  String?          @db.VarChar(50)
-  longitude String?          @db.VarChar(50)
-  entregas  entregas[]
-}
-
 model entregas {
-  id               Int           @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   pedido_id        Int?
   entregador_id    Int?
-  status           String?       @db.VarChar(50)
-  previsao_entrega DateTime?     @db.Timestamp(6)
-  entregadores     entregadores? @relation(fields: [entregador_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  pedidos          pedidos?      @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status           String?   @db.VarChar(50)
+  previsao_entrega DateTime? @db.Timestamp(6)
+  pedidos          pedidos?  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model itens_pedido {
