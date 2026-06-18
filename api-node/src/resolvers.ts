@@ -9,6 +9,7 @@ import { entregaResolver } from './entrega/presentation/graphql/entregaResolver.
 import { pagamentoResolver } from './pagamento/presentation/graphql/pagamentoResolver.js'
 import { avaliacaoResolver } from './avaliacao/presentation/graphql/avaliacaoResolver.js'
 import { roteamentoResolver } from './roteamento/presentation/graphql/roteamentoResolver.js'
+import { recomendacaoResolver } from './recomendacao/presentation/graphql/recomendacaoResolver.js'
 
 export const resolvers = [
   usuarioResolver,
@@ -21,5 +22,7 @@ export const resolvers = [
   entregaResolver,
   pagamentoResolver,
   avaliacaoResolver,
-  roteamentoResolver
+  roteamentoResolver,
+  recomendacaoResolver
 ];
+

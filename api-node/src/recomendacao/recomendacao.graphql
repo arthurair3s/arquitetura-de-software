@@ -1,0 +1,29 @@
+type InsightItem {
+  produtoId: Int!
+  produtoNome: String!
+  precoAtual: Float!
+  tipoSugestao: String!
+  sugestao: String!
+}
+
+type InsightsLoja {
+  status: String!
+  plano: String!
+  restaurante: String!
+  concorrentesAnalisados: Int!
+  insights: [InsightItem!]!
+}
+
+type AssinaturaRecomendacao {
+  restauranteId: Int!
+  plano: String!
+  message: String!
+}
+
+extend type Query {
+  obterInsightsLoja(restauranteId: Int!): InsightsLoja
+}
+
+extend type Mutation {
+  atualizarAssinaturaRecomendacao(restauranteId: Int!, plano: String!): AssinaturaRecomendacao
+}

@@ -112,6 +112,7 @@ services:
       DATABASE_URL: postgresql://${DB_MAIN_USER}:${DB_MAIN_PASS}@postgres_db:5432/${DB_MAIN_NAME}?schema=public
       ENTREGADORES_SERVICE_URL: ms-entregadores:5001
       ROTEAMENTO_SERVICE_URL: ms-roteamento:5002
+      RECOMENDACAO_SERVICE_URL: ms-recomendacao:50053
       JWT_SECRET: ${JWT_SECRET}
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASS: ${RABBIT_PASS}
@@ -122,6 +123,8 @@ services:
       ms-entregadores:
         condition: service_started
       ms-roteamento:
+        condition: service_started
+      ms-recomendacao:
         condition: service_started
       rabbitmq:
         condition: service_healthy
@@ -203,6 +206,44 @@ services:
     networks:
       - app-network
 
+  postgres_recomendacao:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_RECOMENDACAO_USER}
+      POSTGRES_PASSWORD: ${DB_RECOMENDACAO_PASS}
+      POSTGRES_DB: ${DB_RECOMENDACAO_NAME}
+    ports:
+      - '5436:5432'
+    volumes:
+      - postgres_recomendacao_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_RECOMENDACAO_USER} -d ${DB_RECOMENDACAO_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  ms-recomendacao:
+    build:
+      context: .
+      dockerfile: ms-recomendacao-py/Dockerfile
+    environment:
+      RABBIT_HOST: rabbitmq
+      RABBIT_PORT: 5672
+      RABBIT_USER: ${RABBIT_USER}
+      RABBIT_PASS: ${RABBIT_PASS}
+      DATABASE_URL: postgresql://${DB_RECOMENDACAO_USER}:${DB_RECOMENDACAO_PASS}@postgres_recomendacao:5432/${DB_RECOMENDACAO_NAME}
+    depends_on:
+      postgres_recomendacao:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
 
 networks:
   app-network:
@@ -214,3 +255,4 @@ networks:
 volumes:
   postgres_data:
   postgres_entregadores_data:
+  postgres_recomendacao_data:

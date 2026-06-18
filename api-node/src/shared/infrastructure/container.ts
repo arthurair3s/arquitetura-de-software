@@ -47,6 +47,10 @@ import { PagamentoAppService } from '../../pagamento/application/services/pagame
 import { AvaliacaoRepository } from '../../avaliacao/infrastructure/adapters/avaliacaoRepository.js';
 import { AvaliacaoAppService } from '../../avaliacao/application/services/avaliacaoService.js';
 
+// Recomendacao
+import { GrpcRecomendacaoProvider } from '../../recomendacao/infrastructure/adapters/grpcRecomendacaoProvider.js';
+import { RecomendacaoAppService } from '../../recomendacao/application/services/recomendacaoService.js';
+
 export class DIContainer {
   private _jwtTokenService?: JwtTokenService;
 
@@ -62,6 +66,7 @@ export class DIContainer {
   private _entregaRepository?: EntregaRepository;
   private _pagamentoRepository?: PagamentoRepository;
   private _avaliacaoRepository?: AvaliacaoRepository;
+  private _recomendacaoProvider?: GrpcRecomendacaoProvider;
 
   // Services
   private _usuarioService?: UsuarioAppService;
@@ -78,6 +83,7 @@ export class DIContainer {
   private _simuladorDeslocamentoService?: SimuladorDeslocamentoService;
   private _pagamentoService?: PagamentoAppService;
   private _avaliacaoService?: AvaliacaoAppService;
+  private _recomendacaoService?: RecomendacaoAppService;
 
   getJwtTokenService(): JwtTokenService {
     if (!this._jwtTokenService) {
@@ -305,6 +311,22 @@ export class DIContainer {
       );
     }
     return this._avaliacaoService;
+  }
+
+  getRecomendacaoProvider(): GrpcRecomendacaoProvider {
+    if (!this._recomendacaoProvider) {
+      this._recomendacaoProvider = new GrpcRecomendacaoProvider();
+    }
+    return this._recomendacaoProvider;
+  }
+
+  getRecomendacaoService(): RecomendacaoAppService {
+    if (!this._recomendacaoService) {
+      this._recomendacaoService = new RecomendacaoAppService(
+        this.getRecomendacaoProvider()
+      );
+    }
+    return this._recomendacaoService;
   }
 }
 

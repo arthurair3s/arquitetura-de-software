@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package recomendacao;
+
+service RecomendacaoService {
+  rpc ObterInsightsLoja (InsightsRequest) returns (InsightsResponse);
+  rpc AtualizarAssinatura (AssinaturaRequest) returns (AssinaturaResponse);
+}
+
+message InsightsRequest {
+  int32 restaurante_id = 1;
+}
+
+message InsightItem {
+  int32 produto_id = 1;
+  string produto_nome = 2;
+  float preco_atual = 3;
+  string tipo_sugestao = 4;
+  string sugestao = 5;
+}
+
+message InsightsResponse {
+  string status = 1;
+  string plano = 2;
+  string restaurante = 3;
+  int32 concorrentes_analisados = 4;
+  repeated InsightItem insights = 5;
+}
+
+message AssinaturaRequest {
+  int32 restaurante_id = 1;
+  string plano = 2; // "PREMIUM" ou "GRATUITO"
+}
+
+message AssinaturaResponse {
+  int32 restaurante_id = 1;
+  string plano = 2;
+  string message = 3;
+}
