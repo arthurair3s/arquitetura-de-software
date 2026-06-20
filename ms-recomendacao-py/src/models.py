@@ -32,6 +32,14 @@ class RestauranteReplica(Base):
     plano = Column(String(50), default="GRATUITO", nullable=False)
 
 
+class CategoriaReplica(Base):
+    __tablename__ = "categorias_replica"
+
+    id = Column(Integer, primary_key=True, autoincrement=False)
+    nome = Column(String(100), nullable=False)
+    restaurante_id = Column(Integer, nullable=False)
+
+
 class ProdutoReplica(Base):
     __tablename__ = "produtos_replica"
 

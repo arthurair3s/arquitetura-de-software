@@ -1,0 +1,62 @@
+graph TD
+    %% Styling
+    classDef gw fill:#4b2c63,stroke:#9d4edd,stroke-width:2px,color:#fff;
+    classDef ms fill:#1d2d44,stroke:#3e885b,stroke-width:2px,color:#fff;
+    classDef db fill:#0b132b,stroke:#00b4d8,stroke-width:2px,color:#fff;
+    classDef broker fill:#2d1a12,stroke:#f8961e,stroke-width:2px,color:#fff;
+    classDef ext fill:#121212,stroke:#666,stroke-width:1px,color:#aaa;
+
+    %% Nodes
+    Client["Cliente / Lojista (GraphQL Playground/App)"]
+    Gateway["API Gateway / BFF<br>(Node.js + Apollo Server)"]:::gw
+
+    subgraph "Camada de Persistência Principal"
+        DB_Main[("PostgreSQL Principal<br>(delivery_db)")]:::db
+    end
+
+    subgraph "Infraestrutura CDC & Sincronização Analítica"
+        Debezium["Debezium Connector<br>(Logical Replication/WAL)"]:::broker
+        Kafka["Apache Kafka<br>(Event Streaming Platform)"]:::broker
+        MS_Recomendacao["MS Recomendação<br>(Python + FastAPI)"]:::ms
+        DB_Recomendacao[("PostgreSQL Recomendação<br>(recomendacao_db)")]:::db
+    end
+
+    subgraph "Mensageria e Atribuição Assíncrona"
+        RabbitMQ["RabbitMQ Broker<br>(Exchange: delivery-events)"]:::broker
+        MS_Entregadores["MS Entregadores<br>(C# + .NET Core)"]:::ms
+        DB_Entregadores[("PostgreSQL Entregadores<br>(entregadores_db)")]:::db
+    end
+
+    subgraph "Mensageria e Notificações"
+        MS_Notificacoes["MS Notificacoes<br>(Python)"]:::ms
+        SMTP["SMTP Mailtrap<br>(Simulação/Envio Real)"]:::ext
+    end
+
+    %% Connections
+    Client -- "GraphQL Requests" --> Gateway
+    Gateway -- "ORM (Prisma)" --> DB_Main
+    
+    %% CDC Flow
+    DB_Main -- "Replication Log (WAL)" --> Debezium
+    Debezium -- "Publish events" --> Kafka
+    Kafka -- "CDC Consumer (Topics: dbserver1.public.*)" --> MS_Recomendacao
+    MS_Recomendacao -- "Persist replicas" --> DB_Recomendacao
+    Gateway -- "gRPC (Query: ObterInsightsLoja)" --> MS_Recomendacao
+
+    %% Event-Driven Flow
+    Gateway -- "Publish Events (AMQP)" --> RabbitMQ
+    RabbitMQ -- "Queue: pedidos.confirmado" --> MS_Entregadores
+    MS_Entregadores -- "Persist drivers status" --> DB_Entregadores
+    MS_Entregadores -- "Publish: entrega.atribuida (AMQP)" --> RabbitMQ
+    RabbitMQ -- "Queue: api.entrega-atribuida" --> Gateway
+
+    %% Notification Flow
+    RabbitMQ -- "Queue: notificacoes.eventos" --> MS_Notificacoes
+    MS_Notificacoes -- "Send Alerts (SMTP)" --> SMTP
+
+    %% Classes mapping
+    class Gateway gw;
+    class MS_Recomendacao,MS_Entregadores,MS_Notificacoes ms;
+    class DB_Main,DB_Recomendacao,DB_Entregadores db;
+    class Debezium,Kafka,RabbitMQ broker;
+    class SMTP ext;
