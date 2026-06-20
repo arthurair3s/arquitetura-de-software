@@ -9,7 +9,7 @@ from kafka import KafkaConsumer
 from database import SessionLocal
 from models import RestauranteReplica, CategoriaReplica, ProdutoReplica
 
-# Configuração de Logs
+# configuração de logs
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("KafkaCDCConsumer")
 
@@ -43,7 +43,7 @@ class KafkaCDCConsumer:
 
     def _run(self):
         """Loop principal de consumo do Kafka."""
-        # Loop de reconexão inicial resiliente
+        # loop de reconexão inicial resiliente
         while self.running:
             try:
                 logger.info(f"Conectando ao Kafka em {self.bootstrap_servers}...")
@@ -64,13 +64,13 @@ class KafkaCDCConsumer:
         if not self.running:
             return
 
-        # Consumo de mensagens
+        # consumo de mensagens
         while self.running:
             try:
                 if self.consumer is None:
                     time.sleep(1)
                     continue
-                # Poll de mensagens para permitir interrupção limpa
+                # poll de mensagens para permitir interrupção limpa
                 # pyrefly: ignore [missing-attribute]
                 messages = self.consumer.poll(timeout_ms=1000)
                 for topic_partition, records in messages.items():
@@ -84,7 +84,7 @@ class KafkaCDCConsumer:
     def _process_message(self, topic, message):
         """Processa a mensagem CDC do Debezium."""
         if not message:
-            # Ignora mensagens de tombstone (deletes em cascata geram tombstone para o Kafka compaction)
+            # ignora mensagens de tombstone (deletes em cascata geram tombstone para o Kafka compaction)
             return
 
         payload = message.get("payload")
@@ -131,7 +131,7 @@ class KafkaCDCConsumer:
                 rest.longitude = lon
                 logger.info(f"Restaurante #{rest_id} atualizado na réplica local.")
             else:
-                # Default plano como GRATUITO ao cadastrar novo
+                # define plano como GRATUITO ao cadastrar novo
                 new_rest = RestauranteReplica(id=rest_id, nome=nome, latitude=lat, longitude=lon, plano="GRATUITO")
                 db.add(new_rest)
                 logger.info(f"Restaurante #{rest_id} criado na réplica local.")
@@ -161,7 +161,7 @@ class KafkaCDCConsumer:
                 db.add(new_cat)
                 logger.info(f"Categoria #{cat_id} criada na réplica local.")
 
-            # Resolve/corrige produtos que foram carregados out-of-order e estão com restaurante_id = 0
+            # resolve/corrige produtos que foram carregados out-of-order e estão com restaurante_id = 0
             produtos_pendentes = db.query(ProdutoReplica).filter(
                 ProdutoReplica.categoria_id == cat_id,
                 ProdutoReplica.restaurante_id == 0
@@ -185,7 +185,7 @@ class KafkaCDCConsumer:
             preco = after.get("preco")
             cat_id = after.get("categoria_id")
 
-            # Resolve o restaurante_id consultando a réplica de categorias
+            # resolve o restaurante_id consultando a réplica de categorias
             restaurante_id = 0
             if cat_id:
                 cat = db.query(CategoriaReplica).filter(CategoriaReplica.id == cat_id).first()

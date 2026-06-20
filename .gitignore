@@ -72,3 +72,7 @@ osrm-data/*
 *.db
 *.db-journal
 /generated/.venv
+
+# === Regras e Padrões de Projeto ===
+docs/standards/
+

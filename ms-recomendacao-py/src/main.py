@@ -13,7 +13,7 @@ from messaging.consumer import RabbitMQConsumer
 from messaging.kafka_consumer import KafkaCDCConsumer
 from services.recommendation_service import RecommendationService
 
-# Garante a criação de tabelas do banco de dados na inicialização
+# garante a criação de tabelas do banco de dados na inicialização
 Base.metadata.create_all(bind=engine)
 
 consumer = RabbitMQConsumer()
@@ -72,19 +72,19 @@ def seed_initial_replicas():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Executa o auto-seed dos restaurantes e produtos
+    # executa o auto-seed dos restaurantes e produtos
     seed_initial_replicas()
 
-    # Inicia o consumer RabbitMQ em uma thread separada
+    # inicia o consumer RabbitMQ em uma thread separada
     consumer_thread = threading.Thread(target=consumer.start, daemon=True)
     consumer_thread.start()
     print("[Main] Consumer do RabbitMQ iniciado em background.")
 
-    # Inicia o consumer Kafka CDC in background
+    # inicia o consumer Kafka CDC in background
     kafka_consumer.start()
     print("[Main] Consumer Kafka CDC iniciado em background.")
 
-    # Inicia o servidor gRPC em background
+    # inicia o servidor gRPC em background
     # pyrefly: ignore [missing-import]
     from grpc_server import start_grpc_server
     grpc_thread = threading.Thread(target=start_grpc_server, daemon=True)
@@ -160,5 +160,5 @@ def atualizar_plano(
 if __name__ == "__main__":
     # pyrefly: ignore [missing-import]
     import uvicorn
-    # Executa o servidor na porta 8001
+    # executa o servidor na porta 8001
     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=False)
