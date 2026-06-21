@@ -53,34 +53,34 @@ graph TB
     end
 
     %% Flows
-    cliente -->|Interage com a interface (HTTPS/SPA)| frontend
-    lojista -->|Acessa o painel do restaurante (HTTPS/SPA)| frontend
-    frontend -->|Envia requisições GraphQL (HTTPS/JSON Port 8000)| gateway
-    entregador -->|Transmite fluxo de coordenadas (gRPC Stream Port 5001)| ms_entregadores
+    cliente -->|"Interage com a interface (HTTPS/SPA)"| frontend
+    lojista -->|"Acessa o painel do restaurante (HTTPS/SPA)"| frontend
+    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8000)"| gateway
+    entregador -->|"Transmite fluxo de coordenadas (gRPC Stream Port 5001)"| ms_entregadores
 
-    gateway -->|Encaminha requisições GraphQL (HTTP/GraphQL Port 4000)| api_node
-    api_node -->|Grava/lê dados transacionais (Prisma Client Port 5433)| db_postgres
-    api_node -->|Lê/grava cache-aside de queries (TCP/ioredis Port 6379)| db_redis
-    api_node -->|Consulta entregadores próximos (gRPC Client Port 5001)| ms_entregadores
-    api_node -->|Solicita cálculo de rota (gRPC Client Port 5002)| ms_roteamento
-    api_node -->|Busca insights e atualiza assinatura (gRPC Client Port 50053)| ms_recomendacao
-    api_node -->|Publica eventos (AMQP/amqplib Port 5672)| rabbitmq
-    api_node -->|Solicita cobrança de cartões/Pix (HTTPS/REST API)| stripe
+    gateway -->|"Encaminha requisições GraphQL (HTTP/GraphQL Port 4000)"| api_node
+    api_node -->|"Grava/lê dados transacionais (Prisma Client Port 5433)"| db_postgres
+    api_node -->|"Lê/grava cache-aside de queries (TCP/ioredis Port 6379)"| db_redis
+    api_node -->|"Consulta entregadores próximos (gRPC Client Port 5001)"| ms_entregadores
+    api_node -->|"Solicita cálculo de rota (gRPC Client Port 5002)"| ms_roteamento
+    api_node -->|"Busca insights e atualiza assinatura (gRPC Client Port 50053)"| ms_recomendacao
+    api_node -->|"Publica eventos (AMQP/amqplib Port 5672)"| rabbitmq
+    api_node -->|"Solicita cobrança de cartões/Pix (HTTPS/REST API)"| stripe
 
-    ms_entregadores -->|Persiste entregadores (ADO.NET/EF Core Port 5434)| db_entregadores
-    ms_entregadores -->|Salva posições geográficas (Redis Geo Commands Port 6379)| db_redis
-    ms_entregadores -->|Publica entrega.atribuida / Consome pedido.confirmado (AMQP Port 5672)| rabbitmq
+    ms_entregadores -->|"Persiste entregadores (ADO.NET/EF Core Port 5434)"| db_entregadores
+    ms_entregadores -->|"Salva posições geográficas (Redis Geo Commands Port 6379)"| db_redis
+    ms_entregadores -->|"Publica entrega.atribuida / Consome pedido.confirmado (AMQP Port 5672)"| rabbitmq
 
-    ms_roteamento -->|Consulta estimativas e trajetos físicos (HTTP/JSON Port 5080)| osrm_server
+    ms_roteamento -->|"Consulta estimativas e trajetos físicos (HTTP/JSON Port 5080)"| osrm_server
 
-    ms_recomendacao -->|Grava histórico analítico e réplicas (SQLAlchemy Port 5436)| db_recomendacao
-    ms_recomendacao -->|Consome pedido.confirmado (AMQP Port 5672)| rabbitmq
+    ms_recomendacao -->|"Grava histórico analítico e réplicas (SQLAlchemy Port 5436)"| db_recomendacao
+    ms_recomendacao -->|"Consome pedido.confirmado (AMQP Port 5672)"| rabbitmq
 
-    ms_notificacoes -->|Consome eventos para disparar e-mails (AMQP Port 5672)| rabbitmq
-    ms_notificacoes -->|Dispara e-mails transacionais (SMTP/TCP Port 2525)| mailtrap
+    ms_notificacoes -->|"Consome eventos para disparar e-mails (AMQP Port 5672)"| rabbitmq
+    ms_notificacoes -->|"Dispara e-mails transacionais (SMTP/TCP Port 2525)"| mailtrap
 
-    db_postgres -->|Lê logs de transações (WAL) (Logical Replication Port 5433)| kafka_cdc
-    kafka_cdc -->|Transmite réplicas de restaurantes e produtos (Kafka Protocol Port 9092)| ms_recomendacao
+    db_postgres -->|"Lê logs de transações (WAL) (Logical Replication Port 5433)"| kafka_cdc
+    kafka_cdc -->|"Transmite réplicas de restaurantes e produtos (Kafka Protocol Port 9092)"| ms_recomendacao
 
     %% Traces and Metrics
     api_node -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
@@ -93,8 +93,8 @@ graph TB
     prometheus -. "Scrape de métricas (HTTP)" .-> ms_recomendacao
     prometheus -. "Scrape de métricas (HTTP)" .-> ms_entregadores
 
-    grafana -->|Consulta métricas (HTTP/REST API)| prometheus
-    grafana -->|Busca traces (HTTP/REST API)| jaeger
+    grafana -->|"Consulta métricas (HTTP/REST API)"| prometheus
+    grafana -->|"Busca traces (HTTP/REST API)"| jaeger
 ```
 
 ---

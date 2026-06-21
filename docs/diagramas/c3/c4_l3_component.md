@@ -27,7 +27,7 @@ graph TB
     pres -->|Invoca| app
     app -->|Orquestra dados usando| dom_ports
     app -->|Manipula regras em| dom_entities
-    infra -.->|Implementa / Realiza| dom_ports
+    infra -.->|"Implementa / Realiza"| dom_ports
     infra -->|Utiliza| dom_entities
 ```
 
@@ -65,7 +65,7 @@ graph TB
     resolvers -->|Executa| uc_login
     
     uc_login -->|Busca usuário por email| i_user_repo
-    uc_login -->|Valida senha & emite JWT| i_token_service
+    uc_login -->|"Valida senha & emite JWT"| i_token_service
 
     prisma_adapters -.->|Implements| i_user_repo
     token_service -.->|Implements| i_token_service
@@ -152,8 +152,8 @@ graph TB
     prisma_adapters -->|SQL| db_postgres
     rabbitmq_pub -->|AMQP Publish| rabbitmq
     redis_client -->|TCP Geo Commands| db_redis
-    grpc_providers -->|gRPC: Buscar Entregadores| ms_entregadores
-    grpc_providers -->|gRPC: Traçar Rotas| ms_roteamento
+    grpc_providers -->|"gRPC: Buscar Entregadores"| ms_entregadores
+    grpc_providers -->|"gRPC: Traçar Rotas"| ms_roteamento
 ```
 
 ---
@@ -185,8 +185,8 @@ graph TB
     end
 
     %% Flows
-    resolvers -->|Mutation: Assinar Plano| uc_assinatura
-    resolvers -->|Query: Insights Comerciais| uc_insights
+    resolvers -->|"Mutation: Assinar Plano"| uc_assinatura
+    resolvers -->|"Query: Insights Comerciais"| uc_insights
 
     uc_insights -->|Busca previsões e KPIs| i_insights_provider
     uc_assinatura -->|Atualiza permissões gRPC| i_insights_provider

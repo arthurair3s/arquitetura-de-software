@@ -21,12 +21,12 @@ graph TD
     mailtrap["Servidor de E-mail (Mailtrap/SMTP)<br>(Sistema Externo)<br>(Dispara notificações eletrônicas sobre criação de pedidos, confirmações e alterações de status)"]:::ext
 
     %% Relationships
-    cliente -->|Visualiza cardápios, faz pedidos e acompanha entregas em tempo real (HTTPS/GraphQL)| express_delivery
-    entregador -->|Envia localização geográfica e atualiza status de entregas (gRPC Stream/HTTPS)| express_delivery
-    lojista -->|Gerencia estabelecimentos, cardápios e visualiza insights competitivos (HTTPS/GraphQL)| express_delivery
-    express_delivery -->|Consulta rotas ideais e estimativas de trajeto (HTTP/JSON)| osrm_server
-    express_delivery -->|Processa cobranças e pagamentos de pedidos (HTTPS/REST API)| stripe
-    express_delivery -->|Dispara e-mails transacionais de notificação (SMTP/TLS)| mailtrap
+    cliente -->|"Visualiza cardápios, faz pedidos e acompanha entregas em tempo real (HTTPS/GraphQL)"| express_delivery
+    entregador -->|"Envia localização geográfica e atualiza status de entregas (gRPC Stream/HTTPS)"| express_delivery
+    lojista -->|"Gerencia estabelecimentos, cardápios e visualiza insights competitivos (HTTPS/GraphQL)"| express_delivery
+    express_delivery -->|"Consulta rotas ideais e estimativas de trajeto (HTTP/JSON)"| osrm_server
+    express_delivery -->|"Processa cobranças e pagamentos de pedidos (HTTPS/REST API)"| stripe
+    express_delivery -->|"Dispara e-mails transacionais de notificação (SMTP/TLS)"| mailtrap
 ```
 
 ---
