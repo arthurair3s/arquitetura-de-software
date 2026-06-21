@@ -17,10 +17,4 @@ export interface IUsuarioService {
     senha?: string | null
   }): Promise<Usuario>
   deletar(id: number | string): Promise<boolean>
-  login(email: string, senha: string): Promise<{ token: string; usuario: Usuario }>
-  atualizarEndereco(id: number | string, dados: {
-    latitude?: number | null
-    longitude?: number | null
-    endereco?: string | null
-  }): Promise<Usuario>
 }

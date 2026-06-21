@@ -4,13 +4,10 @@ import { Usuario, UsuarioInvalidoError } from '../../domain/Usuario.js'
 import { logger } from '../../../shared/utils/logger.js'
 import { Email } from '../../../shared/domain/value-objects/Email.js'
 import { SenhaHash } from '../../../shared/domain/value-objects/SenhaHash.js'
-import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
-import type { ITokenService } from '../../../shared/domain/ITokenService.js'
 
 export class UsuarioAppService implements IUsuarioService {
   constructor(
-    private readonly repository: IUsuarioRepository,
-    private readonly tokenService: ITokenService
+    private readonly repository: IUsuarioRepository
   ) {}
 
   async listar(): Promise<Usuario[]> {
@@ -76,59 +73,5 @@ export class UsuarioAppService implements IUsuarioService {
 
   async deletar(id: number | string): Promise<boolean> {
     return this.repository.deletarUsuario(id)
-  }
-
-  async login(email: string, senha: string): Promise<{ token: string; usuario: Usuario }> {
-    const usuario = await this.repository.buscarUsuarioPorEmail(email)
-    if (!usuario) {
-      logger.warn(`Tentativa de login com e-mail inexistente: ${email}`, 'AuthService')
-      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
-    }
-
-    if (!usuario.senhaObj) {
-      logger.warn(`Falha de senha para o usuário: ${email} (Senha não definida no banco)`, 'AuthService')
-      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
-    }
-
-    const senhaValida = await usuario.senhaObj.comparar(senha)
-    if (!senhaValida) {
-      logger.warn(`Falha de senha para o usuário: ${email}`, 'AuthService')
-      throw new UsuarioInvalidoError('E-mail ou senha incorretos.')
-    }
-
-    const token = this.tokenService.gerarToken(
-      { iss: 'express-delivery-app', id: usuario.id, email: usuario.emailObj.valor, nome: usuario.nome },
-      '7d'
-    )
-    return { token, usuario }
-  }
-
-  async atualizarEndereco(id: number | string, dados: {
-    latitude?: number | null
-    longitude?: number | null
-    endereco?: string | null
-  }): Promise<Usuario> {
-    const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
-    if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
-
-    let novaCoordenada = usuarioAtual.coordenada
-    if (dados.latitude !== undefined || dados.longitude !== undefined) {
-      const novaLat = dados.latitude !== undefined ? (dados.latitude !== null ? Number(dados.latitude) : null) : (usuarioAtual.coordenada?.latitude ?? null)
-      const novaLon = dados.longitude !== undefined ? (dados.longitude !== null ? Number(dados.longitude) : null) : (usuarioAtual.coordenada?.longitude ?? null)
-      
-      novaCoordenada = (novaLat !== null && novaLon !== null) 
-        ? new Coordenada(novaLat, novaLon) 
-        : null
-    }
-
-    const novoEndereco = dados.endereco !== undefined ? (dados.endereco !== null ? dados.endereco : null) : usuarioAtual.endereco
-
-    usuarioAtual.atualizarEndereco(novaCoordenada, novoEndereco)
-
-    return this.repository.atualizarEndereco(id, {
-      latitude: usuarioAtual.coordenada?.latitude ?? null,
-      longitude: usuarioAtual.coordenada?.longitude ?? null,
-      endereco: usuarioAtual.endereco
-    })
   }
 }

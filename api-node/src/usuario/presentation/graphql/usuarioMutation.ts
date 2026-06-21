@@ -1,4 +1,6 @@
 import type { IUsuarioService } from '../../application/ports/IUsuarioService.js'
+import type { LoginUsuarioUseCase } from '../../application/use-cases/LoginUsuarioUseCase.js'
+import type { AtualizarEnderecoUsuarioUseCase } from '../../application/use-cases/AtualizarEnderecoUsuarioUseCase.js'
 import { GraphQLError } from 'graphql'
 import {
   loginSchema,
@@ -8,13 +10,17 @@ import {
 } from '../../application/usuarioValidation.js'
 import { withDomainErrorHandling } from '../../../shared/utils/errorHandler.js'
 
-export const createUsuarioMutation = (service: IUsuarioService) => ({
+export const createUsuarioMutation = (
+  service: IUsuarioService,
+  loginUsuarioUseCase: LoginUsuarioUseCase,
+  atualizarEnderecoUsuarioUseCase: AtualizarEnderecoUsuarioUseCase
+) => ({
   login: async (_: any, args: any) => {
     const parsed = loginSchema.safeParse(args)
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return withDomainErrorHandling(() => service.login(parsed.data.email, parsed.data.senha))
+    return withDomainErrorHandling(() => loginUsuarioUseCase.execute(parsed.data))
   },
 
   criarUsuario: async (_: any, args: any) => {
@@ -42,7 +48,10 @@ export const createUsuarioMutation = (service: IUsuarioService) => ({
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return withDomainErrorHandling(() => service.atualizarEndereco(context.user.id, parsed.data))
+    return withDomainErrorHandling(() => atualizarEnderecoUsuarioUseCase.execute({
+      usuario_id: context.user.id,
+      ...parsed.data
+    }))
   },
 
   deletarUsuario: async (_: any, { id }: { id: string }) =>
