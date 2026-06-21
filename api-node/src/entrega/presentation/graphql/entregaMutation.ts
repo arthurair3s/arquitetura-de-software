@@ -1,13 +1,13 @@
 import type { IEntregaService } from '../../application/ports/IEntregaService.js'
-import type { SimuladorDeslocamentoService } from '../../application/services/simuladorDeslocamentoService.js'
-import type { AtribuicaoEntregaService } from '../../application/services/atribuicaoEntregaService.js'
+import type { SimularDeslocamentoUseCase } from '../../application/use-cases/SimularDeslocamentoUseCase.js'
+import type { AtribuirMelhorEntregadorUseCase } from '../../application/use-cases/AtribuirMelhorEntregadorUseCase.js'
 import { GraphQLError } from 'graphql'
 import { criarEntregaSchema, editarEntregaSchema } from '../../application/entregaValidation.js'
 
 export const createEntregaMutation = (
   service: IEntregaService,
-  simuladorService: SimuladorDeslocamentoService,
-  atribuicaoService: AtribuicaoEntregaService
+  simularDeslocamentoUseCase: SimularDeslocamentoUseCase,
+  atribuirMelhorEntregadorUseCase: AtribuirMelhorEntregadorUseCase
 ) => ({
   criarEntrega: async (_: any, args: any) => {
     const parsed = criarEntregaSchema.safeParse(args)
@@ -29,10 +29,10 @@ export const createEntregaMutation = (
   deletarEntrega: async (_: any, { id }: { id: string }) => !!(await service.deletar(id)),
 
   simularDeslocamento: async (_: any, { id }: { id: string }) => {
-    return simuladorService.simularDeslocamento(id)
+    return simularDeslocamentoUseCase.execute(id)
   },
 
   atribuirEntregador: async (_: any, { pedido_id }: { pedido_id: string }) => {
-    return atribuicaoService.atribuirMelhorEntregador(pedido_id)
+    return atribuirMelhorEntregadorUseCase.execute(pedido_id)
   }
 })

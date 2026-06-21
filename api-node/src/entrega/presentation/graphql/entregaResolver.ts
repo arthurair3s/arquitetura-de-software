@@ -3,15 +3,18 @@ import { createEntregaQuery } from './entregaQuery.js'
 import { createEntregaMutation } from './entregaMutation.js'
 
 const service = diContainer.getEntregaService()
-const simuladorService = diContainer.getSimuladorDeslocamentoService()
-const atribuicaoService = diContainer.getAtribuicaoEntregaService()
+const simularDeslocamentoUseCase = diContainer.getSimularDeslocamentoUseCase()
+const atribuirMelhorEntregadorUseCase = diContainer.getAtribuirMelhorEntregadorUseCase()
 const pedidoService = diContainer.getPedidoService()
 const entregadorService = diContainer.getEntregadorService()
-const rotaService = diContainer.getRotaEntregaService()
+
+const obterRotaEstavelUseCase = diContainer.getObterRotaEstavelUseCase()
+const obterRotaColetaUseCase = diContainer.getObterRotaColetaUseCase()
+const obterRotaEntregaUseCase = diContainer.getObterRotaEntregaUseCase()
 
 export const entregaResolver = {
   Query: createEntregaQuery(service),
-  Mutation: createEntregaMutation(service, simuladorService, atribuicaoService),
+  Mutation: createEntregaMutation(service, simularDeslocamentoUseCase, atribuirMelhorEntregadorUseCase),
   Entrega: {
     pedido: async (parent: any) => {
       if (!parent.pedido_id) return null
@@ -23,15 +26,15 @@ export const entregaResolver = {
     },
     rota: async (parent: any) => {
       if (!parent.id) return null
-      return rotaService.obterRotaEstavel(parent.id)
+      return obterRotaEstavelUseCase.execute(parent.id)
     },
     rota_coleta: async (parent: any) => {
       if (!parent.id) return null
-      return rotaService.obterRotaColeta(parent.id)
+      return obterRotaColetaUseCase.execute(parent.id)
     },
     rota_entrega: async (parent: any) => {
       if (!parent.id) return null
-      return rotaService.obterRotaEntrega(parent.id)
+      return obterRotaEntregaUseCase.execute(parent.id)
     }
   },
   Pedido: {

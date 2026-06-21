@@ -1,21 +1,22 @@
-import type { EntregaAppService } from './entregaService.js'
+import type { IEntregaRepository } from '../../domain/ports/IEntregaRepository.js'
 import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
 import type { IEntregadorService } from '../../../entregador/application/ports/IEntregadorService.js'
 import type { IRestauranteService } from '../../../restaurante/application/ports/IRestauranteService.js'
 import type { IRoteamentoService } from '../../../roteamento/application/ports/IRoteamentoService.js'
 import { Entrega, EntregaInvalidaError } from '../../domain/Entrega.js'
+import { StatusEntrega } from '../../domain/StatusEntrega.js'
 import { logger } from '../../../shared/utils/logger.js'
 
-export class AtribuicaoEntregaService {
+export class AtribuirMelhorEntregadorUseCase {
   constructor(
-    private readonly entregaService: EntregaAppService,
+    private readonly repository: IEntregaRepository,
     private readonly pedidoService: IPedidoService,
     private readonly restauranteService: IRestauranteService,
     private readonly entregadorService: IEntregadorService,
     private readonly roteamentoService: IRoteamentoService
   ) {}
 
-  async atribuirMelhorEntregador(pedidoId: number | string): Promise<Entrega> {
+  async execute(pedidoId: number | string): Promise<Entrega> {
     const pedido = await this.pedidoService.buscarPorId(pedidoId)
     if (!pedido) throw new EntregaInvalidaError('Pedido não encontrado.')
 
@@ -71,11 +72,15 @@ export class AtribuicaoEntregaService {
 
     logger.info(`Sucesso: Entregador ${melhor.nome} vinculado ao pedido ${pedidoId}.`, 'EntregaService');
 
-    const entrega = await this.entregaService.criar({
-      pedido_id: pedidoId,
-      entregador_id: melhor.id!,
-      status: 'ATRIBUIDA'
-    })
+    const statusObj = new StatusEntrega('ATRIBUIDA')
+    const entrega = new Entrega(
+      Number(pedidoId),
+      Number(melhor.id!),
+      statusObj,
+      null
+    )
+
+    const result = await this.repository.criarEntrega(entrega)
 
     if (melhor.statusObj.estaDisponivel()) {
       try {
@@ -86,6 +91,6 @@ export class AtribuicaoEntregaService {
       }
     }
 
-    return entrega
+    return result
   }
 }

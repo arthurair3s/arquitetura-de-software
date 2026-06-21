@@ -1,27 +1,27 @@
-import type { EntregaAppService } from './entregaService.js'
+import type { IEntregaRepository } from '../../domain/ports/IEntregaRepository.js'
 import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
 import type { IEntregadorService } from '../../../entregador/application/ports/IEntregadorService.js'
 import type { IRestauranteService } from '../../../restaurante/application/ports/IRestauranteService.js'
-import type { RotaEntregaService } from './rotaEntregaService.js'
+import type { ObterRotaEstavelUseCase } from './ObterRotaEstavelUseCase.js'
 import { EntregaInvalidaError } from '../../domain/Entrega.js'
 import { logger } from '../../../shared/utils/logger.js'
 
-export class SimuladorDeslocamentoService {
-  private activeSimulations = new Map<number, NodeJS.Timeout>();
+export class SimularDeslocamentoUseCase {
+  private static activeSimulations = new Map<number, NodeJS.Timeout>();
 
   constructor(
-    private readonly entregaService: EntregaAppService,
+    private readonly repository: IEntregaRepository,
     private readonly pedidoService: IPedidoService,
     private readonly entregadorService: IEntregadorService,
     private readonly restauranteService: IRestauranteService,
-    private readonly rotaService: RotaEntregaService
+    private readonly obterRotaEstavelUseCase: ObterRotaEstavelUseCase
   ) {}
 
-  async simularDeslocamento(entregaId: number | string): Promise<boolean> {
+  async execute(entregaId: number | string): Promise<boolean> {
     const entregaIdNum = Number(entregaId);
-    if (this.activeSimulations.has(entregaIdNum)) return true;
+    if (SimularDeslocamentoUseCase.activeSimulations.has(entregaIdNum)) return true;
 
-    const entrega = await this.entregaService.buscarPorId(entregaId);
+    const entrega = await this.repository.buscarEntregaPorId(entregaId);
     if (!entrega) throw new EntregaInvalidaError('entrega nao encontrada');
 
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id);
@@ -51,7 +51,7 @@ export class SimuladorDeslocamentoService {
       logger.info(`Destino: Cliente`, 'Simulação');
     }
 
-    const rota = await this.rotaService.obterRotaEstavel(entregaId);
+    const rota = await this.obterRotaEstavelUseCase.execute(entregaId);
     if (!rota || !rota.caminho || rota.caminho.length === 0) {
       logger.error(`Falha crítica: Rota não encontrada para a entrega ${entregaId}`, 'Simulação');
       return false;
@@ -62,14 +62,14 @@ export class SimuladorDeslocamentoService {
 
     const tick = async () => {
       if (pontos.length === 0) {
-        this.activeSimulations.delete(entregaIdNum);
+        SimularDeslocamentoUseCase.activeSimulations.delete(entregaIdNum);
         
         if (currentStatus === 'ATRIBUIDA') {
           logger.info(`Sucesso: Chegou ao Restaurante. Atualizando para EM_TRANSITO.`, 'Simulação');
-          await this.entregaService.editarPorId(entregaId, { status: 'EM_TRANSITO' });
+          await this.repository.editarEntregaPorId(entregaId, { status: 'EM_TRANSITO' });
         } else {
           logger.info(`Sucesso: Chegou ao Cliente. Finalizando entrega.`, 'Simulação');
-          await this.entregaService.editarPorId(entregaId, { status: 'ENTREGUE' });
+          await this.repository.editarEntregaPorId(entregaId, { status: 'ENTREGUE' });
           await this.entregadorService.atualizarStatus(motorista.id!, 'DISPONIVEL');
           this.entregadorService.liberarDeSimulacao(motorista.id!);
           // Finaliza o stream gRPC persistente
@@ -91,11 +91,11 @@ export class SimuladorDeslocamentoService {
       }
 
       const timeoutId = setTimeout(tick, 1000);
-      this.activeSimulations.set(entregaIdNum, timeoutId);
+      SimularDeslocamentoUseCase.activeSimulations.set(entregaIdNum, timeoutId);
     };
 
     const timeoutId = setTimeout(tick, 1000);
-    this.activeSimulations.set(entregaIdNum, timeoutId);
+    SimularDeslocamentoUseCase.activeSimulations.set(entregaIdNum, timeoutId);
     return true;
   }
 }
