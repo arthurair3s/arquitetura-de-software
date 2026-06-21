@@ -1,8 +1,14 @@
 import type { IEntregadorService } from '../../application/ports/IEntregadorService.js'
+import type { PovoarFrotaUseCase } from '../../application/use-cases/PovoarFrotaUseCase.js'
+import type { AtualizarLocalizacaoEntregadorUseCase } from '../../application/use-cases/AtualizarLocalizacaoEntregadorUseCase.js'
 import { GraphQLError } from 'graphql'
 import { criarEntregadorSchema, editarEntregadorSchema } from '../../application/entregadorValidation.js'
 
-export const createEntregadorMutation = (service: IEntregadorService) => ({
+export const createEntregadorMutation = (
+  service: IEntregadorService,
+  povoarFrotaUseCase: PovoarFrotaUseCase,
+  atualizarLocalizacaoUseCase: AtualizarLocalizacaoEntregadorUseCase
+) => ({
   criarEntregador: async (_: any, args: any) => {
     const parsed = criarEntregadorSchema.safeParse(args)
     if (!parsed.success) {
@@ -27,8 +33,8 @@ export const createEntregadorMutation = (service: IEntregadorService) => ({
   },
 
   atualizarLocalizacaoEntregador: async (_: any, { id, latitude, longitude }: { id: string; latitude: number; longitude: number }) => {
-    return service.atualizarLocalizacao(id, latitude, longitude)
+    return atualizarLocalizacaoUseCase.execute(id, latitude, longitude)
   },
 
-  povoarFrota: async () => service.povoarFrota()
+  povoarFrota: async () => povoarFrotaUseCase.execute()
 })

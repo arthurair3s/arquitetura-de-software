@@ -1,33 +1,14 @@
 import type { IEntregadorRepository } from '../../domain/ports/IEntregadorRepository.js'
 import type { IEntregadorService } from '../ports/IEntregadorService.js'
 import type { IRestauranteService } from '../../../restaurante/application/ports/IRestauranteService.js'
-import type { IRoteamentoProvider } from '../../../roteamento/domain/ports/IRoteamentoProvider.js'
 import { Entregador, EntregadorInvalidoError } from '../../domain/Entregador.js'
-import { logger } from '../../../shared/utils/logger.js'
 
-let simulacaoInterval: any = null;
-const motoristasBases = new Map<number, { lat: number; lng: number }>();
-
-const HUBS_RJ = [
-  { name: 'Copacabana', lat: -22.9711, lng: -43.1822 },
-  { name: 'Centro', lat: -22.9035, lng: -43.1730 },
-  { name: 'Maracanã', lat: -22.9126, lng: -43.2301 },
-  { name: 'Cachambi / Norte Shopping', lat: -22.8860, lng: -43.2770 },
-  { name: 'Méier', lat: -22.9022, lng: -43.2800 },
-  { name: 'Madureira', lat: -22.8735, lng: -43.3360 },
-  { name: 'Barra da Tijuca', lat: -23.0003, lng: -43.3658 },
-  { name: 'Recreio', lat: -23.0183, lng: -43.4672 },
-  { name: 'Bangu', lat: -22.8741, lng: -43.4646 },
-  { name: 'Ilha do Governador', lat: -22.8092, lng: -43.2039 }
-];
-
-const motoristasEmSimulacao = new Set<number>();
+const motoristasEmSimulacao = new Set<number>()
 
 export class EntregadorAppService implements IEntregadorService {
   constructor(
     private readonly repository: IEntregadorRepository,
-    private readonly restauranteService: IRestauranteService,
-    private readonly roteamentoProvider: IRoteamentoProvider
+    private readonly restauranteService: IRestauranteService
   ) {}
 
   bloquearParaSimulacao(id: number | string): void { motoristasEmSimulacao.add(Number(id)); }
@@ -88,69 +69,5 @@ export class EntregadorAppService implements IEntregadorService {
 
   finalizarStreamLocalizacao(id: number | string): void {
     this.repository.finalizarStreamLocalizacao(id);
-  }
-
-  async povoarFrota(): Promise<boolean> {
-    if (simulacaoInterval) return true;
-
-    let entregadores = await this.listar();
-    const frotaDesejada = 50;
-    
-    if (entregadores.length < frotaDesejada) {
-      const faltam = frotaDesejada - entregadores.length;
-      for (let i = 1; i <= faltam; i++) {
-        try {
-          await this.criar({
-            nome: `Motoqueiro ${i} (Simulado)`,
-            telefone: `219${Math.floor(Math.random() * 90000000 + 10000000)}`,
-            veiculo: 'Moto Honda CG 160'
-          });
-        } catch (e: any) {
-          logger.error(`Erro ao criar entregador simulado: ${e.message}`, 'Simulação');
-        }
-      }
-      entregadores = await this.listar();
-    }
-
-    const runSimulationTick = async () => {
-      try {
-        const atuais = await this.listar();
-        for (const e of atuais) {
-          if (e.status !== 'DISPONIVEL') continue;
-          if (e.id == null || this.estaEmSimulacao(e.id)) continue;
-
-          if (!motoristasBases.has(e.id)) {
-            const hub = HUBS_RJ[Math.floor(Math.random() * HUBS_RJ.length)];
-            const offsetLat = (Math.random() - 0.5) * 0.05;
-            const offsetLng = (Math.random() - 0.5) * 0.05;
-            motoristasBases.set(e.id, { 
-              lat: hub.lat + offsetLat, 
-              lng: hub.lng + offsetLng 
-            });
-          }
-          
-          const base = motoristasBases.get(e.id)!;
-          const jumpLat = (Math.random() - 0.5) * 0.05;
-          const jumpLng = (Math.random() - 0.5) * 0.05;
-          
-          const latRaw = base.lat + jumpLat;
-          const lngRaw = base.lng + jumpLng;
-
-          try {
-            const snapped = await this.roteamentoProvider.encaixarNaEstrada(latRaw, lngRaw);
-            await this.atualizarLocalizacao(e.id, snapped.latitude, snapped.longitude);
-          } catch (err) {
-            // ignore individual errors
-          }
-        }
-      } catch (err: any) {
-         logger.error(`Falha na simulação de frota: ${err.message}`, 'Simulação');
-      }
-
-      simulacaoInterval = setTimeout(runSimulationTick, 3000);
-    };
-
-    simulacaoInterval = setTimeout(runSimulationTick, 3000);
-    return true;
   }
 }
