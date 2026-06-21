@@ -1,7 +1,8 @@
-import type { IRecomendacaoService } from '../../application/ports/IRecomendacaoService.js';
+import { diContainer } from '../../../shared/infrastructure/container.js';
 
-export const createRecomendacaoQuery = (service: IRecomendacaoService) => ({
+export const createRecomendacaoQuery = () => ({
   obterInsightsLoja: async (_: any, { restauranteId }: { restauranteId: number }) => {
-    return service.obterInsights(restauranteId);
+    const useCase = diContainer.getObterInsightsUseCase();
+    return useCase.execute(restauranteId);
   }
 });

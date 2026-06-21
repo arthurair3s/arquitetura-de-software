@@ -1,7 +1,8 @@
-import type { IRecomendacaoService } from '../../application/ports/IRecomendacaoService.js';
+import { diContainer } from '../../../shared/infrastructure/container.js';
 
-export const createRecomendacaoMutation = (service: IRecomendacaoService) => ({
+export const createRecomendacaoMutation = () => ({
   atualizarAssinaturaRecomendacao: async (_: any, { restauranteId, plano }: { restauranteId: number, plano: string }) => {
-    return service.atualizarAssinatura(restauranteId, plano);
+    const useCase = diContainer.getAssinarPlanoRecomendacaoUseCase();
+    return useCase.execute(restauranteId, plano);
   }
 });
