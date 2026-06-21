@@ -26,7 +26,7 @@ graph TD
     cliente -->|Interagem via Web/App/APIs| sys
     sys -->|Consome serviços de mapas, pagamento e email| externos
 ```
-> 🔗 [Ver Diagrama de Contexto Detalhado (L1)](docs/c4/c4_l1_context.md)
+> 🔗 [Ver Diagrama de Contexto Detalhado (L1)](docs/diagramas/c1/c4_l1_context.md)
 
 ### Nível 2: Contêineres (Containers)
 Aumenta o detalhamento expondo a topologia de microsserviços, bancos de dados, cache, brokers de mensagens e telemetria que compõem o ecossistema.
@@ -77,7 +77,7 @@ graph TD
     ms_python -->|Consome eventos / CDC| messaging
     ms_python -->|Envio de e-mails| ext
 ```
-> 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/c4/c4_l2_container.md)
+> 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/diagramas/c2/c4_l2_container.md)
 
 ### Nível 3: Componentes (Components)
 Zoom sobre a organização do container **Backend Core (API Node)**, estruturada sob as premissas da Clean Architecture com injeção e inversão de dependência (DIP).
@@ -106,7 +106,7 @@ graph TB
     app -->|Orquestração de Dados| infra
     infra -->|Efetua persistência / chamadas RPC| resources
 ```
-> 🔗 [Ver Diagrama de Componentes Detalhado (L3)](docs/c4/c4_l3_component.md)
+> 🔗 [Ver Diagrama de Componentes Detalhado (L3)](docs/diagramas/c3/c4_l3_component.md)
 
 ---
 

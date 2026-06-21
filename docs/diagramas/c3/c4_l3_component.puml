@@ -1,0 +1,169 @@
+@startuml C4_L3_Component_Overview
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Visão Geral de Camadas (Clean Architecture)
+
+Container(resolvers, "GraphQL Resolvers", "Apollo Resolvers (TS)", "Recebe as consultas/mutações.")
+Component(app_usecases, "Use Cases (Aplicação)", "TypeScript Classes", "Orquestração de lógica de negócio e regras de aplicação.")
+Component(domain_ports, "Portas (Interfaces)", "TypeScript Interfaces", "Contratos de infraestrutura e serviços externos.")
+Component(domain_entities, "Entidades & Value Objects", "Domain Layer", "Regras e modelos de domínio ricos.")
+Component(infra_adapters, "Adaptores de Infraestrutura", "Prisma, gRPC, RabbitMQ", "Implementações técnicas de portas.")
+
+Rel(resolvers, app_usecases, "Invoca")
+Rel(app_usecases, domain_ports, "Utiliza contratos")
+Rel(app_usecases, domain_entities, "Manipula")
+Rel(infra_adapters, domain_ports, "Implementa (DIP)", "Implements")
+Rel(infra_adapters, domain_entities, "Utiliza")
+
+@enduml
+
+@startuml C4_L3_Component_Auth
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Contexto de Autenticação & Usuários
+
+Container(gateway, "API Gateway (Kong)", "Kong 3.4", "Encaminha requisições GraphQL.")
+ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Armazena credenciais e dados cadastrais.")
+
+Container_Boundary(api_node_auth, "Contexto de Autenticação (API Node)") {
+    Component(resolvers, "GraphQL Resolvers", "Apollo Resolvers", "Resolver da Mutation login.")
+    Component(validators, "Validadores (Zod)", "Zod Schemas", "Valida email e senha.")
+    Component(uc_login, "LoginUsuarioUseCase", "TypeScript Class", "Executa validação de login e emite JWT.")
+    Component(i_user_repo, "IUsuarioRepository", "Interface", "Contrato para consulta de dados de usuário.")
+    Component(i_token_service, "ITokenService", "Interface", "Contrato para criação de tokens seguros.")
+    Component(prisma_adapters, "Adaptores Prisma", "TypeScript Repositories", "Implementação do IUsuarioRepository.")
+    Component(token_service, "Serviço de Token (JWT)", "jsonwebtoken library", "Implementação do ITokenService.")
+}
+
+Rel(gateway, resolvers, "Encaminha requisições", "HTTP")
+Rel(resolvers, validators, "Valida inputs", "SafeParse")
+Rel(resolvers, uc_login, "Executa", "execute()")
+Rel(uc_login, i_user_repo, "Busca usuário", "Port/Interface")
+Rel(uc_login, i_token_service, "Gera token", "Port/Interface")
+Rel(prisma_adapters, i_user_repo, "Implementa", "Implements")
+Rel(token_service, i_token_service, "Implementa", "Implements")
+Rel(prisma_adapters, db_postgres, "Queries", "Prisma Client (Port 5433)")
+
+@enduml
+
+@startuml C4_L3_Component_Logistics
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Contexto de Pedidos, Entregas & Roteamento
+
+Container(rabbitmq, "RabbitMQ", "RabbitMQ 3", "Broker de eventos assíncronos.")
+ContainerDb(db_redis, "Cache (Redis)", "Redis 7", "Guarda cache-aside e posições geográficas.")
+ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Persiste pedidos e status.")
+Container(ms_entregadores, "MS Entregadores", "C# / gRPC", "Rastreamento da frota.")
+Container(ms_roteamento, "MS Roteamento", "C# / gRPC", "Cálculo de caminhos geográficos.")
+
+Container_Boundary(api_node_logistics, "Contexto de Logística (API Node)") {
+    Component(resolvers, "GraphQL Resolvers", "Apollo Resolvers")
+    Component(uc_pedido, "ConfirmarPedidoUseCase", "TypeScript Class")
+    Component(uc_entrega, "AtribuirEntregadorUseCase", "TypeScript Class")
+    Component(uc_frota, "PovoarFrotaUseCase", "TypeScript Class")
+    Component(uc_localizacao, "AtualizarLocalizacaoEntregadorUseCase", "TypeScript Class")
+    Component(uc_rota, "ObterRotaEstavelUseCase", "TypeScript Class")
+    Component(uc_coleta, "ObterRotaColetaUseCase", "TypeScript Class")
+    Component(uc_entrega_rota, "ObterRotaEntregaUseCase", "TypeScript Class")
+
+    Component(i_pedido_repo, "IPedidoRepository", "Interface")
+    Component(i_entregador_provider, "IEntregadorProvider", "Interface")
+    Component(i_rota_provider, "IRotaProvider", "Interface")
+    Component(i_pub, "IEventPublisher", "Interface")
+
+    Component(prisma_adapters, "Adaptores Prisma", "TypeScript Repositories")
+    Component(grpc_providers, "Provedores gRPC", "gRPC Clients")
+    Component(rabbitmq_pub, "RabbitMQPublisher", "Event Publisher")
+    Component(rabbitmq_con, "RabbitMQConsumer", "Background Consumer")
+    Component(redis_client, "RedisClient Singleton", "ioredis")
+}
+
+Rel(resolvers, uc_pedido, "Invoca")
+Rel(resolvers, uc_frota, "Invoca")
+Rel(resolvers, uc_localizacao, "Invoca")
+Rel(resolvers, uc_rota, "Invoca")
+
+Rel(uc_pedido, i_pedido_repo, "Grava pedido", "Port")
+Rel(uc_pedido, i_pub, "Publica pedido.confirmado", "Port")
+
+Rel(rabbitmq_con, rabbitmq, "Consome entrega.atribuida", "AMQP (Port 5672)")
+Rel(rabbitmq_con, uc_entrega, "Executa")
+Rel(uc_entrega, i_pedido_repo, "Grava atribuição", "Port")
+
+Rel(uc_localizacao, redis_client, "Atualiza GPS", "Method Call")
+
+Rel(uc_frota, i_entregador_provider, "Popula frota", "Port")
+Rel(uc_rota, i_rota_provider, "Calcula rotas", "Port")
+Rel(uc_coleta, i_rota_provider, "Calcula rotas", "Port")
+Rel(uc_entrega_rota, i_rota_provider, "Calcula rotas", "Port")
+
+Rel(prisma_adapters, i_pedido_repo, "Implementa", "Implements")
+Rel(grpc_providers, i_entregador_provider, "Implementa", "Implements")
+Rel(grpc_providers, i_rota_provider, "Implementa", "Implements")
+Rel(rabbitmq_pub, i_pub, "Implementa", "Implements")
+
+Rel(prisma_adapters, db_postgres, "Grava", "Prisma Client (Port 5433)")
+Rel(rabbitmq_pub, rabbitmq, "Dispara eventos", "AMQP (Port 5672)")
+Rel(redis_client, db_redis, "Atualiza posições", "Redis Commands (Port 6379)")
+Rel(grpc_providers, ms_entregadores, "Busca motoristas", "gRPC (Port 5001)")
+Rel(grpc_providers, ms_roteamento, "Traça caminhos", "gRPC (Port 5002)")
+
+@enduml
+
+@startuml C4_L3_Component_Analytics
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Contexto de Assinaturas, Recomendações & Insights
+
+Container(ms_recomendacao, "MS Recomendação", "Python / gRPC", "Processamento analítico.")
+Container(kafka_cdc, "Kafka + Debezium (CDC)", "Broker/Connector", "Streaming de replicação cadastral.")
+ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Fonte dos cadastros.")
+
+Container_Boundary(api_node_analytics, "Contexto de Analytics (API Node)") {
+    Component(resolvers, "GraphQL Resolvers", "Apollo Resolvers")
+    Component(uc_assinatura, "AssinarPlanoRecomendacaoUseCase", "TypeScript Class")
+    Component(uc_insights, "ObterInsightsUseCase", "TypeScript Class")
+    Component(i_insights_provider, "IInsightsProvider", "Interface")
+    Component(grpc_providers, "Provedores gRPC", "gRPC Clients")
+}
+
+Rel(resolvers, uc_assinatura, "Invoca")
+Rel(resolvers, uc_insights, "Invoca")
+Rel(uc_insights, i_insights_provider, "Busca KPIs", "Port")
+Rel(uc_assinatura, i_insights_provider, "Atualiza planos", "Port")
+Rel(grpc_providers, i_insights_provider, "Implementa", "Implements")
+Rel(grpc_providers, ms_recomendacao, "Consome insights", "gRPC (Port 50053)")
+Rel(db_postgres, kafka_cdc, "WAL Logs", "Logical Replication (Port 5433)")
+Rel(kafka_cdc, ms_recomendacao, "Replica dados", "Kafka Protocol (Port 9092)")
+
+@enduml
+
+@startuml C4_L3_Component_Payment
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Componentes (L3) - Contexto de Pagamento
+
+System_Ext(stripe, "Stripe Gateway API", "Processamento financeiro externo.")
+
+Container_Boundary(api_node_payment, "Contexto de Pagamentos (API Node)") {
+    Component(uc_pagamento, "ProcessarPagamentoUseCase", "TypeScript Class")
+    Component(i_payment_provider, "IPaymentProvider", "Interface")
+    Component(grpc_providers, "Provedores gRPC / Adaptadores", "TypeScript Adaptador")
+}
+
+Rel(uc_pagamento, i_payment_provider, "Cria checkout session", "Port")
+Rel(grpc_providers, i_payment_provider, "Implementa", "Implements")
+Rel(grpc_providers, stripe, "Faz chamadas REST", "HTTPS (Port 443)")
+
+@enduml
