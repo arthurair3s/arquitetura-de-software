@@ -2,6 +2,7 @@ import type { IPedidoService } from '../../application/ports/IPedidoService.js'
 import { GraphQLError } from 'graphql'
 import { criarPedidoSchema, editarPedidoSchema } from '../../application/pedidoValidation.js'
 import { withDomainErrorHandling } from '../../../shared/utils/errorHandler.js'
+import { diContainer } from '../../../shared/infrastructure/container.js'
 
 export const createPedidoMutation = (service: IPedidoService) => ({
   criarPedido: async (_: any, args: any) => {
@@ -9,7 +10,8 @@ export const createPedidoMutation = (service: IPedidoService) => ({
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
-    return withDomainErrorHandling(() => service.criar(parsed.data as any))
+    const useCase = diContainer.getConfirmarPedidoUseCase()
+    return withDomainErrorHandling(() => useCase.execute(parsed.data as any))
   },
 
   editarPedido: async (_: any, args: any) => {
