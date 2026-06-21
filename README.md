@@ -6,224 +6,241 @@ Este projeto é um ecossistema de alta performance projetado para demonstrar a a
 
 ## 🏛️ Arquitetura do Sistema (Modelo C4)
 
-Utilizamos o Modelo C4 para descrever a estrutura do sistema, permitindo visualizar desde a interação de alto nível do usuário até os detalhes de componentes e Clean Architecture de forma nativa e integrada.
+Utilizamos o Modelo C4 para descrever a estrutura do sistema, dividindo-a em três níveis de detalhamento (Contexto, Contêineres e Componentes) de forma limpa e integrada.
 
 ### Nível 1: Contexto do Sistema (System Context)
-O sistema atua como o orquestrador central entre os usuários finais, a frota de entregadores simulada e o motor de roteamento geográfico (OSRM).
+Apresenta a visão panorâmica de alto nível e como o ecossistema Express Delivery interage com seus diferentes usuários e integrações de terceiros.
 
 ```mermaid
 graph TD
-    %% Estilos de Elemento C4
-    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#ffffff;
-    classDef system fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#ffffff;
-    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
+    %% Styling
+    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff;
+    classDef system fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#fff;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    cliente["Cliente<br/>(Utiliza o sistema para pedir e rastrear entregas em tempo real)"]
-    entregador["Entregador<br/>(Atualiza GPS e gerencia status de suas entregas)"]
-    lojista["Lojista (Restaurante)<br/>(Gerencia cardápios, produtos e visualiza insights competitivos)"]
-    express_delivery["Sistema Express Delivery<br/>(Orquestra pedidos, rotas, frotas e pagamentos)"]
-    osrm_server["Servidor OSRM<br/>[Sistema Externo]<br/>Calcula rotas ideais sobre dados do OpenStreetMap"]
-    stripe["Gateway Stripe<br/>[Sistema Externo]<br/>Processa pagamentos com cartão e PIX de forma segura"]
-    mailtrap["Servidor Mailtrap/SMTP<br/>[Sistema Externo]<br/>Dispara emails transacionais sobre status de pedidos"]
+    %% Elements
+    cliente["Cliente<br>(Visualiza cardápios, realiza pedidos e acompanha entregas)"]:::person
+    entregador["Entregador<br>(Atualiza GPS e gerencia status de suas entregas)"]:::person
+    lojista["Lojista (Restaurante)<br>(Gerencia cardápios e acompanha insights de vendas)"]:::person
 
-    cliente -->|Visualiza cardápios, faz pedidos| express_delivery
-    entregador -->|Envia localização, status de entregas| express_delivery
-    lojista -->|Gerencia estabelecimentos, cardápios e visualiza insights| express_delivery
-    express_delivery -->|Consulta rotas ideais e estimativas| osrm_server
-    express_delivery -->|Processa cobranças de pedidos| stripe
-    express_delivery -->|Dispara e-mails transacionais| mailtrap
+    sys["Sistema Express Delivery<br>[Orquestrador Central]"]:::system
 
-    class cliente,entregador,lojista person;
-    class express_delivery system;
-    class osrm_server,stripe,mailtrap ext;
+    osrm["Servidor de Roteamento (OSRM)<br>[Sistema Externo]"]:::ext
+    stripe["Gateway Stripe<br>[Sistema Externo]"]:::ext
+    mailtrap["Servidor Mailtrap/SMTP<br>[Sistema Externo]"]:::ext
+
+    %% Relations
+    cliente -->|Interage via Web| sys
+    entregador -->|Envia GPS e gerencia entregas| sys
+    lojista -->|Gerencia restaurante e vê insights| sys
+    sys -->|Consulta caminhos e distâncias| osrm
+    sys -->|Processa pagamentos financeiro| stripe
+    sys -->|Dispara emails de notificação| mailtrap
 ```
 
 ### Nível 2: Contêineres (Containers)
-Detalhamento da topologia de containers do ecossistema. Todo o tráfego externo é centralizado pelo **API Gateway (Kong)**, que atua como o ponto de entrada único (Single Point of Entry) na porta 8000, roteando as requisições para o Frontend ou para a API conforme o path.
+Aumenta o detalhamento expondo a topologia de microsserviços, bancos de dados, cache, brokers de mensagens e telemetria que compõem o ecossistema.
 
 ```mermaid
 graph TB
-    %% Estilos de Elemento C4
-    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#ffffff;
-    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#ffffff;
-    classDef database fill:#1168bd,stroke:#0e5aab,stroke-width:2px,color:#ffffff;
-    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
+    %% Styling
+    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff;
+    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#fff;
+    classDef db fill:#0b132b,stroke:#00b4d8,stroke-width:2px,color:#fff;
+    classDef broker fill:#2d1a12,stroke:#f8961e,stroke-width:2px,color:#fff;
+    classDef ext fill:#121212,stroke:#666,stroke-width:1px,color:#aaa;
+    classDef obs fill:#333333,stroke:#ff5722,stroke-width:2px,color:#fff;
 
-    cliente["Cliente<br/>(Visualiza cardápios e faz pedidos no browser)"]
-    entregador["Entregador<br/>(Atualiza GPS e aceita corridas)"]
-    lojista["Lojista<br/>(Acessa o painel do restaurante no browser)"]
+    %% Actors
+    cliente["Cliente (Browser)"]:::person
+    entregador["Entregador (App/GPS)"]:::person
+    lojista["Lojista (Browser)"]:::person
 
-    frontend["Frontend Web<br/>[React + Vite]<br/>Interface de usuário SPA (Roda no dispositivo do cliente)"]
+    %% Entrypoints
+    frontend["Frontend Web<br>(React SPA)"]:::container
+    gateway["API Gateway (Kong)<br>[Port 8000]"]:::container
 
-    subgraph private_backend ["Rede Privada / Servidores de Backend"]
-        gateway["API Gateway (Kong)<br/>[Kong 3.4]<br/>Autenticação JWT, CORS e Roteamento de Borda"]
-        api_node["Backend Core (API Node)<br/>[TypeScript / GraphQL / Prisma]<br/>Regras de negócio e gRPC client principal"]
-        ms_entregadores["MS Entregadores<br/>[C# / .NET 10 / gRPC]<br/>Gerencia frota e posições geográficas"]
-        ms_roteamento["MS Roteamento<br/>[C# / .NET 10 / gRPC]<br/>Calcula trajetos ótimos e estimativas"]
-        ms_recomendacao["MS Recomendação<br/>[Python / FastAPI / gRPC]<br/>Gera insights analíticos de preços"]
-        ms_notificacoes["MS Notificações<br/>[Python / pika / SMTP]<br/>Consome eventos e dispara emails"]
-        db_postgres[("PostgreSQL Principal<br/>[Dados Relacionais]<br/>Persistência de pedidos, usuários e cadastros")]
-        db_entregadores[("PostgreSQL Entregadores<br/>[Dados Relacionais]<br/>Banco isolado dos entregadores")]
-        db_recomendacao[("PostgreSQL Recomendação<br/>[Dados Relacionais]<br/>Banco isolado de insights analíticos")]
-        db_redis[("Redis Cache<br/>[Geoprocessamento]<br/>Localizações geográficas e cache-aside")]
-        rabbitmq["RabbitMQ<br/>[Message Broker]<br/>Mensageria assíncrona entre serviços"]
-        kafka_cdc["Kafka + Debezium<br/>[CDC Connect]<br/>Replicação de dados em tempo real"]
+    subgraph "Containers de Backend & Bancos (Rede Privada)"
+        api_node["Backend Core (API Node)<br>(GraphQL / Prisma)"]:::container
+        db_postgres[("PostgreSQL Principal<br>(delivery_db)")]:::db
+        db_redis[("Redis Cache & Geo<br>(redis:6379)")]:::db
+
+        ms_entregadores["MS Entregadores<br>(.NET 10 + gRPC)"]:::container
+        db_entregadores[("PostgreSQL Entregadores")]:::db
+
+        ms_roteamento["MS Roteamento<br>(.NET 10 + gRPC)"]:::container
+
+        ms_recomendacao["MS Recomendação<br>(FastAPI + gRPC)"]:::container
+        db_recomendacao[("PostgreSQL Recomendação")]:::db
+
+        ms_notificacoes["MS Notificações<br>(Python Worker)"]:::container
     end
 
-    subgraph externals ["Serviços Externos"]
-        osrm_server["Servidor OSRM<br/>[C++ Engine]<br/>Processa matrizes geográficas e rotas"]
-        stripe["Gateway Stripe<br/>[External System]<br/>Processamento financeiro seguro"]
-        mailtrap["Servidor Mailtrap<br/>[External System]<br/>Disparo de e-mails de teste"]
+    subgraph "Barramentos e Integrações Assíncronas"
+        rabbitmq["RabbitMQ Message Broker"]:::broker
+        kafka_cdc["Kafka + Debezium CDC"]:::broker
     end
 
-    subgraph observability ["Observabilidade"]
-        jaeger["Jaeger Tracing<br/>[Jaeger All-in-One]<br/>Traces distribuídos gRPC/GraphQL"]
-        prometheus["Prometheus Metrics<br/>[Metrics Server]<br/>Métricas temporais"]
-        grafana["Grafana Dashboards<br/>[Grafana OSS]<br/>Painéis analíticos unificados"]
+    subgraph "Sistemas Externos"
+        osrm["OSRM Engine"]:::ext
+        stripe["Gateway Stripe"]:::ext
+        mailtrap["SMTP Mailtrap"]:::ext
     end
 
+    subgraph "Observabilidade"
+        jaeger["Jaeger (Traces)"]:::obs
+        prometheus["Prometheus (Metrics)"]:::obs
+        grafana["Grafana (Dashboards)"]:::obs
+    end
+
+    %% Flows
     cliente -->|Interage| frontend
     lojista -->|Interage| frontend
-    frontend -->|Requisições GraphQL| gateway
-    entregador -->|gRPC Coordinates Stream| ms_entregadores
-    gateway -->|Roteia /graphql| api_node
-    api_node -->|Consultas e Escrita| db_postgres
-    api_node -->|Lê/grava cache| db_redis
-    api_node -->|gRPC: Consultar entregadores| ms_entregadores
-    api_node -->|gRPC: Solicitar rota| ms_roteamento
-    api_node -->|gRPC: Insights de loja| ms_recomendacao
-    api_node -->|Publica eventos| rabbitmq
+    frontend -->|HTTP / GraphQL| gateway
+    gateway -->|Encaminha /graphql| api_node
+    entregador -->|gRPC Coordinate Stream| ms_entregadores
+
+    api_node -->|ORM SQL| db_postgres
+    api_node -->|Lê/Escreve Cache| db_redis
+    api_node -->|gRPC: Roteamento| ms_roteamento
+    api_node -->|gRPC: Recomendações| ms_recomendacao
+    api_node -->|gRPC: Buscar Entregador| ms_entregadores
     api_node -->|Processa pagamentos| stripe
-    ms_entregadores -->|Persiste cadastros| db_entregadores
-    ms_entregadores -->|Cache de posições rápidas| db_redis
-    ms_entregadores -->|Publica/Consome| rabbitmq
-    ms_roteamento -->|Cálculo de trajetos| osrm_server
-    ms_recomendacao -->|Persiste dados| db_recomendacao
+    api_node -->|Publica eventos (AMQP)| rabbitmq
+
+    ms_entregadores -->|Persiste dados| db_entregadores
+    ms_entregadores -->|Redis Geo commands| db_redis
+    ms_entregadores -->|Publica/Consome eventos| rabbitmq
+
+    ms_roteamento -->|Consulta trajetos físicos| osrm
+
+    ms_recomendacao -->|Persiste dados locais| db_recomendacao
     ms_recomendacao -->|Consome eventos| rabbitmq
+
     ms_notificacoes -->|Consome eventos| rabbitmq
-    ms_notificacoes -->|Dispara emails| mailtrap
-    db_postgres -->|CDC WAL Logs| kafka_cdc
-    kafka_cdc -->|Replicação de dados| ms_recomendacao
+    ms_notificacoes -->|Envia email| mailtrap
 
-    %% Traces e Monitoramento
-    api_node -->|Traces OTLP| jaeger
-    ms_entregadores -->|Traces OTLP| jaeger
-    ms_roteamento -->|Traces OTLP| jaeger
-    ms_recomendacao -->|Traces OTLP| jaeger
-    ms_notificacoes -->|Traces OTLP| jaeger
-    prometheus -->|Scrape metrics| api_node
-    grafana -->|Visualiza| prometheus
-    grafana -->|Visualiza| jaeger
+    db_postgres -->|CDC logical WAL| kafka_cdc
+    kafka_cdc -->|Replica cadastros| ms_recomendacao
 
-    class cliente,entregador,lojista person;
-    class frontend,gateway,api_node,ms_entregadores,ms_roteamento,ms_recomendacao,ms_notificacoes,rabbitmq,kafka_cdc,jaeger,prometheus,grafana container;
-    class db_postgres,db_entregadores,db_recomendacao,db_redis database;
-    class osrm_server,stripe,mailtrap ext;
+    %% Observability flows
+    api_node -. "OTLP Traces" .-> jaeger
+    ms_entregadores -. "OTLP Traces" .-> jaeger
+    ms_roteamento -. "OTLP Traces" .-> jaeger
+    ms_recomendacao -. "OTLP Traces" .-> jaeger
+    ms_notificacoes -. "OTLP Traces" .-> jaeger
+
+    prometheus -. "Scrape Metrics" .-> api_node
+    prometheus -. "Scrape Metrics" .-> ms_recomendacao
+    prometheus -. "Scrape Metrics" .-> ms_entregadores
+    grafana -->|Painéis| prometheus
+    grafana -->|Painéis| jaeger
 ```
 
 ### Nível 3: Componentes (Components)
-Detalhamento interno do container **Backend Core (API Node)**, ilustrando como a arquitetura limpa (Clean Architecture) e o isolamento de domínio (DDD) são estruturados em camadas independentes.
+Zoom sobre a organização do container **Backend Core (API Node)**, estruturada sob as premissas da Clean Architecture com injeção e inversão de dependência (DIP).
 
 ```mermaid
 graph TB
-    %% Estilos de Elemento C4
-    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#ffffff;
-    classDef component fill:#85bbf0,stroke:#6699cc,stroke-width:2px,color:#000000;
-    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#ffffff;
+    %% Styling
+    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#fff;
+    classDef comp fill:#85bbf0,stroke:#6699cc,stroke-width:2px,color:#000;
+    classDef port fill:#e9c46a,stroke:#f4a261,stroke-width:2px,color:#000;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    gateway["API Gateway (Kong)"]
-    db_postgres[("PostgreSQL")]
-    db_redis[("Redis Cache")]
-    rabbitmq["RabbitMQ"]
-    ms_entregadores["MS Entregadores"]
-    ms_roteamento["MS Roteamento"]
-    ms_recomendacao["MS Recomendação"]
+    %% Edge
+    gateway["API Gateway (Kong)"]:::container
+    db_postgres[("PostgreSQL")]:::ext
+    db_redis[("Redis Cache")]:::ext
+    rabbitmq["RabbitMQ Broker"]:::ext
+    ms_entregadores["MS Entregadores"]:::container
+    ms_roteamento["MS Roteamento"]:::container
+    ms_recomendacao["MS Recomendação"]:::container
 
     subgraph api_node ["Backend Core (API Node)"]
-        subgraph layer_pres ["Camada de Apresentação"]
-            resolvers["GraphQL Resolvers<br/>[Apollo Server]<br/>Trata queries e mutations de entrada"]
+        subgraph presentation ["Camada de Apresentação"]
+            resolvers["GraphQL Resolvers<br>(Apollo Server)"]:::comp
         end
 
-        subgraph layer_app ["Camada de Aplicação"]
-            validators["Validadores Zod<br/>[Schema Parsing]<br/>Garante integridade de inputs"]
-            confirmar_pedido_uc["ConfirmarPedidoUseCase<br/>[UseCase]<br/>Cria e confirma pedidos"]
-            atribuir_entregador_uc["AtribuirEntregadorUseCase<br/>[UseCase]<br/>Registra entrega atribuída"]
-            assinar_recomendacao_uc["AssinarPlanoRecomendacaoUseCase<br/>[UseCase]<br/>Gerencia planos premium"]
-            povoar_frota_uc["PovoarFrotaUseCase<br/>[UseCase]<br/>Povoa e simula frota"]
-            atualizar_localizacao_entregador_uc["AtualizarLocalizacaoEntregadorUseCase<br/>[UseCase]<br/>Valida/atualiza geo-posições"]
-            obter_rota_estavel_uc["ObterRotaEstavelUseCase<br/>[UseCase]<br/>Calcula rotas de entregas"]
-            obter_rota_coleta_uc["ObterRotaColetaUseCase<br/>[UseCase]<br/>Calcula rota de coleta"]
-            obter_rota_entrega_uc["ObterRotaEntregaUseCase<br/>[UseCase]<br/>Calcula rota de entrega"]
-            obter_insights_uc["ObterInsightsUseCase<br/>[UseCase]<br/>Busca insights via gRPC"]
-            processar_pagamento_uc["ProcessarPagamentoUseCase<br/>[UseCase]<br/>Processa pagamentos via Stripe"]
-            login_usuario_uc["LoginUsuarioUseCase<br/>[UseCase]<br/>Autentica usuário e emite JWT"]
-            app_services["Serviços de Aplicação<br/>[TypeScript Classes]<br/>Serviços auxiliares legados/CRUDs"]
+        subgraph application ["Camada de Aplicação (Use Cases)"]
+            validators["Validadores Zod"]:::comp
+            
+            uc_pedido["ConfirmarPedidoUseCase"]:::comp
+            uc_entrega["AtribuirEntregadorUseCase"]:::comp
+            uc_assinatura["AssinarPlanoRecomendacaoUseCase"]:::comp
+            uc_frota["PovoarFrotaUseCase"]:::comp
+            uc_localizacao["AtualizarLocalizacaoEntregadorUseCase"]:::comp
+            uc_rota["ObterRotaEstavelUseCase"]:::comp
+            uc_insights["ObterInsightsUseCase"]:::comp
+            uc_pagamento["ProcessarPagamentoUseCase"]:::comp
+            uc_login["LoginUsuarioUseCase"]:::comp
+            
+            app_services["Serviços de Aplicação<br>(CRUDs auxiliares)"]:::comp
         end
 
-        subgraph layer_domain ["Camada de Domínio (Core)"]
-            entities["Entidades de Domínio<br/>[Entities]<br/>Usuario, Pedido, Restaurante ricos"]
-            value_objects["Value Objects<br/>[Value Objects]<br/>Email, Coordenada, Dinheiro imutáveis"]
-            domain_ports["Portas / Interfaces<br/>[Ports]<br/>Contratos abstratos de repositórios/gRPC/Messaging"]
+        subgraph domain ["Camada de Domínio (Core)"]
+            entities["Entidades de Domínio<br>(Usuario, Pedido, etc.)"]:::comp
+            value_objects["Value Objects<br>(Email, Dinheiro, etc.)"]:::comp
+            domain_ports["Portas / Interfaces<br>(Contratos de Portas)"]:::port
         end
 
-        subgraph layer_infra ["Camada de Infraestrutura"]
-            prisma_adapters["Prisma Adapters<br/>[Repositories]<br/>Implementa portas de banco no Postgres"]
-            grpc_providers["gRPC Providers<br/>[gRPC Clients]<br/>Implementa portas gRPC com microserviços"]
-            rabbitmq_publisher["RabbitMQPublisher<br/>[Event Publisher]<br/>Dispara eventos assíncronos"]
-            rabbitmq_consumer["RabbitMQConsumer<br/>[Background Worker]<br/>Consome eventos de filas"]
-            redis_client["RedisClient Singleton<br/>[ioredis]<br/>Gerencia conexão e cache no Redis"]
-            token_service["Token Service<br/>[jsonwebtoken]<br/>Geração e verificação de JWTs"]
-            opentelemetry_sdk["OpenTelemetry SDK<br/>[Instrumentation]<br/>Coleta de traces automáticos do GraphQL/SQL/gRPC"]
+        subgraph infrastructure ["Camada de Infraestrutura"]
+            prisma_adapters["Adaptores Prisma"]:::comp
+            grpc_providers["Provedores gRPC"]:::comp
+            rabbitmq_pub["RabbitMQPublisher"]:::comp
+            rabbitmq_con["RabbitMQConsumer"]:::comp
+            redis_client["RedisClient Singleton"]:::comp
+            token_service["Serviço de Token (JWT)"]:::comp
+            opentelemetry_sdk["OpenTelemetry SDK"]:::comp
         end
     end
 
-    gateway -->|Requisições HTTP GraphQL| resolvers
-    resolvers -->|Valida parâmetros| validators
-    resolvers -->|Invoca| confirmar_pedido_uc
-    resolvers -->|Invoca| assinar_recomendacao_uc
-    resolvers -->|Invoca| povoar_frota_uc
-    resolvers -->|Invoca| atualizar_localizacao_entregador_uc
-    resolvers -->|Invoca| obter_rota_estavel_uc
-    resolvers -->|Invoca| obter_insights_uc
-    resolvers -->|Invoca| login_usuario_uc
+    %% Flows
+    gateway -->|HTTP GraphQL| resolvers
+    resolvers -->|Valida inputs| validators
+    
+    %% Resolver UCs
+    resolvers -->|Invoca| uc_pedido
+    resolvers -->|Invoca| uc_assinatura
+    resolvers -->|Invoca| uc_frota
+    resolvers -->|Invoca| uc_localizacao
+    resolvers -->|Invoca| uc_rota
+    resolvers -->|Invoca| uc_insights
+    resolvers -->|Invoca| uc_login
     resolvers -->|Invoca| app_services
 
-    confirmar_pedido_uc -->|Usa contratos| domain_ports
-    confirmar_pedido_uc -->|Manipula| entities
-    confirmar_pedido_uc -->|Instancia| value_objects
-    atribuir_entregador_uc -->|Usa contratos| domain_ports
-    atribuir_entregador_uc -->|Manipula| entities
-    povoar_frota_uc -->|Usa contratos| domain_ports
-    povoar_frota_uc -->|Manipula| entities
-    atualizar_localizacao_entregador_uc -->|Usa contratos| domain_ports
-    atualizar_localizacao_entregador_uc -->|Manipula| entities
-    obter_rota_estavel_uc -->|Usa contratos| domain_ports
-    obter_insights_uc -->|Usa contratos| domain_ports
-    processar_pagamento_uc -->|Usa contratos| domain_ports
-    login_usuario_uc -->|Usa contratos| domain_ports
+    %% Use Cases -> Domain & Ports
+    uc_pedido -->|Usa contratos| domain_ports
+    uc_pedido -->|Manipula| entities
+    uc_pedido -->|Instancia| value_objects
+    
+    uc_entrega -->|Usa contratos| domain_ports
+    uc_entrega -->|Manipula| entities
+    
+    uc_frota -->|Usa contratos| domain_ports
+    uc_frota -->|Manipula| entities
 
-    rabbitmq_consumer -->|Consome eventos| rabbitmq
-    rabbitmq_consumer -->|Invoca| atribuir_entregador_uc
+    rabbitmq_con -->|Consome eventos| rabbitmq
+    rabbitmq_con -->|Invoca| uc_entrega
 
-    prisma_adapters -.->|Realiza| domain_ports
-    grpc_providers -.->|Realiza| domain_ports
-    rabbitmq_publisher -.->|Realiza| domain_ports
-    token_service -.->|Realiza| domain_ports
+    %% Dependency Inversion (Infra implements Ports)
+    prisma_adapters -.->|Implements| domain_ports
+    grpc_providers -.->|Implements| domain_ports
+    rabbitmq_pub -.->|Implements| domain_ports
+    token_service -.->|Implements| domain_ports
 
+    %% Instrumentation
     opentelemetry_sdk -.->|Instrumenta| resolvers
     opentelemetry_sdk -.->|Instrumenta| prisma_adapters
     opentelemetry_sdk -.->|Instrumenta| grpc_providers
 
-    prisma_adapters -->|Prisma Client SQL| db_postgres
-    rabbitmq_publisher -->|AMQP Publish| rabbitmq
-    grpc_providers -->|gRPC: Entregadores| ms_entregadores
-    grpc_providers -->|gRPC: Roteamento| ms_roteamento
-    grpc_providers -->|gRPC: Recomendação| ms_recomendacao
-    redis_client -->|TCP Cache| db_redis
-
-    class gateway,ms_entregadores,ms_roteamento,ms_recomendacao container;
-    class db_postgres,db_redis ext;
-    class resolvers,validators,confirmar_pedido_uc,atribuir_entregador_uc,assinar_recomendacao_uc,povoar_frota_uc,atualizar_localizacao_entregador_uc,obter_rota_estavel_uc,obter_rota_coleta_uc,obter_rota_entrega_uc,obter_insights_uc,processar_pagamento_uc,login_usuario_uc,app_services,entities,value_objects,domain_ports,prisma_adapters,grpc_providers,rabbitmq_publisher,rabbitmq_consumer,redis_client,token_service,opentelemetry_sdk component;
+    %% Connect to external resources
+    prisma_adapters -->|SQL| db_postgres
+    rabbitmq_pub -->|AMQP| rabbitmq
+    redis_client -->|TCP| db_redis
+    grpc_providers -->|gRPC| ms_entregadores
+    grpc_providers -->|gRPC| ms_roteamento
+    grpc_providers -->|gRPC| ms_recomendacao
 ```
 
 ---
