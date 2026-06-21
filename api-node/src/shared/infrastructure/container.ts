@@ -35,9 +35,6 @@ import { EntregadorAppService } from '../../entregador/application/services/entr
 // Entrega
 import { EntregaRepository } from '../../entrega/infrastructure/adapters/entregaRepository.js';
 import { EntregaAppService } from '../../entrega/application/services/entregaService.js';
-import { RotaEntregaService } from '../../entrega/application/services/rotaEntregaService.js';
-import { AtribuicaoEntregaService } from '../../entrega/application/services/atribuicaoEntregaService.js';
-import { SimuladorDeslocamentoService } from '../../entrega/application/services/simuladorDeslocamentoService.js';
 
 // Pagamento
 import { PagamentoRepository } from '../../pagamento/infrastructure/adapters/pagamentoRepository.js';
@@ -49,7 +46,23 @@ import { AvaliacaoAppService } from '../../avaliacao/application/services/avalia
 
 // Recomendacao
 import { GrpcRecomendacaoProvider } from '../../recomendacao/infrastructure/adapters/grpcRecomendacaoProvider.js';
-import { RecomendacaoAppService } from '../../recomendacao/application/services/recomendacaoService.js';
+
+// Use Cases
+import { ConfirmarPedidoUseCase } from '../../pedido/application/use-cases/ConfirmarPedidoUseCase.js';
+import { AtribuirEntregadorUseCase } from '../../entrega/application/use-cases/AtribuirEntregadorUseCase.js';
+import { AssinarPlanoRecomendacaoUseCase } from '../../recomendacao/application/use-cases/AssinarPlanoRecomendacaoUseCase.js';
+import { AtribuirMelhorEntregadorUseCase } from '../../entrega/application/use-cases/AtribuirMelhorEntregadorUseCase.js';
+import { SimularDeslocamentoUseCase } from '../../entrega/application/use-cases/SimularDeslocamentoUseCase.js';
+import { ProcessarPagamentoUseCase } from '../../pagamento/application/use-cases/ProcessarPagamentoUseCase.js';
+import { LoginUsuarioUseCase } from '../../usuario/application/use-cases/LoginUsuarioUseCase.js';
+import { AtualizarEnderecoUsuarioUseCase } from '../../usuario/application/use-cases/AtualizarEnderecoUsuarioUseCase.js';
+import { PovoarFrotaUseCase } from '../../entregador/application/use-cases/PovoarFrotaUseCase.js';
+import { AtualizarLocalizacaoEntregadorUseCase } from '../../entregador/application/use-cases/AtualizarLocalizacaoEntregadorUseCase.js';
+import { ObterRotaEstavelUseCase } from '../../entrega/application/use-cases/ObterRotaEstavelUseCase.js';
+import { ObterRotaColetaUseCase } from '../../entrega/application/use-cases/ObterRotaColetaUseCase.js';
+import { ObterRotaEntregaUseCase } from '../../entrega/application/use-cases/ObterRotaEntregaUseCase.js';
+import { ObterInsightsUseCase } from '../../recomendacao/application/use-cases/ObterInsightsUseCase.js';
+import { rabbitMQPublisher } from './messaging/rabbitmqPublisher.js';
 
 export class DIContainer {
   private _jwtTokenService?: JwtTokenService;
@@ -78,12 +91,25 @@ export class DIContainer {
   private _roteamentoService?: RoteamentoAppService;
   private _entregadorService?: EntregadorAppService;
   private _entregaService?: EntregaAppService;
-  private _rotaEntregaService?: RotaEntregaService;
-  private _atribuicaoEntregaService?: AtribuicaoEntregaService;
-  private _simuladorDeslocamentoService?: SimuladorDeslocamentoService;
   private _pagamentoService?: PagamentoAppService;
   private _avaliacaoService?: AvaliacaoAppService;
-  private _recomendacaoService?: RecomendacaoAppService;
+
+
+  // Use Cases Cache
+  private _confirmarPedidoUseCase?: ConfirmarPedidoUseCase;
+  private _atribuirEntregadorUseCase?: AtribuirEntregadorUseCase;
+  private _assinarPlanoRecomendacaoUseCase?: AssinarPlanoRecomendacaoUseCase;
+  private _atribuirMelhorEntregadorUseCase?: AtribuirMelhorEntregadorUseCase;
+  private _simularDeslocamentoUseCase?: SimularDeslocamentoUseCase;
+  private _processarPagamentoUseCase?: ProcessarPagamentoUseCase;
+  private _loginUsuarioUseCase?: LoginUsuarioUseCase;
+  private _atualizarEnderecoUsuarioUseCase?: AtualizarEnderecoUsuarioUseCase;
+  private _povoarFrotaUseCase?: PovoarFrotaUseCase;
+  private _atualizarLocalizacaoEntregadorUseCase?: AtualizarLocalizacaoEntregadorUseCase;
+  private _obterRotaEstavelUseCase?: ObterRotaEstavelUseCase;
+  private _obterRotaColetaUseCase?: ObterRotaColetaUseCase;
+  private _obterRotaEntregaUseCase?: ObterRotaEntregaUseCase;
+  private _obterInsightsUseCase?: ObterInsightsUseCase;
 
   getJwtTokenService(): JwtTokenService {
     if (!this._jwtTokenService) {
@@ -174,8 +200,7 @@ export class DIContainer {
   getUsuarioService(): UsuarioAppService {
     if (!this._usuarioService) {
       this._usuarioService = new UsuarioAppService(
-        this.getUsuarioRepository(),
-        this.getJwtTokenService()
+        this.getUsuarioRepository()
       );
     }
     return this._usuarioService;
@@ -240,8 +265,7 @@ export class DIContainer {
     if (!this._entregadorService) {
       this._entregadorService = new EntregadorAppService(
         this.getEntregadorRepository(),
-        this.getRestauranteService(),
-        this.getRoteamentoProvider()
+        this.getRestauranteService()
       );
     }
     return this._entregadorService;
@@ -256,49 +280,13 @@ export class DIContainer {
     return this._entregaService;
   }
 
-  getRotaEntregaService(): RotaEntregaService {
-    if (!this._rotaEntregaService) {
-      this._rotaEntregaService = new RotaEntregaService(
-        this.getEntregaService(),
-        this.getPedidoService(),
-        this.getEntregadorService(),
-        this.getRestauranteService(),
-        this.getRoteamentoService()
-      );
-    }
-    return this._rotaEntregaService;
-  }
-
-  getAtribuicaoEntregaService(): AtribuicaoEntregaService {
-    if (!this._atribuicaoEntregaService) {
-      this._atribuicaoEntregaService = new AtribuicaoEntregaService(
-        this.getEntregaService(),
-        this.getPedidoService(),
-        this.getRestauranteService(),
-        this.getEntregadorService(),
-        this.getRoteamentoService()
-      );
-    }
-    return this._atribuicaoEntregaService;
-  }
-
-  getSimuladorDeslocamentoService(): SimuladorDeslocamentoService {
-    if (!this._simuladorDeslocamentoService) {
-      this._simuladorDeslocamentoService = new SimuladorDeslocamentoService(
-        this.getEntregaService(),
-        this.getPedidoService(),
-        this.getEntregadorService(),
-        this.getRestauranteService(),
-        this.getRotaEntregaService()
-      );
-    }
-    return this._simuladorDeslocamentoService;
-  }
-
   getPagamentoService(): PagamentoAppService {
     if (!this._pagamentoService) {
       this._pagamentoService = new PagamentoAppService(
-        this.getPagamentoRepository()
+        this.getPagamentoRepository(),
+        this.getPedidoRepository(),
+        this.getUsuarioService(),
+        rabbitMQPublisher
       );
     }
     return this._pagamentoService;
@@ -320,13 +308,158 @@ export class DIContainer {
     return this._recomendacaoProvider;
   }
 
-  getRecomendacaoService(): RecomendacaoAppService {
-    if (!this._recomendacaoService) {
-      this._recomendacaoService = new RecomendacaoAppService(
+  getConfirmarPedidoUseCase(): ConfirmarPedidoUseCase {
+    if (!this._confirmarPedidoUseCase) {
+      this._confirmarPedidoUseCase = new ConfirmarPedidoUseCase(
+        this.getPedidoRepository(),
+        this.getUsuarioService(),
+        rabbitMQPublisher
+      );
+    }
+    return this._confirmarPedidoUseCase;
+  }
+
+  getAtribuirEntregadorUseCase(): AtribuirEntregadorUseCase {
+    if (!this._atribuirEntregadorUseCase) {
+      this._atribuirEntregadorUseCase = new AtribuirEntregadorUseCase(
+        this.getEntregaRepository()
+      );
+    }
+    return this._atribuirEntregadorUseCase;
+  }
+
+  getAssinarPlanoRecomendacaoUseCase(): AssinarPlanoRecomendacaoUseCase {
+    if (!this._assinarPlanoRecomendacaoUseCase) {
+      this._assinarPlanoRecomendacaoUseCase = new AssinarPlanoRecomendacaoUseCase(
         this.getRecomendacaoProvider()
       );
     }
-    return this._recomendacaoService;
+    return this._assinarPlanoRecomendacaoUseCase;
+  }
+
+  getAtribuirMelhorEntregadorUseCase(): AtribuirMelhorEntregadorUseCase {
+    if (!this._atribuirMelhorEntregadorUseCase) {
+      this._atribuirMelhorEntregadorUseCase = new AtribuirMelhorEntregadorUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getRestauranteService(),
+        this.getEntregadorService(),
+        this.getRoteamentoService()
+      );
+    }
+    return this._atribuirMelhorEntregadorUseCase;
+  }
+
+  getSimularDeslocamentoUseCase(): SimularDeslocamentoUseCase {
+    if (!this._simularDeslocamentoUseCase) {
+      this._simularDeslocamentoUseCase = new SimularDeslocamentoUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getEntregadorService(),
+        this.getRestauranteService(),
+        this.getObterRotaEstavelUseCase()
+      );
+    }
+    return this._simularDeslocamentoUseCase;
+  }
+
+  getProcessarPagamentoUseCase(): ProcessarPagamentoUseCase {
+    if (!this._processarPagamentoUseCase) {
+      this._processarPagamentoUseCase = new ProcessarPagamentoUseCase(
+        this.getPagamentoRepository(),
+        this.getPedidoRepository(),
+        this.getUsuarioService(),
+        rabbitMQPublisher
+      );
+    }
+    return this._processarPagamentoUseCase;
+  }
+
+  getLoginUsuarioUseCase(): LoginUsuarioUseCase {
+    if (!this._loginUsuarioUseCase) {
+      this._loginUsuarioUseCase = new LoginUsuarioUseCase(
+        this.getUsuarioRepository(),
+        this.getJwtTokenService()
+      );
+    }
+    return this._loginUsuarioUseCase;
+  }
+
+  getAtualizarEnderecoUsuarioUseCase(): AtualizarEnderecoUsuarioUseCase {
+    if (!this._atualizarEnderecoUsuarioUseCase) {
+      this._atualizarEnderecoUsuarioUseCase = new AtualizarEnderecoUsuarioUseCase(
+        this.getUsuarioRepository()
+      );
+    }
+    return this._atualizarEnderecoUsuarioUseCase;
+  }
+
+  getPovoarFrotaUseCase(): PovoarFrotaUseCase {
+    if (!this._povoarFrotaUseCase) {
+      this._povoarFrotaUseCase = new PovoarFrotaUseCase(
+        this.getEntregadorRepository(),
+        this.getRoteamentoProvider(),
+        this.getEntregadorService()
+      );
+    }
+    return this._povoarFrotaUseCase;
+  }
+
+  getAtualizarLocalizacaoEntregadorUseCase(): AtualizarLocalizacaoEntregadorUseCase {
+    if (!this._atualizarLocalizacaoEntregadorUseCase) {
+      this._atualizarLocalizacaoEntregadorUseCase = new AtualizarLocalizacaoEntregadorUseCase(
+        this.getEntregadorRepository()
+      );
+    }
+    return this._atualizarLocalizacaoEntregadorUseCase;
+  }
+
+  getObterRotaEstavelUseCase(): ObterRotaEstavelUseCase {
+    if (!this._obterRotaEstavelUseCase) {
+      this._obterRotaEstavelUseCase = new ObterRotaEstavelUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getEntregadorService(),
+        this.getRestauranteService(),
+        this.getRoteamentoService()
+      );
+    }
+    return this._obterRotaEstavelUseCase;
+  }
+
+  getObterRotaColetaUseCase(): ObterRotaColetaUseCase {
+    if (!this._obterRotaColetaUseCase) {
+      this._obterRotaColetaUseCase = new ObterRotaColetaUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getEntregadorService(),
+        this.getRestauranteService(),
+        this.getRoteamentoService()
+      );
+    }
+    return this._obterRotaColetaUseCase;
+  }
+
+  getObterRotaEntregaUseCase(): ObterRotaEntregaUseCase {
+    if (!this._obterRotaEntregaUseCase) {
+      this._obterRotaEntregaUseCase = new ObterRotaEntregaUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getEntregadorService(),
+        this.getRestauranteService(),
+        this.getRoteamentoService()
+      );
+    }
+    return this._obterRotaEntregaUseCase;
+  }
+
+  getObterInsightsUseCase(): ObterInsightsUseCase {
+    if (!this._obterInsightsUseCase) {
+      this._obterInsightsUseCase = new ObterInsightsUseCase(
+        this.getRecomendacaoProvider()
+      );
+    }
+    return this._obterInsightsUseCase;
   }
 }
 

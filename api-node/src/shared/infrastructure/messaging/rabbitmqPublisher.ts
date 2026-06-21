@@ -1,6 +1,7 @@
 import amqp from 'amqplib';
+import { IEventPublisher } from '../../application/ports/IEventPublisher.js';
 
-export class RabbitMQPublisher {
+export class RabbitMQPublisher implements IEventPublisher {
   private connection: amqp.ChannelModel | null = null;
   private channel: amqp.Channel | null = null;
   private readonly exchangeName = 'delivery-events';

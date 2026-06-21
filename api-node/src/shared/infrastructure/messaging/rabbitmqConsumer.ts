@@ -81,19 +81,12 @@ export class RabbitMQConsumer {
             throw new Error('Invalid payload received for entrega.atribuida');
           }
 
-          const entregaService = diContainer.getEntregaService();
-          
-          const existing = await entregaService.buscarPorPedidoId(pedido_id);
-          if (existing && existing.length > 0) {
-            console.log(`[Consumer] Delivery for Pedido ID ${pedido_id} already exists. Skipping.`);
-          } else {
-            const entrega = await entregaService.criar({
-              pedido_id,
-              entregador_id,
-              status: status || 'ATRIBUIDA'
-            });
-            console.log(`[Consumer] Delivery created successfully in database:`, entrega);
-          }
+          const useCase = diContainer.getAtribuirEntregadorUseCase();
+          await useCase.execute({
+            pedido_id,
+            entregador_id,
+            status: status || 'ATRIBUIDA'
+          });
 
           chan.ack(msg);
         } catch (err) {
