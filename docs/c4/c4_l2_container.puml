@@ -10,20 +10,21 @@ title Diagrama de Containers (L2) - Express Delivery
 ' -------------------------------------------------------------
 Person(cliente, "Cliente", "Utiliza o sistema para visualizar cardápios, realizar pedidos e acompanhar entregas em tempo real.")
 Person(entregador, "Entregador", "Utiliza o sistema para atualizar sua localização geográfica e gerenciar o status das entregas.")
+Person(lojista, "Lojista (Restaurante)", "Gerencia cardápios, produtos, recebe pedidos e acompanha insights competitivos da loja.")
 
 ' Frontend Container (Executado no dispositivo do cliente)
-Container(frontend, "Frontend Web", "React + Vite, TailwindCSS", "Interface Web SPA de alta performance que fornece as telas para Clientes (executada no browser do usuário).")
+Container(frontend, "Frontend Web", "React + Vite, TailwindCSS", "Interface Web SPA que fornece as telas para Clientes e Lojistas.")
 
 ' -------------------------------------------------------------
 ' REDE PRIVADA / BACKEND
 ' -------------------------------------------------------------
 System_Boundary(private_backend, "Rede Privada / Servidores de Backend") {
     
-    ' API Gateway Container (Edge Entrypoint)
+    ' API Gateway Container
     Container(gateway, "API Gateway (Kong)", "Kong 3.4 (DB-less)", "Gerencia autenticação JWT, CORS, Rate Limiting e roteamento unificado de requisições de borda.")
 
     ' Core Backend Container (GraphQL API)
-    Container(api_node, "Backend Core (API Node)", "TypeScript, Node.js, GraphQL, Prisma", "Orquestrador principal da aplicação. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e integrações gRPC.")
+    Container(api_node, "Backend Core (API Node)", "TypeScript, Node.js, GraphQL, Prisma", "Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e integrações gRPC.")
 
     ' Microserviço de Entregadores (.NET 10)
     Container(ms_entregadores, "Microserviço de Entregadores", "C#, .NET 10, gRPC", "Gerencia o ciclo de vida, disponibilidade e o rastreamento em tempo real da frota de entregadores.")
@@ -31,43 +32,89 @@ System_Boundary(private_backend, "Rede Privada / Servidores de Backend") {
     ' Microserviço de Roteamento (.NET 10)
     Container(ms_roteamento, "Microserviço de Roteamento", "C#, .NET 10, gRPC", "Responsável pelo cálculo de rotas ideais, estimativas de tempos e trajetos de coleta/entrega.")
 
-    ' Armazenamento de Dados Relacional
-    ContainerDb(db_postgres, "Banco de Dados (PostgreSQL)", "PostgreSQL 15", "Armazena dados transacionais de usuários, restaurantes, produtos, pedidos, pagamentos e avaliações.")
+    ' Microserviço de Recomendação (Python)
+    Container(ms_recomendacao, "Microserviço de Recomendação", "Python, FastAPI, gRPC, SQLAlchemy", "Gera insights analíticos de preços para lojistas baseados em geolocalização e histórico de vendas locais.")
+
+    ' Microserviço de Notificações (Python)
+    Container(ms_notificacoes, "Microserviço de Notificações", "Python, pika, SMTP", "Consome eventos e envia notificações por e-mail transacionais em background.")
+
+    ' Armazenamento de Dados Relacional - Core
+    ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Armazena dados transacionais de usuários, restaurantes, produtos, pedidos, pagamentos e avaliações.")
+
+    ' Armazenamento de Dados Relacional - Entregadores
+    ContainerDb(db_entregadores, "Banco de Dados Entregadores", "PostgreSQL 15", "Armazena dados isolados dos entregadores cadastrados no sistema.")
+
+    ' Armazenamento de Dados Relacional - Recomendação
+    ContainerDb(db_recomendacao, "Banco de Dados Recomendação", "PostgreSQL 15", "Armazena o histórico analítico de vendas e as réplicas locais de dados para geoprocessamento.")
 
     ' Armazenamento Cache e In-Memory (Redis)
-    ContainerDb(db_redis, "Cache de Posições (Redis)", "Redis 7", "Armazena localizações geográficas em tempo real da frota de entregadores para atualizações gRPC de baixa latência.")
+    ContainerDb(db_redis, "Cache e Posições (Redis)", "Redis 7", "Armazena posições geográficas em tempo real dos entregadores (Redis Geo) e serve como cache-aside de queries GraphQL frequentes.")
+
+    ' Mensageria e Eventos de Negócio (RabbitMQ)
+    Container(rabbitmq, "RabbitMQ Message Broker", "RabbitMQ 3", "Roteia eventos assíncronos (pedido.confirmado, pagamento.aprovado, entrega.atribuida) entre serviços.")
+
+    ' Streaming e Captura de Alterações (Kafka + Debezium)
+    Container(kafka_cdc, "Plataforma CDC (Kafka + Debezium)", "Apache Kafka, Debezium Connect", "Captura alterações de dados (WAL) no banco de dados principal e replica para os microsserviços interessados.")
 }
 
 ' -------------------------------------------------------------
 ' SISTEMAS EXTERNOS / DEPENDÊNCIAS
 ' -------------------------------------------------------------
-System_Boundary(infra_osrm, "Infraestrutura de Mapas") {
-    Container(osrm_server, "Servidor de Roteamento (OSRM)", "C++ (OSRM Backend)", "Servidor OSRM que resolve caminhos geométricos e distâncias ótimas com base nos mapas OpenStreetMap.")
+System_Boundary(externals, "Serviços Externos") {
+    Container(osrm_server, "Servidor de Roteamento (OSRM)", "C++ (OSRM Backend)", "Servidor OSRM que resolve caminhos geométricos e estimativas físicas reais.")
+    System_Ext(stripe, "Gateway de Pagamento (Stripe)", "Processa transações financeiras de forma segura.")
+}
+
+' Telemetria e Monitoramento
+System_Boundary(observability, "Observabilidade") {
+    Container(jaeger, "Jaeger Tracing", "Jaeger All-in-One", "Centraliza a visualização de traces distribuídos gRPC/GraphQL.")
+    Container(prometheus, "Prometheus Metrics", "Prometheus Server", "Coleta métricas temporais das aplicações instrumentadas.")
+    Container(grafana, "Grafana Dashboards", "Grafana OSS", "Visualiza painéis analíticos e métricas consolidadas do sistema.")
 }
 
 ' -------------------------------------------------------------
 ' RELACIONAMENTOS / FLUXOS DE COMUNICAÇÃO
 ' -------------------------------------------------------------
 
-' Fluxo do Cliente
-Rel(cliente, frontend, "Interage com a interface (Visualiza Menu, Cria Pedido)", "HTTPS / SPA")
-Rel(frontend, gateway, "Envia requisições GraphQL (com ou sem JWT)", "HTTPS / JSON (Port 8000)")
+' Usuários
+Rel(cliente, frontend, "Interage com a interface", "HTTPS / SPA")
+Rel(lojista, frontend, "Acessa o painel do restaurante", "HTTPS / SPA")
+Rel(frontend, gateway, "Envia requisições GraphQL", "HTTPS / JSON (Port 8000)")
+Rel(entregador, ms_entregadores, "Transmite fluxo de coordenadas", "gRPC Stream (Port 5001)")
 
-' Fluxo do Entregador
-Rel(entregador, ms_entregadores, "Transmite fluxo de coordenadas em tempo real", "gRPC Stream (Port 5001)")
+' Gateway e API Core
+Rel(gateway, api_node, "Encaminha requisições GraphQL", "HTTP / GraphQL (Port 4000)")
+Rel(api_node, db_postgres, "Grava/lê dados transacionais", "Prisma Client (Port 5433)")
+Rel(api_node, db_redis, "Lê/grava cache-aside de queries", "TCP / ioredis (Port 6379)")
+Rel(api_node, ms_entregadores, "Consulta entregadores próximos", "gRPC Client (Port 5001)")
+Rel(api_node, ms_roteamento, "Solicita cálculo de rota", "gRPC Client (Port 5002)")
+Rel(api_node, ms_recomendacao, "Busca insights e atualiza assinatura", "gRPC Client (Port 50053)")
+Rel(api_node, rabbitmq, "Publica eventos (pedido.confirmado, pagamento.aprovado)", "AMQP / amqplib (Port 5672)")
+Rel(api_node, stripe, "Solicita cobrança de cartões/Pix", "HTTPS / REST API")
 
-' Fluxo do Gateway
-Rel(gateway, api_node, "Encaminha requisições validadas para /graphql", "HTTP / GraphQL (Port 4000)")
+' Microsserviços
+Rel(ms_entregadores, db_entregadores, "Persiste entregadores", "ADO.NET / EF Core (Port 5434)")
+Rel(ms_entregadores, db_redis, "Salva posições geográficas em tempo real", "Redis Geo Commands (Port 6379)")
+Rel(ms_entregadores, rabbitmq, "Publica entrega.atribuida / Consome pedido.confirmado", "AMQP / TCP (Port 5672)")
 
-' Fluxo do API Node
-Rel(api_node, db_postgres, "Persiste usuários, pedidos, restaurantes e pagamentos", "Prisma Client (TCP Port 5433)")
-Rel(api_node, ms_entregadores, "Consulta entregadores próximos e atribui pedidos", "gRPC Client (Port 5001)")
-Rel(api_node, ms_roteamento, "Solicita cálculo de rota e estimativa para a entrega", "gRPC Client (Port 5002)")
+Rel(ms_roteamento, osrm_server, "Consulta estimativas e trajetos físicos", "HTTP / JSON (Port 5080)")
 
-' Fluxo dos Microserviços
-Rel(ms_entregadores, db_postgres, "Consulta dados cadastrais dos entregadores", "ADO.NET / Entity Framework")
-Rel(ms_entregadores, db_redis, "Grava e lê coordenadas geográficas de alta frequência", "Redis Geo Commands (Port 6379)")
+Rel(ms_recomendacao, db_recomendacao, "Grava histórico analítico e réplicas", "SQLAlchemy (Port 5436)")
+Rel(ms_recomendacao, rabbitmq, "Consome pedido.confirmado", "AMQP / TCP (Port 5672)")
 
-Rel(ms_roteamento, osrm_server, "Consulta matrizes de distância e caminhos geométricos", "HTTP / JSON (Port 5080)")
+Rel(ms_notificacoes, rabbitmq, "Consome eventos para disparar e-mails", "AMQP / TCP (Port 5672)")
+
+' CDC e Replicação
+Rel(db_postgres, kafka_cdc, "Lê logs de transações (WAL)", "Logical Replication (Port 5433)")
+Rel(kafka_cdc, ms_recomendacao, "Transmite réplicas de restaurantes e produtos", "Kafka Protocol (Port 9092)")
+
+' Traces e Métricas
+Rel(api_node, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
+Rel(ms_entregadores, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
+Rel(ms_roteamento, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
+Rel(ms_recomendacao, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
+Rel(prometheus, api_node, "Scrape de métricas", "HTTP / Prometheus format")
+Rel(grafana, prometheus, "Consulta métricas temporais", "HTTP / REST API")
+Rel(grafana, jaeger, "Busca traces vinculados", "HTTP / REST API")
 
 @enduml

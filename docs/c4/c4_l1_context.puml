@@ -10,6 +10,7 @@ title Diagrama de Contexto de Sistema (L1) - Express Delivery
 ' -------------------------------------------------------------
 Person(cliente, "Cliente", "Utiliza o sistema para visualizar cardápios, realizar pedidos e acompanhar entregas em tempo real.")
 Person(entregador, "Entregador", "Utiliza o sistema para atualizar sua localização geográfica e gerenciar o status das entregas.")
+Person(lojista, "Lojista (Restaurante)", "Gerencia cardápios, produtos, recebe pedidos e acompanha insights competitivos da loja.")
 
 ' -------------------------------------------------------------
 ' SISTEMA PRINCIPAL
@@ -20,12 +21,15 @@ System(express_delivery, "Sistema Express Delivery", "Permite que clientes peça
 ' SISTEMAS EXTERNOS / DEPENDÊNCIAS
 ' -------------------------------------------------------------
 System_Ext(osrm_server, "Servidor de Roteamento (OSRM)", "Resolve caminhos geométricos e distâncias ótimas com base nos mapas OpenStreetMap.")
+System_Ext(stripe, "Gateway de Pagamento (Stripe)", "Processa transações de cartão de crédito e gerencia cobranças com segurança.")
 
 ' -------------------------------------------------------------
 ' RELACIONAMENTOS
 ' -------------------------------------------------------------
 Rel(cliente, express_delivery, "Visualiza cardápios, faz pedidos e acompanha entregas", "HTTPS / JSON")
 Rel(entregador, express_delivery, "Envia localização geográfica e atualiza status de entregas", "gRPC / HTTPS")
+Rel(lojista, express_delivery, "Gerencia estabelecimentos, cardápios e visualiza insights", "HTTPS / JSON")
 Rel(express_delivery, osrm_server, "Consulta rotas ideais e estimativas de trajeto", "HTTP / JSON")
+Rel(express_delivery, stripe, "Processa pagamentos de pedidos", "HTTPS / REST API")
 
 @enduml
