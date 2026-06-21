@@ -16,17 +16,17 @@ graph TD
 
     express_delivery["Sistema Express Delivery<br>(Permite que clientes peçam comida de restaurantes parceiros e fornece o rastreamento logístico em tempo real com distribuição inteligente de entregadores)"]:::system
 
-    osrm_server["Servidor de Roteamento (OSRM)<br>[Sistema Externo]<br>(Resolve caminhos geométricos, distâncias físicas e tempos de viagem ótimos com base nos mapas reais OpenStreetMap)"]:::ext
-    stripe["Gateway de Pagamento (Stripe)<br>[Sistema Externo]<br>(Processa transações de cartão de crédito e PIX, gerencia cobranças e estornos de forma segura)"]:::ext
-    mailtrap["Servidor de E-mail (Mailtrap/SMTP)<br>[Sistema Externo]<br>(Dispara notificações eletrônicas sobre criação de pedidos, confirmações e alterações de status)"]:::ext
+    osrm_server["Servidor de Roteamento (OSRM)<br>(Sistema Externo)<br>(Resolve caminhos geométricos, distâncias físicas e tempos de viagem ótimos com base nos mapas reais OpenStreetMap)"]:::ext
+    stripe["Gateway de Pagamento (Stripe)<br>(Sistema Externo)<br>(Processa transações de cartão de crédito e PIX, gerencia cobranças e estornos de forma segura)"]:::ext
+    mailtrap["Servidor de E-mail (Mailtrap/SMTP)<br>(Sistema Externo)<br>(Dispara notificações eletrônicas sobre criação de pedidos, confirmações e alterações de status)"]:::ext
 
     %% Relationships
-    cliente -->|Visualiza cardápios, faz pedidos e acompanha entregas em tempo real [HTTPS/GraphQL]| express_delivery
-    entregador -->|Envia localização geográfica e atualiza status de entregas [gRPC Stream/HTTPS]| express_delivery
-    lojista -->|Gerencia estabelecimentos, cardápios e visualiza insights competitivos [HTTPS/GraphQL]| express_delivery
-    express_delivery -->|Consulta rotas ideais e estimativas de trajeto [HTTP/JSON]| osrm_server
-    express_delivery -->|Processa cobranças e pagamentos de pedidos [HTTPS/REST API]| stripe
-    express_delivery -->|Dispara e-mails transacionais de notificação [SMTP/TLS]| mailtrap
+    cliente -->|Visualiza cardápios, faz pedidos e acompanha entregas em tempo real (HTTPS/GraphQL)| express_delivery
+    entregador -->|Envia localização geográfica e atualiza status de entregas (gRPC Stream/HTTPS)| express_delivery
+    lojista -->|Gerencia estabelecimentos, cardápios e visualiza insights competitivos (HTTPS/GraphQL)| express_delivery
+    express_delivery -->|Consulta rotas ideais e estimativas de trajeto (HTTP/JSON)| osrm_server
+    express_delivery -->|Processa cobranças e pagamentos de pedidos (HTTPS/REST API)| stripe
+    express_delivery -->|Dispara e-mails transacionais de notificação (SMTP/TLS)| mailtrap
 ```
 
 ---
