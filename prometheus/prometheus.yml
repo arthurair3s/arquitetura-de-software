@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'api-node'
+    static_configs:
+      - targets: ['api:4000']
+
+  - job_name: 'ms-entregadores'
+    static_configs:
+      - targets: ['ms-entregadores:5001']
+
+  - job_name: 'ms-roteamento'
+    static_configs:
+      - targets: ['ms-roteamento:5002']
+
+  - job_name: 'ms-recomendacao'
+    static_configs:
+      - targets: ['ms-recomendacao:8001']

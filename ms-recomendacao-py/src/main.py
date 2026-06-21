@@ -1,5 +1,30 @@
 import threading
+import os
 from contextlib import asynccontextmanager
+# pyrefly: ignore [missing-import]
+from opentelemetry import trace
+# pyrefly: ignore [missing-import]
+from opentelemetry.sdk.trace import TracerProvider
+# pyrefly: ignore [missing-import]
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+# pyrefly: ignore [missing-import]
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+# pyrefly: ignore [missing-import]
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+# pyrefly: ignore [missing-import]
+from opentelemetry.sdk.resources import Resource
+
+
+# inicializa o opentelemetry provider e exportador otlp grpc
+otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+otel_service_name = os.getenv("OTEL_SERVICE_NAME", "ms-recomendacao")
+
+resource = Resource.create(attributes={"service.name": otel_service_name})
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otel_endpoint, insecure=True))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Depends, HTTPException, Query
 # pyrefly: ignore [missing-import]
@@ -104,6 +129,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# instrumenta o app fastapi para gerar traces automáticos
+FastAPIInstrumentor.instrument_app(app)
 
 
 class AssinaturaRequest(BaseModel):

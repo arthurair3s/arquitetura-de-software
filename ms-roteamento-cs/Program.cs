@@ -1,7 +1,26 @@
 using Features.ProcessamentoRotas;
 using Features.ProcessamentoRotas.Contracts;
 
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// obtém o nome do serviço e endpoint do exporter de telemetria
+var otelServiceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "ms-roteamento";
+var otelEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4317";
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(otelServiceName))
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddGrpcClientInstrumentation()
+        .AddOtlpExporter(options =>
+        {
+            options.Endpoint = new Uri(otelEndpoint);
+        }));
+
 
 builder.Services.AddGrpc();
 

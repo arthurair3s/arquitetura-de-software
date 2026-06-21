@@ -62,6 +62,9 @@ services:
       RabbitMQ__Port: 5672
       RabbitMQ__Username: ${RABBIT_USER}
       RabbitMQ__Password: ${RABBIT_PASS}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: ms-entregadores
+
     depends_on:
       postgres_entregadores:
         condition: service_healthy
@@ -82,7 +85,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5002
-      OSRM_URL: http://172.25.0.10:5000/
+      OSRM_URL: http://172.25.0.250:5000/
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: ms-roteamento
+
     depends_on:
       osrm-server:
         condition: service_started
@@ -102,7 +108,7 @@ services:
     restart: unless-stopped
     networks:
       app-network:
-        ipv4_address: 172.25.0.10
+        ipv4_address: 172.25.0.250
 
   api:
     build:
@@ -119,6 +125,11 @@ services:
       RABBIT_USER: ${RABBIT_USER}
       RABBIT_PASS: ${RABBIT_PASS}
       RABBIT_HOST: rabbitmq
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: api-node
+
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -238,6 +249,9 @@ services:
       RABBIT_PASS: ${RABBIT_PASS}
       DATABASE_URL: postgresql://${DB_RECOMENDACAO_USER}:${DB_RECOMENDACAO_PASS}@postgres_recomendacao:5432/${DB_RECOMENDACAO_NAME}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: ms-recomendacao
+
     depends_on:
       postgres_recomendacao:
         condition: service_healthy
@@ -308,6 +322,38 @@ services:
     depends_on:
       - kafka
       - zookeeper
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
     restart: unless-stopped
     networks:
       - app-network
