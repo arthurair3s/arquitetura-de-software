@@ -155,10 +155,28 @@ docker compose up --build
 | :--- | :--- | :--- |
 | **Frontend** | React, Leaflet | UI moderna e visualização de geoprocessamento |
 | **Gateway** | Kong Gateway | Porta de entrada profissional, JWT e Rate Limit |
-| **API Principal** | Node.js, GraphQL | Orquestração de Microserviços e Schema unificado |
-| **Microserviços** | .NET 10 (C#), gRPC | Performance extrema e lógica de negócio |
-| **Dados** | PostgreSQL, Redis | Persistência relacional e cache de localização ultra-rápido |
-| **Roteamento** | OSRM Engine | Inteligência logística baseada em OpenStreetMap |
+| **API Principal** | Node.js (TypeScript), Apollo Server (GraphQL) | Orquestração de Microserviços e Schema unificado sob Clean Architecture |
+| **Microserviços C#** | .NET 10, gRPC, EF Core | Performance extrema para gerenciamento de entregadores e roteamento |
+| **Microserviços Python** | Python 3.12, FastAPI, gRPC, Pika | Motores de recomendação de precificação B2B e envio de notificações |
+| **Bancos de Dados** | PostgreSQL 15, Redis 7 (Redis Geo) | Persistência física isolada por domínio e cache/localização ultra-rápida |
+| **Roteamento** | OSRM Engine (C++ Engine) | Inteligência logística baseada em OpenStreetMap |
+| **Mensageria** | RabbitMQ (AMQP) | Barramento de eventos assíncronos (atribuição de entregas) |
+| **Change Data Capture (CDC)** | Apache Kafka, Debezium Connect | Replicação de dados transacionais para o motor analítico em tempo real |
+| **Observabilidade** | OpenTelemetry, Jaeger, Prometheus, Grafana | Tracing distribuído e métricas consolidadas dos serviços |
+
+---
+
+## 🌟 Funcionalidades e Padrões de Projeto Implementados
+
+Com base nas últimas evoluções de arquitetura descritas no histórico do projeto, as seguintes capacidades estão ativas e funcionais:
+
+*   **Arquitetura baseada em Casos de Uso (Clean Architecture & DIP)**: Divisão estruturada em Presentation (GraphQL Resolvers), Application (Use Cases atômicos e isolados), Domain (Entities, Value Objects & Ports) e Infrastructure, com total inversão de dependências.
+*   **Isolamento Completo de Bancos de Dados**: Bancos de dados PostgreSQL dedicados para o núcleo principal (`postgres_db`), entregadores (`postgres_entregadores`) e recomendações B2B (`postgres_recomendacao`), reduzindo drasticamente o acoplamento físico.
+*   **Mensageria Assíncrona com RabbitMQ**: Atribuição de entregadores guiada por eventos (`pedido.confirmado` e `entrega.atribuida`) com filas de Dead Letter (DLQ/DLX) para resiliência no processamento.
+*   **Change Data Capture (CDC) via Kafka**: Transmissão em tempo real das alterações do banco principal (WAL) para a base analítica, com tratamento resiliente contra desordenação de eventos e tombstones.
+*   **Strategy Pattern para Regras de Negócio**: Utilizado para alternar dinamicamente métodos de pagamento (Pix, Cartão de Crédito com limite, Stripe) e níveis de planos de recomendação (Gratuito vs Premium).
+*   **Cache Distribuído Híbrido**: Redis operando como cache-aside de queries de alta leitura (como restaurantes e avaliações) e invalidação imediata em mutations para alta performance com consistência imediata.
+*   **Monitoramento e Rastreamento Distribuído**: Rastreamento de latência e traces de ponta a ponta correlacionando requisições GraphQL com chamadas gRPC, processamento de filas e banco de dados, exportando para o Jaeger.
 
 ---
 
@@ -166,19 +184,19 @@ docker compose up --build
 *   **Aplicação Web (Frontend)**: [http://localhost:8000](http://localhost:8000)
 *   **GraphQL Playground (API)**: [http://localhost:8000/graphql](http://localhost:8000/graphql)
 *   **OSRM (Direto)**: [http://localhost:5080](http://localhost:5080)
+*   **Jaeger Tracing Dashboard**: [http://localhost:16686](http://localhost:16686)
+*   **Grafana Dashboards**: [http://localhost:3000](http://localhost:3000)
 
 ---
 
 ## 🚧 Status e Visão de Futuro (Roadmap)
 
-Este projeto está em desenvolvimento contínuo, servindo como um **laboratório vivo de arquitetura de software**. O objetivo é consolidar tanto conceitos fundamentais quanto as tendências de mercado mais avançadas.
+Este projeto funciona como um **laboratório vivo de arquitetura de software**, mantendo sua base de código alinhada às melhores práticas do mercado.
 
 ### Próximas Evoluções Planejadas:
-*   **Mensageria & Resiliência**: Implementação de comunicação assíncrona com **RabbitMQ** e padrões de tolerância a falhas (Circuit Breaker).
-*   **Checkout & Pagamentos**: Integração de um gateway profissional (Stripe) para simulação de fluxos financeiros reais.
-*   **Qualidade & Design**: Refatoração profunda aplicando **Domain-Driven Design (DDD)** e princípios **SOLID**.
-*   **Escalabilidade**: Expansão da malha com novos microserviços especializados.
-*   **Documentação Avançada**: Evolução completa do Modelo C4 até o nível de código.
+*   **Resiliência Avançada**: Implementação de *Circuit Breakers* (como Polly ou lógica customizada) e políticas de retentativas exponenciais nas chamadas gRPC e conexões do broker.
+*   **Testes de Integração E2E**: Ampliação da cobertura de testes automatizados para validar fluxos integrados e simulações completas de ponta a ponta.
+*   **Refinamento de Dashboards**: Criação de visualizações avançadas de telemetria no Grafana a partir das métricas e traces coletados pelo Prometheus e Jaeger.
 
 ---
 *Este projeto demonstra o compromisso com a excelência técnica e a paixão por arquiteturas de software complexas.*
