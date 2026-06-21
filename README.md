@@ -19,123 +19,65 @@ graph TD
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
     %% Elements
-    cliente["Cliente<br>(Visualiza cardápios, realiza pedidos e acompanha entregas)"]:::person
-    entregador["Entregador<br>(Atualiza GPS e gerencia status de suas entregas)"]:::person
-    lojista["Lojista (Restaurante)<br>(Gerencia cardápios e acompanha insights de vendas)"]:::person
+    cliente["Clientes e Parceiros<br>(Usuários Finais, Lojistas, Entregadores)"]:::person
+    sys["Sistema Express Delivery<br>(Plataforma Central de Delivery)"]:::system
+    externos["Integrações Externas<br>(OSRM, Stripe, Mailtrap)"]:::ext
 
-    sys["Sistema Express Delivery<br>[Orquestrador Central]"]:::system
-
-    osrm["Servidor de Roteamento (OSRM)<br>[Sistema Externo]"]:::ext
-    stripe["Gateway Stripe<br>[Sistema Externo]"]:::ext
-    mailtrap["Servidor Mailtrap/SMTP<br>[Sistema Externo]"]:::ext
-
-    %% Relations
-    cliente -->|Interage via Web| sys
-    entregador -->|Envia GPS e gerencia entregas| sys
-    lojista -->|Gerencia restaurante e vê insights| sys
-    sys -->|Consulta caminhos e distâncias| osrm
-    sys -->|Processa pagamentos financeiro| stripe
-    sys -->|Dispara emails de notificação| mailtrap
+    cliente -->|Interagem via Web/App/APIs| sys
+    sys -->|Consome serviços de mapas, pagamento e email| externos
 ```
+> 🔗 [Ver Diagrama de Contexto Detalhado (L1)](docs/c4/c4_l1_context.md)
 
 ### Nível 2: Contêineres (Containers)
 Aumenta o detalhamento expondo a topologia de microsserviços, bancos de dados, cache, brokers de mensagens e telemetria que compõem o ecossistema.
 
 ```mermaid
-graph TB
+graph TD
     %% Styling
-    classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff;
+    classDef client fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff;
     classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#fff;
     classDef db fill:#0b132b,stroke:#00b4d8,stroke-width:2px,color:#fff;
     classDef broker fill:#2d1a12,stroke:#f8961e,stroke-width:2px,color:#fff;
     classDef ext fill:#121212,stroke:#666,stroke-width:1px,color:#aaa;
-    classDef obs fill:#333333,stroke:#ff5722,stroke-width:2px,color:#fff;
 
-    %% Actors
-    cliente["Cliente (Browser)"]:::person
-    entregador["Entregador (App/GPS)"]:::person
-    lojista["Lojista (Browser)"]:::person
+    cliente["Usuários (Clientes, Lojistas, Entregadores)"]:::client
+    gateway["Gateway de Borda (Kong Gateway:8000)"]:::container
+    frontend["Frontend Web (React SPA)"]:::container
 
-    %% Entrypoints
-    frontend["Frontend Web<br>(React SPA)"]:::container
-    gateway["API Gateway (Kong)<br>[Port 8000]"]:::container
-
-    subgraph "Containers de Backend & Bancos (Rede Privada)"
-        api_node["Backend Core (API Node)<br>(GraphQL / Prisma)"]:::container
-        db_postgres[("PostgreSQL Principal<br>(delivery_db)")]:::db
-        db_redis[("Redis Cache & Geo<br>(redis:6379)")]:::db
-
-        ms_entregadores["MS Entregadores<br>(.NET 10 + gRPC)"]:::container
-        db_entregadores[("PostgreSQL Entregadores")]:::db
-
-        ms_roteamento["MS Roteamento<br>(.NET 10 + gRPC)"]:::container
-
-        ms_recomendacao["MS Recomendação<br>(FastAPI + gRPC)"]:::container
-        db_recomendacao[("PostgreSQL Recomendação")]:::db
-
-        ms_notificacoes["MS Notificações<br>(Python Worker)"]:::container
+    subgraph "Backend Core & Microserviços"
+        api_node["Backend Core (API Node:4000)"]:::container
+        ms_dotnet["MS Core .NET (Entregadores / Roteamento)"]:::container
+        ms_python["MS Apoio Python (Recomendação / Notificações)"]:::container
     end
 
-    subgraph "Barramentos e Integrações Assíncronas"
-        rabbitmq["RabbitMQ Message Broker"]:::broker
-        kafka_cdc["Kafka + Debezium CDC"]:::broker
+    subgraph "Persistência e Mensageria"
+        databases[("Bancos de Dados & Cache<br>(PostgreSQL / Redis)")]:::db
+        messaging[("Plataformas de Mensageria<br>(RabbitMQ / Kafka CDC)")]:::db
     end
 
-    subgraph "Sistemas Externos"
-        osrm["OSRM Engine"]:::ext
-        stripe["Gateway Stripe"]:::ext
-        mailtrap["SMTP Mailtrap"]:::ext
-    end
-
-    subgraph "Observabilidade"
-        jaeger["Jaeger (Traces)"]:::obs
-        prometheus["Prometheus (Metrics)"]:::obs
-        grafana["Grafana (Dashboards)"]:::obs
-    end
+    ext["Integrações Externas (OSRM, Stripe, Mailtrap)"]:::ext
 
     %% Flows
-    cliente -->|Interage| frontend
-    lojista -->|Interage| frontend
-    frontend -->|HTTP / GraphQL| gateway
-    gateway -->|Encaminha /graphql| api_node
-    entregador -->|gRPC Coordinate Stream| ms_entregadores
+    cliente -->|Acessa / Interage| frontend
+    cliente -->|Requisições HTTP/gRPC| gateway
+    gateway -->|Roteia requisições| frontend
+    gateway -->|Roteia /graphql| api_node
 
-    api_node -->|ORM SQL| db_postgres
-    api_node -->|Lê/Escreve Cache| db_redis
-    api_node -->|gRPC: Roteamento| ms_roteamento
-    api_node -->|gRPC: Recomendações| ms_recomendacao
-    api_node -->|gRPC: Buscar Entregador| ms_entregadores
-    api_node -->|Processa pagamentos| stripe
-    api_node -->|Publica eventos (AMQP)| rabbitmq
+    api_node -->|Comunicação gRPC| ms_dotnet
+    api_node -->|Comunicação gRPC| ms_python
+    api_node -->|Leitura/Escrita SQL e Cache| databases
+    api_node -->|Emite eventos / Integrações| messaging
+    api_node -->|Transações financeiras| ext
 
-    ms_entregadores -->|Persiste dados| db_entregadores
-    ms_entregadores -->|Redis Geo commands| db_redis
-    ms_entregadores -->|Publica/Consome eventos| rabbitmq
+    ms_dotnet -->|Persiste dados e rotas| databases
+    ms_dotnet -->|Consome/Publica eventos| messaging
+    ms_dotnet -->|Cálculo geográfico| ext
 
-    ms_roteamento -->|Consulta trajetos físicos| osrm
-
-    ms_recomendacao -->|Persiste dados locais| db_recomendacao
-    ms_recomendacao -->|Consome eventos| rabbitmq
-
-    ms_notificacoes -->|Consome eventos| rabbitmq
-    ms_notificacoes -->|Envia email| mailtrap
-
-    db_postgres -->|CDC logical WAL| kafka_cdc
-    kafka_cdc -->|Replica cadastros| ms_recomendacao
-
-    %% Observability flows
-    api_node -. "OTLP Traces" .-> jaeger
-    ms_entregadores -. "OTLP Traces" .-> jaeger
-    ms_roteamento -. "OTLP Traces" .-> jaeger
-    ms_recomendacao -. "OTLP Traces" .-> jaeger
-    ms_notificacoes -. "OTLP Traces" .-> jaeger
-
-    prometheus -. "Scrape Metrics" .-> api_node
-    prometheus -. "Scrape Metrics" .-> ms_recomendacao
-    prometheus -. "Scrape Metrics" .-> ms_entregadores
-    grafana -->|Painéis| prometheus
-    grafana -->|Painéis| jaeger
+    ms_python -->|Réplica analítica B2B| databases
+    ms_python -->|Consome eventos / CDC| messaging
+    ms_python -->|Envio de e-mails| ext
 ```
+> 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/c4/c4_l2_container.md)
 
 ### Nível 3: Componentes (Components)
 Zoom sobre a organização do container **Backend Core (API Node)**, estruturada sob as premissas da Clean Architecture com injeção e inversão de dependência (DIP).
@@ -143,105 +85,28 @@ Zoom sobre a organização do container **Backend Core (API Node)**, estruturada
 ```mermaid
 graph TB
     %% Styling
-    classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#fff;
     classDef comp fill:#85bbf0,stroke:#6699cc,stroke-width:2px,color:#000;
-    classDef port fill:#e9c46a,stroke:#f4a261,stroke-width:2px,color:#000;
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    %% Edge
-    gateway["API Gateway (Kong)"]:::container
-    db_postgres[("PostgreSQL")]:::ext
-    db_redis[("Redis Cache")]:::ext
-    rabbitmq["RabbitMQ Broker"]:::ext
-    ms_entregadores["MS Entregadores"]:::container
-    ms_roteamento["MS Roteamento"]:::container
-    ms_recomendacao["MS Recomendação"]:::container
+    gateway["API Gateway (Kong)"]:::ext
 
-    subgraph api_node ["Backend Core (API Node)"]
-        subgraph presentation ["Camada de Apresentação"]
-            resolvers["GraphQL Resolvers<br>(Apollo Server)"]:::comp
-        end
-
-        subgraph application ["Camada de Aplicação (Use Cases)"]
-            validators["Validadores Zod"]:::comp
-            
-            uc_pedido["ConfirmarPedidoUseCase"]:::comp
-            uc_entrega["AtribuirEntregadorUseCase"]:::comp
-            uc_assinatura["AssinarPlanoRecomendacaoUseCase"]:::comp
-            uc_frota["PovoarFrotaUseCase"]:::comp
-            uc_localizacao["AtualizarLocalizacaoEntregadorUseCase"]:::comp
-            uc_rota["ObterRotaEstavelUseCase"]:::comp
-            uc_insights["ObterInsightsUseCase"]:::comp
-            uc_pagamento["ProcessarPagamentoUseCase"]:::comp
-            uc_login["LoginUsuarioUseCase"]:::comp
-            
-            app_services["Serviços de Aplicação<br>(CRUDs auxiliares)"]:::comp
-        end
-
-        subgraph domain ["Camada de Domínio (Core)"]
-            entities["Entidades de Domínio<br>(Usuario, Pedido, etc.)"]:::comp
-            value_objects["Value Objects<br>(Email, Dinheiro, etc.)"]:::comp
-            domain_ports["Portas / Interfaces<br>(Contratos de Portas)"]:::port
-        end
-
-        subgraph infrastructure ["Camada de Infraestrutura"]
-            prisma_adapters["Adaptores Prisma"]:::comp
-            grpc_providers["Provedores gRPC"]:::comp
-            rabbitmq_pub["RabbitMQPublisher"]:::comp
-            rabbitmq_con["RabbitMQConsumer"]:::comp
-            redis_client["RedisClient Singleton"]:::comp
-            token_service["Serviço de Token (JWT)"]:::comp
-            opentelemetry_sdk["OpenTelemetry SDK"]:::comp
-        end
+    subgraph "Backend Core (API Node)"
+        pres["Camada de Apresentação (GraphQL Resolvers)"]:::comp
+        app["Camada de Aplicação (Use Cases & Schemas)"]:::comp
+        dom["Camada de Domínio (Entidades, VOs & Portas)"]:::comp
+        infra["Camada de Infraestrutura (Prisma, gRPC & RabbitMQ)"]:::comp
     end
 
-    %% Flows
-    gateway -->|HTTP GraphQL| resolvers
-    resolvers -->|Valida inputs| validators
-    
-    %% Resolver UCs
-    resolvers -->|Invoca| uc_pedido
-    resolvers -->|Invoca| uc_assinatura
-    resolvers -->|Invoca| uc_frota
-    resolvers -->|Invoca| uc_localizacao
-    resolvers -->|Invoca| uc_rota
-    resolvers -->|Invoca| uc_insights
-    resolvers -->|Invoca| uc_login
-    resolvers -->|Invoca| app_services
+    resources["Bancos, Filas e Microserviços"]:::ext
 
-    %% Use Cases -> Domain & Ports
-    uc_pedido -->|Usa contratos| domain_ports
-    uc_pedido -->|Manipula| entities
-    uc_pedido -->|Instancia| value_objects
-    
-    uc_entrega -->|Usa contratos| domain_ports
-    uc_entrega -->|Manipula| entities
-    
-    uc_frota -->|Usa contratos| domain_ports
-    uc_frota -->|Manipula| entities
-
-    rabbitmq_con -->|Consome eventos| rabbitmq
-    rabbitmq_con -->|Invoca| uc_entrega
-
-    %% Dependency Inversion (Infra implements Ports)
-    prisma_adapters -.->|Implements| domain_ports
-    grpc_providers -.->|Implements| domain_ports
-    rabbitmq_pub -.->|Implements| domain_ports
-    token_service -.->|Implements| domain_ports
-
-    %% Instrumentation
-    opentelemetry_sdk -.->|Instrumenta| resolvers
-    opentelemetry_sdk -.->|Instrumenta| prisma_adapters
-    opentelemetry_sdk -.->|Instrumenta| grpc_providers
-
-    %% Connect to external resources
-    prisma_adapters -->|SQL| db_postgres
-    rabbitmq_pub -->|AMQP| rabbitmq
-    redis_client -->|TCP| db_redis
-    grpc_providers -->|gRPC| ms_entregadores
-    grpc_providers -->|gRPC| ms_roteamento
-    grpc_providers -->|gRPC| ms_recomendacao
+    gateway -->|Chamadas GraphQL| pres
+    pres -->|Invoca| app
+    app -->|Contratos de Negócio| dom
+    infra -.->|Implementa Portas| dom
+    app -->|Orquestração de Dados| infra
+    infra -->|Efetua persistência / chamadas RPC| resources
 ```
+> 🔗 [Ver Diagrama de Componentes Detalhado (L3)](docs/c4/c4_l3_component.md)
 
 ---
 
