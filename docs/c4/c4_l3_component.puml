@@ -54,9 +54,11 @@ Container_Boundary(api_node, "Backend Core (API Node)") {
     Boundary(layer_infrastructure, "Camada de Infraestrutura") {
         Component(prisma_adapters, "Adaptores Prisma", "TypeScript Adapters", "Implementam as interfaces de repositórios do domínio conectando no Prisma Client.")
         Component(rabbitmq_publisher, "RabbitMQPublisher", "TypeScript Client", "Implementa a interface IEventPublisher para disparar eventos assíncronos.")
+        Component(rabbitmq_consumer, "RabbitMQConsumer", "TypeScript Background Worker", "Consome eventos de filas (ex: entrega-atribuida) e orquestra Use Cases correspondentes.")
         Component(grpc_providers, "Provedores gRPC (Clients)", "TypeScript gRPC Clients", "Implementam portas gRPC de integração com microserviços externos.")
         Component(redis_client, "RedisClient Singleton", "ioredis", "Mantém a conexão Singleton e executa comandos de cache no Redis.")
         Component(token_service, "Serviço de Token (JWT)", "jsonwebtoken library", "Implementa ITokenService para autenticação.")
+        Component(opentelemetry_sdk, "OpenTelemetry SDK", "TypeScript Config", "Inicializa o tracing distribuído e a instrumentação automática do Node.js/GraphQL.")
     }
 }
 
@@ -109,6 +111,15 @@ Rel(prisma_adapters, domain_ports, "Implementa contratos de persistência", "Imp
 Rel(rabbitmq_publisher, domain_ports, "Implementa IEventPublisher", "Implements")
 Rel(grpc_providers, domain_ports, "Implementa contratos gRPC", "Implements")
 Rel(token_service, domain_ports, "Implementa ITokenService", "Implements")
+
+' Background Event Consumer
+Rel(rabbitmq_consumer, rabbitmq, "Consome eventos (entrega-atribuida)", "AMQP (Port 5672)")
+Rel(rabbitmq_consumer, atribuir_entregador_uc, "Invoca caso de uso de atribuição", "execute()")
+
+' Instrumentação / Observabilidade
+Rel(opentelemetry_sdk, resolvers, "Intercepta execuções de queries/mutations", "Automatic hook")
+Rel(opentelemetry_sdk, prisma_adapters, "Mede performance das queries SQL", "Automatic hook")
+Rel(opentelemetry_sdk, grpc_providers, "Monitora chamadas gRPC", "Automatic hook")
 
 ' Infraestrutura -> Recursos Externos / Bancos
 Rel(prisma_adapters, db_postgres, "Lê e grava dados", "SQL / Prisma Client (Port 5433)")

@@ -63,6 +63,7 @@ System_Boundary(private_backend, "Rede Privada / Servidores de Backend") {
 System_Boundary(externals, "Serviços Externos") {
     Container(osrm_server, "Servidor de Roteamento (OSRM)", "C++ (OSRM Backend)", "Servidor OSRM que resolve caminhos geométricos e estimativas físicas reais.")
     System_Ext(stripe, "Gateway de Pagamento (Stripe)", "Processa transações financeiras de forma segura.")
+    System_Ext(mailtrap, "Servidor de E-mail (Mailtrap/SMTP)", "Sandbox de testes de envio de emails transacionais.")
 }
 
 ' Telemetria e Monitoramento
@@ -103,6 +104,7 @@ Rel(ms_recomendacao, db_recomendacao, "Grava histórico analítico e réplicas",
 Rel(ms_recomendacao, rabbitmq, "Consome pedido.confirmado", "AMQP / TCP (Port 5672)")
 
 Rel(ms_notificacoes, rabbitmq, "Consome eventos para disparar e-mails", "AMQP / TCP (Port 5672)")
+Rel(ms_notificacoes, mailtrap, "Dispara e-mails transacionais", "SMTP / TCP (Port 2525)")
 
 ' CDC e Replicação
 Rel(db_postgres, kafka_cdc, "Lê logs de transações (WAL)", "Logical Replication (Port 5433)")
@@ -113,6 +115,7 @@ Rel(api_node, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
 Rel(ms_entregadores, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
 Rel(ms_roteamento, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
 Rel(ms_recomendacao, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")
+Rel(ms_notificacoes, jaeger, "Envia traces distribuídos", "OTLP / HTTP (Port 4318)")
 Rel(prometheus, api_node, "Scrape de métricas", "HTTP / Prometheus format")
 Rel(grafana, prometheus, "Consulta métricas temporais", "HTTP / REST API")
 Rel(grafana, jaeger, "Busca traces vinculados", "HTTP / REST API")

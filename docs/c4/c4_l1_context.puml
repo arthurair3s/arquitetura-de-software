@@ -20,16 +20,18 @@ System(express_delivery, "Sistema Express Delivery", "Permite que clientes peça
 ' -------------------------------------------------------------
 ' SISTEMAS EXTERNOS / DEPENDÊNCIAS
 ' -------------------------------------------------------------
-System_Ext(osrm_server, "Servidor de Roteamento (OSRM)", "Resolve caminhos geométricos e distâncias ótimas com base nos mapas OpenStreetMap.")
-System_Ext(stripe, "Gateway de Pagamento (Stripe)", "Processa transações de cartão de crédito e gerencia cobranças com segurança.")
+System_Ext(osrm_server, "Servidor de Roteamento (OSRM)", "Resolve caminhos geométricos, distâncias físicas e tempos de viagem ótimos com base nos mapas reais OpenStreetMap.")
+System_Ext(stripe, "Gateway de Pagamento (Stripe)", "Processa transações de cartão de crédito e PIX, gerencia cobranças e estornos de forma segura.")
+System_Ext(mailtrap, "Servidor de E-mail (Mailtrap/SMTP)", "Dispara notificações eletrônicas (e-mails transacionais) sobre criação de pedidos, confirmações e alterações de status.")
 
 ' -------------------------------------------------------------
 ' RELACIONAMENTOS
 ' -------------------------------------------------------------
-Rel(cliente, express_delivery, "Visualiza cardápios, faz pedidos e acompanha entregas", "HTTPS / JSON")
-Rel(entregador, express_delivery, "Envia localização geográfica e atualiza status de entregas", "gRPC / HTTPS")
-Rel(lojista, express_delivery, "Gerencia estabelecimentos, cardápios e visualiza insights", "HTTPS / JSON")
+Rel(cliente, express_delivery, "Visualiza cardápios, faz pedidos e acompanha entregas em tempo real", "HTTPS / JSON (GraphQL)")
+Rel(entregador, express_delivery, "Envia localização geográfica e atualiza status de entregas", "gRPC Stream / HTTPS")
+Rel(lojista, express_delivery, "Gerencia estabelecimentos, cardápios e visualiza insights competitivos", "HTTPS / JSON (GraphQL)")
 Rel(express_delivery, osrm_server, "Consulta rotas ideais e estimativas de trajeto", "HTTP / JSON")
-Rel(express_delivery, stripe, "Processa pagamentos de pedidos", "HTTPS / REST API")
+Rel(express_delivery, stripe, "Processa cobranças e pagamentos de pedidos", "HTTPS / REST API")
+Rel(express_delivery, mailtrap, "Dispara e-mails transacionais de notificação", "SMTP / TLS")
 
 @enduml
