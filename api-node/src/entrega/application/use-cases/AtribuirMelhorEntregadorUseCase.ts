@@ -72,15 +72,29 @@ export class AtribuirMelhorEntregadorUseCase {
 
     logger.info(`Sucesso: Entregador ${melhor.nome} vinculado ao pedido ${pedidoId}.`, 'EntregaService');
 
-    const statusObj = new StatusEntrega('ATRIBUIDA')
-    const entrega = new Entrega(
-      Number(pedidoId),
-      Number(melhor.id!),
-      statusObj,
-      null
-    )
-
-    const result = await this.repository.criarEntrega(entrega)
+    const existing = await this.repository.buscarEntregaPorPedidoId(Number(pedidoId));
+    let result;
+    if (existing && existing.length > 0) {
+      const entregaExistente = existing[0];
+      const entregaNova = Entrega.criar({
+        id: entregaExistente.id,
+        pedido_id: entregaExistente.pedido_id,
+        entregador_id: melhor.id!,
+        status: 'ATRIBUIDA',
+        previsao_entrega: entregaExistente.previsao_entrega
+      });
+      result = await this.repository.editarEntregaPorId(entregaExistente.id!, entregaNova);
+      logger.info(`[AtribuirMelhorEntregadorUseCase] Entrega existente para o pedido ${pedidoId} atualizada no banco de dados.`, 'EntregaService');
+    } else {
+      const statusObj = new StatusEntrega('ATRIBUIDA')
+      const entrega = new Entrega(
+        Number(pedidoId),
+        Number(melhor.id!),
+        statusObj,
+        null
+      )
+      result = await this.repository.criarEntrega(entrega)
+    }
 
     if (melhor.statusObj.estaDisponivel()) {
       try {

@@ -18,8 +18,17 @@ export class AtribuirEntregadorUseCase {
     // verifica se a entrega ja existe para este pedido
     const existing = await this.repository.buscarEntregaPorPedidoId(pedidoId);
     if (existing && existing.length > 0) {
-      console.log(`[AtribuirEntregadorUseCase] Entrega para o pedido ${pedidoId} já existe. Ignorando.`);
-      return null;
+      const entregaExistente = existing[0];
+      const entregaNova = Entrega.criar({
+        id: entregaExistente.id,
+        pedido_id: entregaExistente.pedido_id,
+        entregador_id: Number(dados.entregador_id),
+        status: dados.status || 'ATRIBUIDA',
+        previsao_entrega: dados.previsao_entrega ? new Date(dados.previsao_entrega) : entregaExistente.previsao_entrega
+      });
+      const result = await this.repository.editarEntregaPorId(entregaExistente.id!, entregaNova);
+      console.log(`[AtribuirEntregadorUseCase] Entrega existente para o pedido ${pedidoId} atualizada no banco de dados:`, result);
+      return result;
     }
 
     const statusObj = new StatusEntrega(dados.status || 'ATRIBUIDA');
