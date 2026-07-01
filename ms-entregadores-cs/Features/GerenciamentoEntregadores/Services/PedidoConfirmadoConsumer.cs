@@ -19,6 +19,7 @@ namespace Features.GerenciamentoEntregadores.Services
     {
         private readonly ILogger<PedidoConfirmadoConsumer> _logger;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IConfiguration _configuration;
         private readonly string _host;
         private readonly int _port;
         private readonly string _username;
@@ -39,6 +40,7 @@ namespace Features.GerenciamentoEntregadores.Services
         {
             _logger = logger;
             _serviceProvider = serviceProvider;
+            _configuration = configuration;
 
             _host = configuration["RabbitMQ:Host"] ?? "localhost";
             _port = int.TryParse(configuration["RabbitMQ:Port"], out var port) ? port : 5672;
@@ -113,6 +115,17 @@ namespace Features.GerenciamentoEntregadores.Services
             var body = ea.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             _logger.LogInformation("Received message from RabbitMQ with key '{RoutingKey}': {Message}", ea.RoutingKey, message);
+
+            var autoAssignStr = _configuration["RabbitMQ:AutoAssign"];
+            bool autoAssign = !bool.TryParse(autoAssignStr, out var parsed) || parsed;
+
+            if (!autoAssign)
+            {
+                _logger.LogInformation("Auto-assignment is disabled (RabbitMQ:AutoAssign=false). Acknowledging message and waiting for manual assignment.");
+                _channel?.BasicAck(ea.DeliveryTag, multiple: false);
+                await Task.CompletedTask;
+                return;
+            }
 
             try
             {
