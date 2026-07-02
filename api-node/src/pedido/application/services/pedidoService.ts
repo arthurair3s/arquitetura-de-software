@@ -5,13 +5,16 @@ import { Pedido, PedidoInvalidoError } from '../../domain/Pedido.js'
 import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js'
 import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 import { StatusPedido } from '../../domain/StatusPedido.js'
+import type { IEntregaRepository } from '../../../entrega/domain/ports/IEntregaRepository.js'
+import { Entrega } from '../../../entrega/domain/Entrega.js'
 
 import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
 
 export class PedidoAppService implements IPedidoService {
   constructor(
     private readonly repository: IPedidoRepository,
-    private readonly usuarioService: IUsuarioService
+    private readonly usuarioService: IUsuarioService,
+    private readonly entregaRepository: IEntregaRepository
   ) {}
 
   async listar(): Promise<Pedido[]> {
@@ -24,6 +27,10 @@ export class PedidoAppService implements IPedidoService {
 
   async buscarPorUsuarioId(id: number | string): Promise<Pedido[]> {
     return this.repository.buscarPedidoPorUsuarioId(id)
+  }
+
+  async buscarPorRestauranteId(id: number | string): Promise<Pedido[]> {
+    return this.repository.buscarPedidoPorRestauranteId(id)
   }
 
   async criar(dados: {
@@ -49,27 +56,12 @@ export class PedidoAppService implements IPedidoService {
     const pedido = new Pedido(
       Number(usuario_id),
       Number(restaurante_id),
-      new StatusPedido('EM_PREPARO_ENTREGA'),
+      new StatusPedido('PENDENTE'),
       new Dinheiro(Number(valor_total)),
       destino
     )
 
     const result = await this.repository.criarPedido(pedido)
-
-    // Publica o evento pedido.confirmado assincronamente
-    rabbitMQPublisher.publish('pedido.confirmado', {
-      id: result.id,
-      usuario_id: result.usuario_id,
-      restaurante_id: result.restaurante_id,
-      status: result.status,
-      valor_total: result.valor_total,
-      destino_latitude: result.destino_latitude,
-      destino_longitude: result.destino_longitude,
-      data_criacao: result.data_criacao
-    }).catch((err) => {
-      console.error('Erro ao publicar evento pedido.confirmado:', err);
-    });
-
     return result
   }
 
@@ -84,6 +76,8 @@ export class PedidoAppService implements IPedidoService {
       throw new PedidoInvalidoError('Pedido não encontrado')
     }
 
+    const statusAnterior = pedidoAtual.status;
+
     if (dados.status !== undefined) pedidoAtual.alterarStatus(new StatusPedido(dados.status))
     if (dados.valor_total !== undefined) pedidoAtual.atualizarValor(new Dinheiro(Number(dados.valor_total)))
     
@@ -93,7 +87,37 @@ export class PedidoAppService implements IPedidoService {
       pedidoAtual.atualizarEnderecoEntrega(new Coordenada(lat, lon))
     }
 
-    return this.repository.editarPedidoPorId(id, pedidoAtual)
+    const result = await this.repository.editarPedidoPorId(id, pedidoAtual)
+
+    // Se transicionou de PENDENTE para EM_PREPARO_ENTREGA, cria entrega e publica RabbitMQ
+    if (statusAnterior === 'PENDENTE' && result.status === 'EM_PREPARO_ENTREGA') {
+      const entregaExistente = await this.entregaRepository.buscarEntregaPorPedidoId(result.id!)
+      if (entregaExistente.length === 0) {
+        const novaEntrega = Entrega.criar({
+          pedido_id: result.id!,
+          entregador_id: null,
+          status: 'PENDENTE',
+          previsao_entrega: null
+        })
+        await this.entregaRepository.criarEntrega(novaEntrega)
+      }
+
+      // Publica o evento pedido.confirmado assincronamente
+      rabbitMQPublisher.publish('pedido.confirmado', {
+        id: result.id,
+        usuario_id: result.usuario_id,
+        restaurante_id: result.restaurante_id,
+        status: result.status,
+        valor_total: Number(result.valor_total),
+        destino_latitude: result.destino_latitude,
+        destino_longitude: result.destino_longitude,
+        data_criacao: result.data_criacao
+      }).catch((err) => {
+        console.error('Erro ao publicar evento pedido.confirmado:', err);
+      });
+    }
+
+    return result
   }
 
   async deletar(id: number | string): Promise<boolean> {

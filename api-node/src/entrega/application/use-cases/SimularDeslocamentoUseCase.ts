@@ -3,6 +3,8 @@ import type { IPedidoService } from '../../../pedido/application/ports/IPedidoSe
 import type { IEntregadorService } from '../../../entregador/application/ports/IEntregadorService.js'
 import type { IRestauranteService } from '../../../restaurante/application/ports/IRestauranteService.js'
 import type { ObterRotaEstavelUseCase } from './ObterRotaEstavelUseCase.js'
+import type { ConfirmarColetaUseCase } from './ConfirmarColetaUseCase.js'
+import type { FinalizarEntregaUseCase } from './FinalizarEntregaUseCase.js'
 import { EntregaInvalidaError } from '../../domain/Entrega.js'
 import { logger } from '../../../shared/utils/logger.js'
 
@@ -14,7 +16,9 @@ export class SimularDeslocamentoUseCase {
     private readonly pedidoService: IPedidoService,
     private readonly entregadorService: IEntregadorService,
     private readonly restauranteService: IRestauranteService,
-    private readonly obterRotaEstavelUseCase: ObterRotaEstavelUseCase
+    private readonly obterRotaEstavelUseCase: ObterRotaEstavelUseCase,
+    private readonly confirmarColetaUseCase: ConfirmarColetaUseCase,
+    private readonly finalizarEntregaUseCase: FinalizarEntregaUseCase
   ) {}
 
   async execute(entregaId: number | string): Promise<boolean> {
@@ -25,6 +29,7 @@ export class SimularDeslocamentoUseCase {
     if (!entrega) throw new EntregaInvalidaError('entrega nao encontrada');
 
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id);
+    if (entrega.entregador_id == null) throw new EntregaInvalidaError('entrega sem entregador atribuido');
     const motorista = await this.entregadorService.buscarPorId(entrega.entregador_id);
     
     if (!pedido || !motorista) throw new EntregaInvalidaError('pedido ou motorista nao encontrado');
@@ -32,8 +37,8 @@ export class SimularDeslocamentoUseCase {
     const currentStatus = (entrega.status || "").trim().toUpperCase();
     logger.info(`Início para entrega ${entregaId}. Status: ${currentStatus}`, 'Simulação');
 
-    this.entregadorService.bloquearParaSimulacao(entrega.entregador_id);
-    await this.entregadorService.atualizarStatus(entrega.entregador_id, 'EM_ENTREGA');
+    this.entregadorService.bloquearParaSimulacao(entrega.entregador_id!);
+    await this.entregadorService.atualizarStatus(entrega.entregador_id!, 'EM_ENTREGA');
 
     let destLat = Number(pedido.destino.latitude);
     let destLon = Number(pedido.destino.longitude);
@@ -65,15 +70,11 @@ export class SimularDeslocamentoUseCase {
         SimularDeslocamentoUseCase.activeSimulations.delete(entregaIdNum);
         
         if (currentStatus === 'ATRIBUIDA') {
-          logger.info(`Sucesso: Chegou ao Restaurante. Atualizando para EM_TRANSITO.`, 'Simulação');
-          await this.repository.editarEntregaPorId(entregaId, { status: 'EM_TRANSITO' });
+          logger.info(`Sucesso: Chegou ao Restaurante. Chamando ConfirmarColetaUseCase.`, 'Simulação');
+          await this.confirmarColetaUseCase.execute(entregaId);
         } else {
-          logger.info(`Sucesso: Chegou ao Cliente. Finalizando entrega.`, 'Simulação');
-          await this.repository.editarEntregaPorId(entregaId, { status: 'ENTREGUE' });
-          await this.entregadorService.atualizarStatus(motorista.id!, 'DISPONIVEL');
-          this.entregadorService.liberarDeSimulacao(motorista.id!);
-          // Finaliza o stream gRPC persistente
-          this.entregadorService.finalizarStreamLocalizacao(motorista.id!);
+          logger.info(`Sucesso: Chegou ao Cliente. Chamando FinalizarEntregaUseCase.`, 'Simulação');
+          await this.finalizarEntregaUseCase.execute(entregaId);
         }
         return;
       }

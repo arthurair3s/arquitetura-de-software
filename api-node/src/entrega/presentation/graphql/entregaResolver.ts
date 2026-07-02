@@ -5,6 +5,8 @@ import { createEntregaMutation } from './entregaMutation.js'
 const service = diContainer.getEntregaService()
 const simularDeslocamentoUseCase = diContainer.getSimularDeslocamentoUseCase()
 const atribuirMelhorEntregadorUseCase = diContainer.getAtribuirMelhorEntregadorUseCase()
+const confirmarColetaUseCase = diContainer.getConfirmarColetaUseCase()
+const finalizarEntregaUseCase = diContainer.getFinalizarEntregaUseCase()
 const pedidoService = diContainer.getPedidoService()
 const entregadorService = diContainer.getEntregadorService()
 
@@ -14,7 +16,13 @@ const obterRotaEntregaUseCase = diContainer.getObterRotaEntregaUseCase()
 
 export const entregaResolver = {
   Query: createEntregaQuery(service),
-  Mutation: createEntregaMutation(service, simularDeslocamentoUseCase, atribuirMelhorEntregadorUseCase),
+  Mutation: createEntregaMutation(
+    service,
+    simularDeslocamentoUseCase,
+    atribuirMelhorEntregadorUseCase,
+    confirmarColetaUseCase,
+    finalizarEntregaUseCase
+  ),
   Entrega: {
     pedido: async (parent: any) => {
       if (!parent.pedido_id) return null

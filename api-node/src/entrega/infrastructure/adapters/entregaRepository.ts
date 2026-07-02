@@ -20,7 +20,7 @@ export class EntregaRepository implements IEntregaRepository {
     const novaEntrega = await prisma.entregas.create({
       data: {
         pedido_id: entrega.pedido_id != null ? Number(entrega.pedido_id) : undefined,
-        entregador_id: entrega.entregador_id != null ? Number(entrega.entregador_id) : undefined,
+        entregador_id: entrega.entregador_id != null ? Number(entrega.entregador_id) : null,
         status: entrega.status,
         previsao_entrega: entrega.previsao_entrega
       }
@@ -35,7 +35,7 @@ export class EntregaRepository implements IEntregaRepository {
         status: entrega.status,
         previsao_entrega: entrega.previsao_entrega,
         pedido_id: entrega.pedido_id != null ? Number(entrega.pedido_id) : undefined,
-        entregador_id: entrega.entregador_id != null ? Number(entrega.entregador_id) : undefined
+        entregador_id: entrega.entregador_id !== undefined ? (entrega.entregador_id != null ? Number(entrega.entregador_id) : null) : undefined
       }
     })
     return Entrega.criar(entregaAtualizada)
@@ -58,6 +58,16 @@ export class EntregaRepository implements IEntregaRepository {
   async buscarEntregaPorEntregadorId(entregador_id: number | string): Promise<Entrega[]> {
     const entregas = await prisma.entregas.findMany({
       where: { entregador_id: Number(entregador_id) }
+    })
+    return entregas.map((e) => Entrega.criar(e))
+  }
+
+  async buscarEntregasPendentes(): Promise<Entrega[]> {
+    const entregas = await prisma.entregas.findMany({
+      where: {
+        status: 'PENDENTE',
+        entregador_id: null
+      }
     })
     return entregas.map((e) => Entrega.criar(e))
   }

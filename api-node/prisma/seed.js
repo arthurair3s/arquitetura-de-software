@@ -44,7 +44,7 @@ const RESTAURANTES = [
   {
     nome: "Braga's Burguer",
     descricao: 'Os melhores hambúrgueres artesanais de Higienópolis',
-    endereco: 'R. Ten. Abel Cunha, 10B - Higienópolis, Rio de Janeiro',
+    endereco: 'Ten. Abel Cunha, 10B - Higienópolis, Rio de Janeiro',
     latitude: -22.877022,
     longitude: -43.256681
   },
@@ -68,6 +68,27 @@ const RESTAURANTES = [
     endereco: 'Av. das Américas, 5000 - Barra da Tijuca, Rio de Janeiro',
     latitude: -23.0003,
     longitude: -43.3658
+  },
+  {
+    nome: "Burger do Meier",
+    descricao: 'Hambúrgueres artesanais suculentos no coração do Meier',
+    endereco: 'Rua Dias da Cruz, 120 - Meier, Rio de Janeiro',
+    latitude: -22.8996,
+    longitude: -43.2795
+  },
+  {
+    nome: "Cantina Don Giuseppe",
+    descricao: 'Massas artesanais e vinhos selecionados',
+    endereco: 'Rua Uruguai, 250 - Tijuca, Rio de Janeiro',
+    latitude: -22.9248,
+    longitude: -43.2389
+  },
+  {
+    nome: "Salada & Cia Tijuca",
+    descricao: 'Opções saudáveis, wraps e sucos naturais',
+    endereco: 'Rua Conde de Bonfim, 340 - Tijuca, Rio de Janeiro',
+    latitude: -22.9234,
+    longitude: -43.2351
   }
 ]
 
@@ -77,21 +98,52 @@ const RESTAURANTES = [
 const USUARIOS = [
   {
     nome: 'Ana Lima',
-    email: 'arthuraires0@gmail.com',
+    email: 'ana.lima@email.com',
     telefone: '11999990001',
-    senha: 'senha123'
+    senha: 'senha123',
+    role: 'CLIENTE'
   },
   {
     nome: 'Carlos Mota',
     email: 'carlos.mota@email.com',
     telefone: '11999990002',
-    senha: 'senha123'
+    senha: 'senha123',
+    role: 'RESTAURANTE'
+  },
+  {
+    nome: 'Roberto Silva',
+    email: 'roberto.silva@email.com',
+    telefone: '11999990004',
+    senha: 'senha123',
+    role: 'RESTAURANTE'
+  },
+  {
+    nome: 'Patricia Costa',
+    email: 'patricia.costa@email.com',
+    telefone: '11999990005',
+    senha: 'senha123',
+    role: 'RESTAURANTE'
   },
   {
     nome: 'Fernanda Cruz',
     email: 'fernanda.cruz@email.com',
     telefone: '11999990003',
-    senha: 'senha123'
+    senha: 'senha123',
+    role: 'ENTREGADOR'
+  },
+  {
+    nome: 'Rodrigo Santos',
+    email: 'rodrigo.santos@email.com',
+    telefone: '11999990006',
+    senha: 'senha123',
+    role: 'ENTREGADOR'
+  },
+  {
+    nome: 'Juliana Rocha',
+    email: 'juliana.rocha@email.com',
+    telefone: '11999990007',
+    senha: 'senha123',
+    role: 'ENTREGADOR'
   }
 ]
 
@@ -186,6 +238,33 @@ const CATEGORIAS_POR_RESTAURANTE = {
         { nome: 'Bife Ancho', descricao: 'Corte uruguaio mal passado', preco: 120.0 }
       ]
     }
+  ],
+  'Burger do Meier': [
+    {
+      nome: 'Gourmet',
+      produtos: [
+        { nome: 'Meier Monster', descricao: 'Carne 200g, muito cheddar, cebola caramelizada', preco: 38.9 },
+        { nome: 'Bacon Blast', descricao: 'Smash duplo com triplo bacon e maionese artesanal', preco: 36.9 }
+      ]
+    }
+  ],
+  'Cantina Don Giuseppe': [
+    {
+      nome: 'Massas Frestas',
+      produtos: [
+        { nome: 'Lasagna Bolognese', descricao: 'Massa fresca, molho bolognese da casa e queijo gratinado', preco: 55.0 },
+        { nome: 'Gnocchi al Pesto', descricao: 'Gnocchi de batata ao molho pesto de manjericão e nozes', preco: 48.0 }
+      ]
+    }
+  ],
+  'Salada & Cia Tijuca': [
+    {
+      nome: 'Saudável',
+      produtos: [
+        { nome: 'Salada Ceasar', descricao: 'Alface americana, tiras de frango grelhado, croutons e molho ceasar', preco: 29.9 },
+        { nome: 'Wrap Frango & Abacate', descricao: 'Wrap de trigo integral com frango, abacate, tomate e cream cheese', preco: 26.9 }
+      ]
+    }
   ]
 }
 
@@ -257,6 +336,30 @@ async function main() {
     )
   }
 
+  // Vincular donos de restaurantes
+  console.log('Vinculando donos de restaurantes...')
+  const carlos = usuarios.find(u => u.email === 'carlos.mota@email.com')
+  if (carlos) {
+    await prisma.usuarios.update({
+      where: { id: carlos.id },
+      data: { restaurante_id: restauranteMap["Pizzaria Cachambi"].id }
+    })
+  }
+  const roberto = usuarios.find(u => u.email === 'roberto.silva@email.com')
+  if (roberto) {
+    await prisma.usuarios.update({
+      where: { id: roberto.id },
+      data: { restaurante_id: restauranteMap["Sushi Maria da Graça"].id }
+    })
+  }
+  const patricia = usuarios.find(u => u.email === 'patricia.costa@email.com')
+  if (patricia) {
+    await prisma.usuarios.update({
+      where: { id: patricia.id },
+      data: { restaurante_id: restauranteMap["Lanchonete Bonsucesso"].id }
+    })
+  }
+
   // Categorias e Produtos
   console.log('Criando categorias e produtos...')
   const todosProdutos = []
@@ -294,7 +397,7 @@ async function main() {
         data: {
           usuario_id: u.id,
           restaurante_id: restaurantesArray[i % restaurantesArray.length].id,
-          status: 'EM_PREPARO_ENTREGA',
+          status: 'PENDENTE',
           valor_total: 0,
           // Coordenadas reais no RJ (próximas aos restaurantes da seed)
           destino_latitude: -22.9068,

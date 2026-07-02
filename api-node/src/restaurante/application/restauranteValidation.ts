@@ -12,5 +12,7 @@ export const editarRestauranteSchema = z.object({
   id: z.string().or(z.number()),
   nome: z.string().optional(),
   descricao: z.string().optional().nullable(),
-  endereco: z.string().optional().nullable()
+  endereco: z.string().optional().nullable(),
+  latitude: z.coerce.number().optional().nullable(),
+  longitude: z.coerce.number().optional().nullable()
 })

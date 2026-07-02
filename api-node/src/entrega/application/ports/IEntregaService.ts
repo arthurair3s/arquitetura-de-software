@@ -5,17 +5,18 @@ export interface IEntregaService {
   buscarPorId(id: number | string): Promise<Entrega | null>
   criar(dados: {
     pedido_id: number | string
-    entregador_id: number | string
+    entregador_id?: number | string | null
     status?: string
     previsao_entrega?: string | Date
   }): Promise<Entrega>
   editarPorId(id: number | string, dados: {
     pedido_id?: number | string
-    entregador_id?: number | string
+    entregador_id?: number | string | null
     status?: string
     previsao_entrega?: string | Date
   }): Promise<Entrega>
   deletar(id: number | string): Promise<boolean>
   buscarPorPedidoId(id: number | string): Promise<Entrega[]>
   buscarPorEntregadorId(id: number | string): Promise<Entrega[]>
+  buscarEntregasPendentes(): Promise<Entrega[]>
 }

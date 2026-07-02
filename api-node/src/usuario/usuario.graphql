@@ -6,6 +6,9 @@ type Usuario {
   latitude: Float
   longitude: Float
   endereco: String
+  role: String
+  entregador_id: Int
+  restaurante_id: Int
 }
 
 type LoginResponse {
@@ -27,6 +30,9 @@ extend type Mutation {
     email: String!
     telefone: String
     senha: String!
+    role: String
+    entregador_id: Int
+    restaurante_id: Int
   ): Usuario
 
   editarUsuario(
@@ -35,6 +41,9 @@ extend type Mutation {
     email: String
     telefone: String
     senha: String
+    role: String
+    entregador_id: Int
+    restaurante_id: Int
   ): Usuario
 
   atualizarEndereco(

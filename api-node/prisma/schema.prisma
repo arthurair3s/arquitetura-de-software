@@ -89,17 +89,22 @@ model restaurantes {
   avaliacoes avaliacoes[]
   categorias categorias[]
   pedidos    pedidos[]
+  usuarios   usuarios[]
 }
 
 model usuarios {
-  id         Int          @id @default(autoincrement())
-  nome       String       @db.VarChar(100)
-  email      String       @unique @db.VarChar(150)
-  telefone   String?      @db.VarChar(20)
-  senha      String?      @db.VarChar(100)
-  latitude   Float?
-  longitude  Float?
-  endereco   String?      @db.Text
-  avaliacoes avaliacoes[]
-  pedidos    pedidos[]
+  id             Int           @id @default(autoincrement())
+  nome           String        @db.VarChar(100)
+  email          String        @unique @db.VarChar(150)
+  telefone       String?       @db.VarChar(20)
+  senha          String?       @db.VarChar(100)
+  latitude       Float?
+  longitude      Float?
+  endereco       String?       @db.Text
+  role           String        @default("CLIENTE") @db.VarChar(20)
+  entregador_id  Int?
+  restaurante_id Int?
+  avaliacoes     avaliacoes[]
+  pedidos        pedidos[]
+  restaurantes   restaurantes? @relation(fields: [restaurante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

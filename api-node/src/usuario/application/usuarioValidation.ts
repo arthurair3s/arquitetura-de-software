@@ -9,7 +9,10 @@ export const criarUsuarioSchema = z.object({
   nome: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
   email: z.string().email("E-mail em formato inválido."),
   telefone: z.string().optional().nullable(),
-  senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.")
+  senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
+  role: z.string().optional(),
+  entregador_id: z.coerce.number().optional().nullable(),
+  restaurante_id: z.coerce.number().optional().nullable()
 })
 
 export const editarUsuarioSchema = z.object({
@@ -17,7 +20,10 @@ export const editarUsuarioSchema = z.object({
   nome: z.string().optional(),
   email: z.string().email("E-mail em formato inválido.").optional(),
   telefone: z.string().optional().nullable(),
-  senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").optional()
+  senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").optional(),
+  role: z.string().optional(),
+  entregador_id: z.coerce.number().optional().nullable(),
+  restaurante_id: z.coerce.number().optional().nullable()
 })
 
 export const atualizarEnderecoSchema = z.object({

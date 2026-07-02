@@ -1,7 +1,7 @@
 type Entrega {
   id: ID!
   pedido: Pedido!
-  entregador: Entregador!
+  entregador: Entregador
   status: String
   previsao_entrega: String
   rota: GeometriaRota
@@ -21,12 +21,13 @@ extend type Entregador {
 extend type Query {
   entregas: [Entrega]
   entrega(id: ID!): Entrega
+  entregasPendentes: [Entrega]
 }
 
 extend type Mutation {
   criarEntrega(
     pedido_id: ID!
-    entregador_id: ID!
+    entregador_id: ID
     status: String
     previsao_entrega: String
   ): Entrega
@@ -45,4 +46,5 @@ extend type Mutation {
   simularDeslocamento(id: ID!): Boolean
   
   atribuirEntregador(pedido_id: ID!): Entrega
+  aceitarEntrega(entrega_id: ID!, entregador_id: ID!): Entrega
 }

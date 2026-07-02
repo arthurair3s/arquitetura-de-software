@@ -19,6 +19,7 @@ export class ObterRotaEntregaUseCase {
     if (!entrega) return null
 
     const pedido = await this.pedidoService.buscarPorId(entrega.pedido_id)
+    if (entrega.entregador_id == null) return null
     const motorista = await this.entregadorService.buscarPorId(entrega.entregador_id)
     if (!pedido || !motorista || !motorista.coordenada) return null
 

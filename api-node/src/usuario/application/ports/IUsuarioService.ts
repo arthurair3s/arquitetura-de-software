@@ -9,12 +9,18 @@ export interface IUsuarioService {
     email: string
     telefone?: string | null
     senha?: string | null
+    role?: string
+    entregador_id?: number | null
+    restaurante_id?: number | null
   }): Promise<Usuario>
   editarPorId(id: number | string, dados: {
     nome?: string
     email?: string
     telefone?: string | null
     senha?: string | null
+    role?: string
+    entregador_id?: number | null
+    restaurante_id?: number | null
   }): Promise<Usuario>
   deletar(id: number | string): Promise<boolean>
 }

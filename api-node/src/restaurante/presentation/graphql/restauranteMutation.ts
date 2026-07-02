@@ -22,6 +22,8 @@ export const createRestauranteMutation = (service: IRestauranteService) => ({
     nome?: string
     descricao?: string
     endereco?: string
+    latitude?: number
+    longitude?: number
   }) => {
     const parsed = editarRestauranteSchema.safeParse(args)
     if (!parsed.success) {

@@ -11,13 +11,13 @@ export class EntregaInvalidaError extends DomainError {
 export class Entrega {
   public readonly id?: number;
   public readonly pedido_id: number;
-  public readonly entregador_id: number;
+  public readonly entregador_id: number | null;
   private _status: StatusEntrega;
   private _previsao_entrega: Date | null;
 
   constructor(
     pedido_id: number,
-    entregador_id: number,
+    entregador_id: number | null,
     status: StatusEntrega,
     previsao_entrega: Date | null = null,
     id?: number
@@ -68,14 +68,14 @@ export class Entrega {
     if (this.pedido_id == null || this.pedido_id <= 0) {
       throw new EntregaInvalidaError('ID do pedido inválido.');
     }
-    if (this.entregador_id == null || this.entregador_id <= 0) {
+    if (this.entregador_id != null && this.entregador_id <= 0 && this._status.valor !== 'PENDENTE') {
       throw new EntregaInvalidaError('ID do entregador inválido.');
     }
   }
 
   static criar(dados: {
     pedido_id: number | string | null;
-    entregador_id: number | string | null;
+    entregador_id?: number | string | null;
     status?: string | null;
     previsao_entrega?: Date | string | null;
     id?: number;
@@ -86,8 +86,8 @@ export class Entrega {
     }
     return new Entrega(
       Number(dados.pedido_id),
-      Number(dados.entregador_id),
-      new StatusEntrega(dados.status || 'ATRIBUIDA'),
+      dados.entregador_id != null ? Number(dados.entregador_id) : null,
+      new StatusEntrega(dados.status || 'PENDENTE'),
       dt,
       dados.id
     );

@@ -14,6 +14,8 @@ export interface IRestauranteService {
     nome?: string
     descricao?: string | null
     endereco?: string | null
+    latitude?: number | null
+    longitude?: number | null
   }): Promise<Restaurante>
   deletar(id: number | string): Promise<boolean>
 }

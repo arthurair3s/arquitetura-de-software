@@ -31,6 +31,9 @@ export class UsuarioAppService implements IUsuarioService {
     email: string
     telefone?: string | null
     senha?: string | null
+    role?: string
+    entregador_id?: number | null
+    restaurante_id?: number | null
   }): Promise<Usuario> {
     let senhaHashed: SenhaHash | null = null
     if (dados.senha) {
@@ -41,7 +44,12 @@ export class UsuarioAppService implements IUsuarioService {
       dados.nome,
       new Email(dados.email),
       dados.telefone,
-      senhaHashed
+      senhaHashed,
+      null, // coordenada
+      null, // endereco
+      dados.role || 'CLIENTE',
+      dados.entregador_id != null ? Number(dados.entregador_id) : null,
+      dados.restaurante_id != null ? Number(dados.restaurante_id) : null
     )
 
     const novoUsuario = await this.repository.criarUsuario(usuario)
@@ -54,6 +62,9 @@ export class UsuarioAppService implements IUsuarioService {
     email?: string
     telefone?: string | null
     senha?: string | null
+    role?: string
+    entregador_id?: number | null
+    restaurante_id?: number | null
   }): Promise<Usuario> {
     const usuarioAtual = await this.repository.buscarUsuarioPorId(id)
     if (!usuarioAtual) throw new UsuarioInvalidoError('Usuário não encontrado')
@@ -66,6 +77,18 @@ export class UsuarioAppService implements IUsuarioService {
 
     if (dados.senha !== undefined && dados.senha !== null) {
       usuarioAtual.alterarSenha(await SenhaHash.deSenhaPlana(dados.senha))
+    }
+
+    if (dados.role !== undefined) {
+      usuarioAtual.role = dados.role
+    }
+
+    if (dados.entregador_id !== undefined) {
+      usuarioAtual.entregador_id = dados.entregador_id
+    }
+
+    if (dados.restaurante_id !== undefined) {
+      usuarioAtual.restaurante_id = dados.restaurante_id
     }
 
     return this.repository.editarUsuarioPorId(id, usuarioAtual)

@@ -33,7 +33,10 @@ export class UsuarioRepository implements IUsuarioRepository {
         senha: usuario.senhaObj?.valor ?? null,
         latitude: usuario.coordenada?.latitude != null ? Number(usuario.coordenada.latitude) : undefined,
         longitude: usuario.coordenada?.longitude != null ? Number(usuario.coordenada.longitude) : undefined,
-        endereco: usuario.endereco
+        endereco: usuario.endereco,
+        role: usuario.role,
+        entregador_id: usuario.entregador_id != null ? Number(usuario.entregador_id) : null,
+        restaurante_id: usuario.restaurante_id != null ? Number(usuario.restaurante_id) : null
       }
     })
     return Usuario.criar(novoUsuario)
@@ -49,7 +52,10 @@ export class UsuarioRepository implements IUsuarioRepository {
         senha: usuario.senhaObj?.valor ?? null,
         latitude: usuario.coordenada !== undefined ? (usuario.coordenada?.latitude != null ? Number(usuario.coordenada.latitude) : null) : undefined,
         longitude: usuario.coordenada !== undefined ? (usuario.coordenada?.longitude != null ? Number(usuario.coordenada.longitude) : null) : undefined,
-        endereco: usuario.endereco
+        endereco: usuario.endereco,
+        role: usuario.role,
+        entregador_id: usuario.entregador_id !== undefined ? (usuario.entregador_id != null ? Number(usuario.entregador_id) : null) : undefined,
+        restaurante_id: usuario.restaurante_id !== undefined ? (usuario.restaurante_id != null ? Number(usuario.restaurante_id) : null) : undefined
       }
     })
     return Usuario.criar(usuarioAtualizado)

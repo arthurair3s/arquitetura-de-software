@@ -19,6 +19,10 @@ export class Usuario {
   private _coordenada: Coordenada | null;
   private _endereco: string | null;
 
+  private _role: string;
+  private _entregador_id: number | null;
+  private _restaurante_id: number | null;
+
   constructor(
     nome: string,
     email: Email,
@@ -26,6 +30,9 @@ export class Usuario {
     senha: SenhaHash | null = null,
     coordenada: Coordenada | null = null,
     endereco: string | null = null,
+    role: string = 'CLIENTE',
+    entregador_id: number | null = null,
+    restaurante_id: number | null = null,
     id?: number
   ) {
     this.id = id;
@@ -35,6 +42,9 @@ export class Usuario {
     this._senha = senha;
     this._coordenada = coordenada;
     this._endereco = endereco;
+    this._role = role;
+    this._entregador_id = entregador_id;
+    this._restaurante_id = restaurante_id;
 
     this.validar();
   }
@@ -46,6 +56,18 @@ export class Usuario {
   get telefone(): string | null { return this._telefone; }
 
   get senhaObj(): SenhaHash | null { return this._senha; }
+
+  get role(): string { return this._role; }
+
+  get entregador_id(): number | null { return this._entregador_id; }
+
+  get restaurante_id(): number | null { return this._restaurante_id; }
+
+  set role(novaRole: string) { this._role = novaRole; }
+
+  set entregador_id(id: number | null) { this._entregador_id = id; }
+
+  set restaurante_id(id: number | null) { this._restaurante_id = id; }
 
   public atualizarPerfil(nome: string, email: Email, telefone: string | null): void {
     this._nome = nome;
@@ -90,6 +112,9 @@ export class Usuario {
     latitude?: any;
     longitude?: any;
     endereco?: string | null;
+    role?: string;
+    entregador_id?: number | null;
+    restaurante_id?: number | null;
     id?: number;
   }): Usuario {
     const coordenada = (dados.latitude != null && dados.longitude != null)
@@ -103,6 +128,9 @@ export class Usuario {
       dados.senha ? new SenhaHash(dados.senha) : null,
       coordenada,
       dados.endereco || null,
+      dados.role || 'CLIENTE',
+      dados.entregador_id != null ? Number(dados.entregador_id) : null,
+      dados.restaurante_id != null ? Number(dados.restaurante_id) : null,
       dados.id
     );
   }

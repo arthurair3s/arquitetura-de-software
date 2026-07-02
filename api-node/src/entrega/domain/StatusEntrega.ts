@@ -8,6 +8,7 @@ export class StatusEntregaInvalidoError extends DomainError {
 }
 
 export type StatusEntregaTipo = 
+  | 'PENDENTE'
   | 'ATRIBUIDA'
   | 'EM_TRANSITO'
   | 'ENTREGUE'
@@ -22,7 +23,7 @@ export class StatusEntrega {
   }
 
   private validar(valor: string): void {
-    const validos = ['ATRIBUIDA', 'EM_TRANSITO', 'ENTREGUE', 'CANCELADA'];
+    const validos = ['PENDENTE', 'ATRIBUIDA', 'EM_TRANSITO', 'ENTREGUE', 'CANCELADA'];
     if (!valor || !validos.includes(valor.toUpperCase())) {
       throw new StatusEntregaInvalidoError(`Status de entrega inválido: ${valor}`);
     }
@@ -34,6 +35,7 @@ export class StatusEntrega {
 
   public podeTransicionarPara(novoStatus: StatusEntrega): boolean {
     const regras: Record<StatusEntregaTipo, StatusEntregaTipo[]> = {
+      'PENDENTE': ['ATRIBUIDA', 'CANCELADA'],
       'ATRIBUIDA': ['EM_TRANSITO', 'CANCELADA'],
       'EM_TRANSITO': ['ENTREGUE', 'CANCELADA'],
       'ENTREGUE': [],

@@ -2,5 +2,6 @@ import type { IEntregaService } from '../../application/ports/IEntregaService.js
 
 export const createEntregaQuery = (service: IEntregaService) => ({
   entregas: async () => service.listar(),
-  entrega: async (_: any, { id }: { id: string }) => service.buscarPorId(id)
+  entrega: async (_: any, { id }: { id: string }) => service.buscarPorId(id),
+  entregasPendentes: async () => service.buscarEntregasPendentes()
 })

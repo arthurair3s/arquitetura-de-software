@@ -17,6 +17,7 @@ extend type Usuario {
 extend type Query {
   pedidos: [Pedido]
   pedido(id: ID!): Pedido
+  pedidosPorRestaurante(restaurante_id: ID!): [Pedido]
 }
 
 extend type Mutation {

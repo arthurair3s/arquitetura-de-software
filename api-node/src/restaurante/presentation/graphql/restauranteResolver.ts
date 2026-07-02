@@ -22,15 +22,23 @@ export const restauranteResolver = {
       }
 
       const res = await queryBase.restaurantes();
+      const plainList = res.map((r) => ({
+        id: r.id,
+        nome: r.nome,
+        descricao: r.descricao,
+        endereco: r.endereco,
+        latitude: r.latitude,
+        longitude: r.longitude
+      }));
 
       try {
         // salva no cache com TTL de 5 minutos (300 segundos)
-        await redis.set(cacheKey, JSON.stringify(res), 'EX', 300);
+        await redis.set(cacheKey, JSON.stringify(plainList), 'EX', 300);
       } catch (err) {
         console.error('[Cache] Erro ao salvar restaurantes no Redis:', err);
       }
 
-      return res;
+      return plainList;
     },
 
     restaurante: async (_: any, { id }: { id: string }) => {
@@ -46,15 +54,25 @@ export const restauranteResolver = {
       }
 
       const res = await queryBase.restaurante(_, { id });
+      if (!res) return null;
+
+      const plain = {
+        id: res.id,
+        nome: res.nome,
+        descricao: res.descricao,
+        endereco: res.endereco,
+        latitude: res.latitude,
+        longitude: res.longitude
+      };
 
       try {
         // salva no cache com TTL de 3 minutos (180 segundos)
-        await redis.set(cacheKey, JSON.stringify(res), 'EX', 180);
+        await redis.set(cacheKey, JSON.stringify(plain), 'EX', 180);
       } catch (err) {
         console.error(`[Cache] Erro ao salvar restaurante ${id} no Redis:`, err);
       }
 
-      return res;
+      return plain;
     }
   },
 

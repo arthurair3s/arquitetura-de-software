@@ -23,6 +23,13 @@ export class PedidoRepository implements IPedidoRepository {
     return pedidos.map((p) => Pedido.criar(p))
   }
 
+  async buscarPedidoPorRestauranteId(restaurante_id: number | string): Promise<Pedido[]> {
+    const pedidos = await prisma.pedidos.findMany({
+      where: { restaurante_id: Number(restaurante_id) }
+    })
+    return pedidos.map((p) => Pedido.criar(p))
+  }
+
   async criarPedido(pedido: Pedido): Promise<Pedido> {
     const novoPedido = await prisma.pedidos.create({
       data: {

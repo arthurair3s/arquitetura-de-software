@@ -62,6 +62,7 @@ services:
       RabbitMQ__Port: 5672
       RabbitMQ__Username: ${RABBIT_USER}
       RabbitMQ__Password: ${RABBIT_PASS}
+      RabbitMQ__AutoAssign: "false"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
       OTEL_SERVICE_NAME: ms-entregadores
 

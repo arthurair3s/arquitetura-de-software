@@ -52,6 +52,8 @@ import { ConfirmarPedidoUseCase } from '../../pedido/application/use-cases/Confi
 import { AtribuirEntregadorUseCase } from '../../entrega/application/use-cases/AtribuirEntregadorUseCase.js';
 import { AssinarPlanoRecomendacaoUseCase } from '../../recomendacao/application/use-cases/AssinarPlanoRecomendacaoUseCase.js';
 import { AtribuirMelhorEntregadorUseCase } from '../../entrega/application/use-cases/AtribuirMelhorEntregadorUseCase.js';
+import { ConfirmarColetaUseCase } from '../../entrega/application/use-cases/ConfirmarColetaUseCase.js';
+import { FinalizarEntregaUseCase } from '../../entrega/application/use-cases/FinalizarEntregaUseCase.js';
 import { SimularDeslocamentoUseCase } from '../../entrega/application/use-cases/SimularDeslocamentoUseCase.js';
 import { ProcessarPagamentoUseCase } from '../../pagamento/application/use-cases/ProcessarPagamentoUseCase.js';
 import { LoginUsuarioUseCase } from '../../usuario/application/use-cases/LoginUsuarioUseCase.js';
@@ -102,6 +104,8 @@ export class DIContainer {
   private _atribuirMelhorEntregadorUseCase?: AtribuirMelhorEntregadorUseCase;
   private _simularDeslocamentoUseCase?: SimularDeslocamentoUseCase;
   private _processarPagamentoUseCase?: ProcessarPagamentoUseCase;
+  private _confirmarColetaUseCase?: ConfirmarColetaUseCase;
+  private _finalizarEntregaUseCase?: FinalizarEntregaUseCase;
   private _loginUsuarioUseCase?: LoginUsuarioUseCase;
   private _atualizarEnderecoUsuarioUseCase?: AtualizarEnderecoUsuarioUseCase;
   private _povoarFrotaUseCase?: PovoarFrotaUseCase;
@@ -237,7 +241,8 @@ export class DIContainer {
     if (!this._pedidoService) {
       this._pedidoService = new PedidoAppService(
         this.getPedidoRepository(),
-        this.getUsuarioService()
+        this.getUsuarioService(),
+        this.getEntregaRepository()
       );
     }
     return this._pedidoService;
@@ -357,10 +362,34 @@ export class DIContainer {
         this.getPedidoService(),
         this.getEntregadorService(),
         this.getRestauranteService(),
-        this.getObterRotaEstavelUseCase()
+        this.getObterRotaEstavelUseCase(),
+        this.getConfirmarColetaUseCase(),
+        this.getFinalizarEntregaUseCase()
       );
     }
     return this._simularDeslocamentoUseCase;
+  }
+
+  getConfirmarColetaUseCase(): ConfirmarColetaUseCase {
+    if (!this._confirmarColetaUseCase) {
+      this._confirmarColetaUseCase = new ConfirmarColetaUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService()
+      );
+    }
+    return this._confirmarColetaUseCase;
+  }
+
+  getFinalizarEntregaUseCase(): FinalizarEntregaUseCase {
+    if (!this._finalizarEntregaUseCase) {
+      this._finalizarEntregaUseCase = new FinalizarEntregaUseCase(
+        this.getEntregaRepository(),
+        this.getPedidoService(),
+        this.getEntregadorService(),
+        this.getUsuarioService()
+      );
+    }
+    return this._finalizarEntregaUseCase;
   }
 
   getProcessarPagamentoUseCase(): ProcessarPagamentoUseCase {

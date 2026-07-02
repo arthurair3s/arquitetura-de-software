@@ -8,4 +8,5 @@ export interface IEntregaRepository {
   deletarEntrega(id: number | string): Promise<boolean>
   buscarEntregaPorPedidoId(pedido_id: number | string): Promise<Entrega[]>
   buscarEntregaPorEntregadorId(entregador_id: number | string): Promise<Entrega[]>
+  buscarEntregasPendentes(): Promise<Entrega[]>
 }

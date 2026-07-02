@@ -38,6 +38,8 @@ export class RestauranteAppService implements IRestauranteService {
     nome?: string
     descricao?: string | null
     endereco?: string | null
+    latitude?: number | null
+    longitude?: number | null
   }): Promise<Restaurante> {
     const restauranteAtual = await this.repository.buscarRestaurantePorId(id)
     if (!restauranteAtual) {
@@ -46,6 +48,17 @@ export class RestauranteAppService implements IRestauranteService {
     if (dados.nome !== undefined) restauranteAtual.nome = dados.nome
     if (dados.descricao !== undefined) restauranteAtual.descricao = dados.descricao
     if (dados.endereco !== undefined) restauranteAtual.endereco = dados.endereco
+    
+    if (dados.latitude !== undefined || dados.longitude !== undefined) {
+      const lat = dados.latitude !== undefined ? (dados.latitude != null ? Number(dados.latitude) : null) : restauranteAtual.latitude
+      const lon = dados.longitude !== undefined ? (dados.longitude != null ? Number(dados.longitude) : null) : restauranteAtual.longitude
+      if (lat != null && lon != null) {
+        restauranteAtual.coordenada = new Coordenada(lat, lon)
+      } else {
+        restauranteAtual.coordenada = null
+      }
+    }
+    
     return this.repository.editarRestaurantePorId(id, restauranteAtual)
   }
 

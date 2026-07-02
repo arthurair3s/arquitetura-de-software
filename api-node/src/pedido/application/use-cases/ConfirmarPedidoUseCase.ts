@@ -38,26 +38,12 @@ export class ConfirmarPedidoUseCase {
     const pedido = new Pedido(
       Number(usuario_id),
       Number(restaurante_id),
-      new StatusPedido('EM_PREPARO_ENTREGA'),
+      new StatusPedido('PENDENTE'),
       new Dinheiro(Number(valor_total)),
       destino
     );
 
     const result = await this.repository.criarPedido(pedido);
-
-    // publica o evento pedido.confirmado de forma assincrona
-    this.eventPublisher.publish('pedido.confirmado', {
-      id: result.id,
-      usuario_id: result.usuario_id,
-      restaurante_id: result.restaurante_id,
-      status: result.status,
-      valor_total: result.valor_total,
-      destino_latitude: result.destino_latitude,
-      destino_longitude: result.destino_longitude,
-      data_criacao: result.data_criacao
-    }).catch((err: unknown) => {
-      console.error('Erro ao publicar evento pedido.confirmado:', err);
-    });
 
     return result;
   }
