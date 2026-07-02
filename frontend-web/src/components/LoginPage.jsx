@@ -121,8 +121,9 @@ export default function LoginPage({ onLogin, onRegister }) {
           {/* Contas de Teste */}
           <div className="space-y-3">
             {[
-              { email: 'ana.lima@email.com', nome: 'Ana Lima', img: 'AL' },
-              { email: 'carlos.mota@email.com', nome: 'Carlos Mota', img: 'CM' },
+              { email: 'ana.lima@email.com', nome: 'Ana Lima (Cliente)', img: 'AL' },
+              { email: 'carlos.mota@email.com', nome: 'Carlos Mota (Restaurante)', img: 'CM' },
+              { email: 'fernanda.cruz@email.com', nome: 'Fernanda Cruz (Entregador)', img: 'FC' },
             ].map(u => (
               <button
                 key={u.email}

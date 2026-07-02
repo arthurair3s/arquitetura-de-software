@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GET_RESTAURANTE_MENU, CRIAR_PEDIDO } from '../graphql/queries';
+import { GET_RESTAURANTE_MENU, CRIAR_PEDIDO, CRIAR_PAGAMENTO } from '../graphql/queries';
 import { API_URL } from '../config';
 
 export default function RestaurantMenu({ restaurante, userLocation, onBack, onOrderCreated }) {
@@ -9,7 +9,21 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
   const [creatingOrder, setCreatingOrder] = useState(false);
 
   // estado do carrinho de compras
-  const [carrinho, setCarrinho] = useState([]);
+  const [carrinho, setCarrinho] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`carrinho_${restaurante.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`carrinho_${restaurante.id}`, JSON.stringify(carrinho));
+  }, [carrinho, restaurante.id]);
+
+  const [metodoPagamento, setMetodoPagamento] = useState('PIX');
+  const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
     fetch(API_URL, {
@@ -52,6 +66,7 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
     }
 
     setCreatingOrder(true);
+    setPaymentError(null);
     try {
       const savedUser = JSON.parse(localStorage.getItem('usuario') || '{}');
       const variables = {
@@ -62,6 +77,7 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
         valor_total: valorTotal
       };
 
+      // 1. Criar o pedido
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +86,35 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
 
       if (res.errors) throw new Error(res.errors[0].message);
       const pedidoId = res.data.criarPedido.id;
-      onOrderCreated(pedidoId, restaurante);
+
+      // 2. Processar o pagamento com a estratégia selecionada no backend
+      const paymentVariables = {
+        pedido_id: pedidoId,
+        metodo: metodoPagamento,
+        valor: valorTotal
+      };
+
+      const payRes = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: CRIAR_PAGAMENTO, variables: paymentVariables })
+      }).then(r => r.json());
+
+      if (payRes.errors) throw new Error(payRes.errors[0].message);
+
+      const statusPagamento = payRes.data.criarPagamento.status;
+      if (statusPagamento === 'APROVADO') {
+        localStorage.removeItem(`carrinho_${restaurante.id}`);
+        onOrderCreated(pedidoId, restaurante);
+      } else {
+        // RECUSADO (Ex: cartão acima de 1000 reais)
+        setPaymentError(
+          metodoPagamento === 'CARTAO' 
+            ? 'Limite insuficiente! Compras acima de R$ 1.000,00 no cartão são recusadas.' 
+            : 'O gateway de pagamento rejeitou a transação.'
+        );
+        setCreatingOrder(false);
+      }
     } catch (e) {
       console.error(e);
       alert("Falha ao criar o pedido: " + e.message);
@@ -164,6 +208,49 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Seletor de Método de Pagamento */}
+          {carrinho.length > 0 && (
+            <div className="border-t pt-4 mb-4">
+              <label className="block text-sm font-bold text-gray-700 mb-3">
+                Forma de Pagamento
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'PIX', label: '📱 Pix', desc: 'Imediato' },
+                  { id: 'CARTAO', label: '💳 Cartão', desc: 'Crédito' },
+                  { id: 'STRIPE', label: '💵 Stripe', desc: 'Simulação' },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setMetodoPagamento(item.id);
+                      setPaymentError(null);
+                    }}
+                    className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                      metodoPagamento === item.id
+                        ? 'border-brandRed bg-red-50/50 text-brandRed font-semibold'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
+                    }`}
+                  >
+                    <span className="text-xs">{item.label}</span>
+                    <span className="text-[9px] text-gray-400 font-normal mt-0.5">{item.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {paymentError && (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-red-600 text-xs mb-4 flex items-start gap-2 animate-pulse-fast">
+              <span className="text-sm">⚠️</span>
+              <div>
+                <p className="font-bold">Pagamento recusado!</p>
+                <p className="text-gray-500 mt-0.5">{paymentError}</p>
+              </div>
             </div>
           )}
 

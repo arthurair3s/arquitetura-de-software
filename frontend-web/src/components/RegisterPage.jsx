@@ -1,20 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config';
-import { REGISTRO } from '../graphql/queries';
+import { REGISTRO, GET_RESTAURANTES } from '../graphql/queries';
 
 export default function RegisterPage({ onBackToLogin, onRegisterSuccess }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
+  const [role, setRole] = useState('CLIENTE');
+  const [restauranteId, setRestauranteId] = useState('');
+  const [restaurantes, setRestaurantes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (role === 'RESTAURANTE') {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: GET_RESTAURANTES })
+      })
+        .then(r => r.json())
+        .then(res => {
+          if (res.data && res.data.restaurantes) {
+            setRestaurantes(res.data.restaurantes);
+            if (res.data.restaurantes.length > 0) {
+              setRestauranteId(res.data.restaurantes[0].id);
+            }
+          }
+        })
+        .catch(err => console.error('Erro ao buscar restaurantes:', err));
+    }
+  }, [role]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    const variables = {
+      nome,
+      email,
+      senha,
+      telefone,
+      role,
+      restaurante_id: role === 'RESTAURANTE' && restauranteId ? Number(restauranteId) : null,
+      entregador_id: null
+    };
 
     try {
       const res = await fetch(API_URL, {
@@ -22,7 +55,7 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: REGISTRO,
-          variables: { nome, email, senha, telefone }
+          variables
         })
       }).then(r => r.json());
 
@@ -116,6 +149,35 @@ export default function RegisterPage({ onBackToLogin, onRegisterSuccess }) {
                 className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brandRed/20 focus:border-brandRed transition-all"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Tipo de Conta</label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brandRed/20 focus:border-brandRed transition-all"
+              >
+                <option value="CLIENTE">Cliente (Consumidor)</option>
+                <option value="RESTAURANTE">Restaurante (Lojista)</option>
+                <option value="ENTREGADOR">Entregador (Courier)</option>
+              </select>
+            </div>
+
+            {role === 'RESTAURANTE' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">Selecione o Restaurante</label>
+                <select
+                  value={restauranteId}
+                  onChange={e => setRestauranteId(e.target.value)}
+                  required
+                  className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brandRed/20 focus:border-brandRed transition-all"
+                >
+                  {restaurantes.map(r => (
+                    <option key={r.id} value={r.id}>{r.nome} ({r.endereco})</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-50 text-brandRed text-xs p-3 rounded-xl border border-red-100">

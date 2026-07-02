@@ -253,101 +253,26 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
         </div>
       </div>
 
-      {/* 2. painel tecnico do motorista */}
+      {/* 2. mapa interativo (A-B-C) */}
       <div className="flex flex-col gap-4">
-        <div className="glass-card p-6 bg-slate-900 text-white relative overflow-hidden">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl"></div>
-
-          <h3 className="font-medium text-slate-400 text-sm mb-4">Painel Técnico (Motorista Mock)</h3>
-
-          {/* Lógica para escolher qual info de trajeto exibir */}
-          {(() => {
-            if (!entrega) {
-              return (
-                <p className="text-xl font-bold mb-6">
-                   Radar: <span className="text-orange-400">
-                    {candidatos.length > 0 ? `${candidatos.length} entregadores próximos rápidos ⚡` : 'Escaneando a área...'}
-                  </span>
-                </p>
-              )
-            }
-            const rotaAtiva =
-              entrega?.status?.toUpperCase() === 'ATRIBUIDA' ? entrega?.rota_coleta :
-                entrega?.status?.toUpperCase() === 'EM_TRANSITO' ? entrega?.rota_entrega :
-                  null;
-
-            const dist = rotaAtiva?.distancia_total_km || 0;
-            const tempo = rotaAtiva?.duracao_total_segundos || 0;
-
-            return (
-              <p className="text-xl font-bold mb-6">
-                Próximo Alvo: <span className="text-blue-400">
-                  {dist > 0 ? `${dist.toFixed(2)} km | ${formatarTempo(tempo)}` : 'Calculando...'}
-                </span>
-              </p>
-            );
-          })()}
-
-          <div className="grid grid-cols-1 gap-3">
-            {!entrega ? (
-              <button
-                className="bg-orange-500 hover:bg-orange-400 text-white disabled:opacity-50 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-                onClick={handleAtribuirEntregador}
-                disabled={simulando || candidatos.length === 0}
-              >
-                {simulando ? '⌛ processando...' : 'Simular: Escolher Entregador Mágico'}
-              </button>
-            ) : (
-              <button
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-3 rounded-lg font-bold transition flex items-center justify-center gap-2"
-                onClick={() => handleIniciarSimulacao(entrega?.id)}
-                disabled={simulando || entrega?.status?.toUpperCase() === 'ENTREGUE'}
-              >
-                {simulando ? '⌛ processando...' : (
-                  entrega?.status?.toUpperCase() === 'ATRIBUIDA' ? '🛵 simular: ir para o restaurante' :
-                    entrega?.status?.toUpperCase() === 'EM_TRANSITO' ? '🏠 simular: ir para o cliente' :
-                      'iniciar deslocamento automatico'
-                )}
-              </button>
-            )}
-            <button
-              className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition"
-              onClick={() => handleMudarStatus('EM_TRANSITO', entrega?.id)}
-              disabled={entrega?.status !== 'ATRIBUIDA'}
-            >
-              Simular: Motoboy Retirou do Restaurante
-            </button>
-            <button
-              className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white py-3 rounded-lg font-medium transition"
-              onClick={() => handleMudarStatus('ENTREGUE', entrega?.id)}
-              disabled={entrega?.status !== 'EM_TRANSITO'}
-            >
-              Simular: Pedido Entregue!
-            </button>
-          </div>
-        </div>
-
-        {/* 3. mapa interativo (A-B-C) */}
-        <div className="flex flex-col gap-4 mt-8 md:col-span-2">
-          <TrackingMap
-            status={entrega?.status?.toUpperCase() || ''}
-            candidatos={candidatos}
-            rotaColeta={entrega?.rota_coleta}
-            rotaEntrega={entrega?.rota_entrega}
-            motoPos={moto ? {
-              latitude: Number(moto?.latitude) || 0,
-              longitude: Number(moto?.longitude) || 0
-            } : null}
-            restaurantePos={{
-              latitude: Number(restaurante?.latitude),
-              longitude: Number(restaurante?.longitude)
-            }}
-            clientePos={{
-              latitude: Number(data?.destino_latitude),
-              longitude: Number(data?.destino_longitude)
-            }}
-          />
-        </div>
+        <TrackingMap
+          status={entrega?.status?.toUpperCase() || ''}
+          candidatos={candidatos}
+          rotaColeta={entrega?.rota_coleta}
+          rotaEntrega={entrega?.rota_entrega}
+          motoPos={moto ? {
+            latitude: Number(moto?.latitude) || 0,
+            longitude: Number(moto?.longitude) || 0
+          } : null}
+          restaurantePos={{
+            latitude: Number(restaurante?.latitude),
+            longitude: Number(restaurante?.longitude)
+          }}
+          clientePos={{
+            latitude: Number(data?.destino_latitude),
+            longitude: Number(data?.destino_longitude)
+          }}
+        />
       </div>
 
       {showRating && !ratingEnviado && (

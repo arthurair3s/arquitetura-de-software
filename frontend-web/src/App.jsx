@@ -5,16 +5,44 @@ import ActiveOrderTracking from './components/ActiveOrderTracking'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import AddressBar from './components/AddressBar'
+import RestaurantePanel from './components/RestaurantePanel'
+import EntregadorPanel from './components/EntregadorPanel'
 import { POVOAR_FROTA } from './graphql/queries'
 import { API_URL } from './config'
+import MeusPedidos from './components/MeusPedidos'
 
 function App() {
   const [usuario, setUsuario] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [view, setView] = useState('login')
-  const [activePedidoId, setActivePedidoId] = useState(null)
-  const [selectedRestaurante, setSelectedRestaurante] = useState(null)
-  const [povoando, setPovoando] = useState(false)
+  const [activePedidoId, setActivePedidoId] = useState(() => {
+    return localStorage.getItem('activePedidoId') || null;
+  });
+  const [selectedRestaurante, setSelectedRestaurante] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedRestaurante');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [povoando, setPovoando] = useState(false);
+
+  useEffect(() => {
+    if (activePedidoId) {
+      localStorage.setItem('activePedidoId', activePedidoId);
+    } else {
+      localStorage.removeItem('activePedidoId');
+    }
+  }, [activePedidoId]);
+
+  useEffect(() => {
+    if (selectedRestaurante) {
+      localStorage.setItem('selectedRestaurante', JSON.stringify(selectedRestaurante));
+    } else {
+      localStorage.removeItem('selectedRestaurante');
+    }
+  }, [selectedRestaurante]);
 
   // Verifica se já existe um token salvo ao carregar o app
   useEffect(() => {
@@ -82,57 +110,31 @@ function App() {
       return (
         <RegisterPage 
           onBackToLogin={() => setView('login')} 
-          onRegisterSuccess={() => setView('login')}
+          onRegisterSuccess={(email) => {
+            setView('login');
+          }}
         />
       )
     }
     return <LoginPage onLogin={handleLogin} onRegister={() => setView('register')} />
   }
 
-  // mostra o rastreador se tiver pedido ativo
-  if (activePedidoId) {
-    return (
-      <div className="min-h-screen pt-4">
-        <ActiveOrderTracking
-          pedidoId={activePedidoId}
-          restaurante={selectedRestaurante}
-          onCancel={() => {
-            setActivePedidoId(null)
-            setSelectedRestaurante(null)
-          }}
-        />
-      </div>
-    )
-  }
-
-  // mostra o menu do restaurante selecionado
-  if (selectedRestaurante) {
-    return (
-      <div className="min-h-screen pt-4">
-        <RestaurantMenu
-          restaurante={selectedRestaurante}
-          userLocation={userLocation}
-          onBack={() => setSelectedRestaurante(null)}
-          onOrderCreated={(pedidoId, rest) => {
-            setSelectedRestaurante(rest)
-            setActivePedidoId(pedidoId)
-          }}
-        />
-      </div>
-    )
-  }
-
-  // view principal: lista de restaurantes
+  // View Principal para usuários autenticados
   return (
-    <div className="min-h-screen pt-4 pb-20">
+    <div className="min-h-screen pt-4 pb-20 bg-slate-50/50">
+      {/* Header Unificado */}
       <div className="max-w-5xl mx-auto px-4 mb-4 flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-2">
           <span className="text-3xl">🛵</span>
           <h1 className="text-2xl font-bold text-brandRed tracking-tight">
             Express Delivery
           </h1>
+          <span className="text-xs bg-slate-100 border px-2 py-0.5 rounded-full font-bold text-slate-500 uppercase">
+            {usuario.role}
+          </span>
         </div>
         <div className="flex items-center gap-4 relative">
+          
           <button
             onClick={handlePovoarMapa}
             disabled={povoando}
@@ -165,9 +167,44 @@ function App() {
         </div>
       </div>
 
+      {/* Conteúdo Dinâmico com base no Modo e Estado do Pedido */}
       <div className="max-w-5xl mx-auto px-4">
-        <AddressBar usuario={usuario} setUsuario={setUsuario} />
-        <RestaurantList onSelectRestaurant={setSelectedRestaurante} />
+        {usuario.role === 'RESTAURANTE' ? (
+          <RestaurantePanel usuario={usuario} />
+        ) : usuario.role === 'ENTREGADOR' ? (
+          <EntregadorPanel usuario={usuario} />
+        ) : activePedidoId ? (
+          <ActiveOrderTracking
+            pedidoId={activePedidoId}
+            restaurante={selectedRestaurante}
+            onCancel={() => {
+              setActivePedidoId(null)
+              setSelectedRestaurante(null)
+            }}
+          />
+        ) : selectedRestaurante ? (
+          <RestaurantMenu
+            restaurante={selectedRestaurante}
+            userLocation={userLocation}
+            onBack={() => setSelectedRestaurante(null)}
+            onOrderCreated={(pedidoId, rest) => {
+              setSelectedRestaurante(rest)
+              setActivePedidoId(pedidoId)
+            }}
+          />
+        ) : (
+          <>
+            <AddressBar usuario={usuario} setUsuario={setUsuario} />
+            <RestaurantList onSelectRestaurant={setSelectedRestaurante} />
+            <MeusPedidos
+              usuario={usuario}
+              onSelectPedido={(pedidoId, restObj) => {
+                setSelectedRestaurante(restObj)
+                setActivePedidoId(pedidoId)
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   )
