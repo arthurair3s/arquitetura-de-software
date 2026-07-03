@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./api-node
+      dockerfile: Dockerfile
+    expose:
+      - '4000'
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      RABBIT_URL: ${RABBIT_URL}
+      ENTREGADORES_SERVICE_URL: ms-entregadores:5001
+      ROTEAMENTO_SERVICE_URL: ms-roteamento:5002
+      RECOMENDACAO_SERVICE_URL: ms-recomendacao:50053
+      JWT_SECRET: ${JWT_SECRET}
+    restart: unless-stopped
+
+  ms-entregadores:
+    build:
+      context: .
+      dockerfile: ms-entregadores-cs/Dockerfile
+    expose:
+      - '5001'
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5001
+      ConnectionStrings__DefaultConnection: ${DATABASE_ENTREGADORES_URL}
+      ConnectionStrings__RedisConnection: ${REDIS_CONNECTION_STRING}
+      RABBIT_URL: ${RABBIT_URL}
+      RabbitMQ__AutoAssign: "true"
+    restart: unless-stopped
+
+  ms-roteamento:
+    build:
+      context: .
+      dockerfile: ms-roteamento-cs/Dockerfile
+    expose:
+      - '5002'
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5002
+      OSRM_URL: http://osrm-server:5000/
+    restart: unless-stopped
+
+  ms-recomendacao:
+    build:
+      context: .
+      dockerfile: ms-recomendacao-py/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_RECOMENDACAO_URL}
+      RABBIT_URL: ${RABBIT_URL}
+    restart: unless-stopped
+
+  ms-notificacoes:
+    build:
+      context: .
+      dockerfile: ms-notificacoes-py/Dockerfile
+    environment:
+      RABBIT_URL: ${RABBIT_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    restart: unless-stopped
+
+  osrm-server:
+    build:
+      context: ./osrm-data
+      dockerfile: Dockerfile
+    expose:
+      - '5000'
+    restart: unless-stopped
+
+  kong:
+    build:
+      context: ./kong
+      dockerfile: Dockerfile
+    environment:
+      KONG_DATABASE: "off"
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_LOG_LEVEL: notice
+      KONG_VAULT_ENV_PREFIX: SECRET_
+      SECRET_JWT_SECRET: ${JWT_SECRET}
+      API_URL: http://api:4000/
+    ports:
+      - '8000:8000'
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend-web
+      dockerfile: Dockerfile
+    ports:
+      - '5173:5173'
+    environment:
+      VITE_API_URL: http://localhost:8000
+    restart: unless-stopped

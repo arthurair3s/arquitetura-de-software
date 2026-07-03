@@ -12,6 +12,7 @@ class Config:
     RABBIT_PORT = int(os.getenv("RABBIT_PORT", "5672"))
     RABBIT_USER = os.getenv("RABBIT_USER", "admin")
     RABBIT_PASS = os.getenv("RABBIT_PASS", "admin123")
+    RABBIT_URL = os.getenv("RABBIT_URL")
 
     SMTP_HOST = os.getenv("SMTP_HOST", "sandbox.smtp.mailtrap.io")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "2525"))

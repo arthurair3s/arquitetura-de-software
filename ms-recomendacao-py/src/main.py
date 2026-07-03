@@ -35,14 +35,12 @@ from database import engine, Base, get_db
 # pyrefly: ignore [missing-import]
 from models import RestauranteReplica, ProdutoReplica
 from messaging.consumer import RabbitMQConsumer
-from messaging.kafka_consumer import KafkaCDCConsumer
 from services.recommendation_service import RecommendationService
 
 # garante a criação de tabelas do banco de dados na inicialização
 Base.metadata.create_all(bind=engine)
 
 consumer = RabbitMQConsumer()
-kafka_consumer = KafkaCDCConsumer()
 recommendation_service = RecommendationService()
 
 
@@ -105,10 +103,6 @@ async def lifespan(app: FastAPI):
     consumer_thread.start()
     print("[Main] Consumer do RabbitMQ iniciado em background.")
 
-    # inicia o consumer Kafka CDC in background
-    kafka_consumer.start()
-    print("[Main] Consumer Kafka CDC iniciado em background.")
-
     # inicia o servidor gRPC em background
     # pyrefly: ignore [missing-import]
     from grpc_server import start_grpc_server
@@ -118,8 +112,6 @@ async def lifespan(app: FastAPI):
     yield
     print("[Main] Parando consumer RabbitMQ...")
     consumer.stop()
-    print("[Main] Parando consumer Kafka CDC...")
-    kafka_consumer.stop()
 
 
 

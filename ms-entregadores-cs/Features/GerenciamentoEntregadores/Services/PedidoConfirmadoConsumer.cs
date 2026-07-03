@@ -66,12 +66,24 @@ namespace Features.GerenciamentoEntregadores.Services
             {
                 var factory = new ConnectionFactory()
                 {
-                    HostName = _host,
-                    Port = _port,
-                    UserName = _username,
-                    Password = _password,
                     DispatchConsumersAsync = true
                 };
+
+                var rabbitUri = _configuration["RabbitMQ:Uri"] 
+                                ?? _configuration["RabbitMQ:ConnectionString"] 
+                                ?? _configuration["RABBIT_URL"];
+
+                if (!string.IsNullOrEmpty(rabbitUri))
+                {
+                    factory.Uri = new Uri(rabbitUri);
+                }
+                else
+                {
+                    factory.HostName = _host;
+                    factory.Port = _port;
+                    factory.UserName = _username;
+                    factory.Password = _password;
+                }
 
                 _connection = factory.CreateConnection();
                 

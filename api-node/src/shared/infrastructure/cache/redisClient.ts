@@ -6,18 +6,29 @@ export class RedisClient {
 
   public static getInstance(): Redis {
     if (!this.instance) {
+      const redisUrl = process.env.REDIS_URL;
       const host = process.env.REDIS_HOST || 'localhost';
       const port = parseInt(process.env.REDIS_PORT || '6379', 10);
+      const password = process.env.REDIS_PASSWORD;
 
-      this.instance = new Redis({
-        host,
-        port,
-        retryStrategy(times: number) {
-          // tenta reconectar após um delay progressivo
-          const delay = Math.min(times * 100, 3000);
-          return delay;
-        },
-      });
+      if (redisUrl) {
+        console.log('[Redis] Conectando via REDIS_URL...');
+        this.instance = new Redis(redisUrl, {
+          retryStrategy(times: number) {
+            return Math.min(times * 100, 3000);
+          },
+        });
+      } else {
+        console.log(`[Redis] Conectando a ${host}:${port}...`);
+        this.instance = new Redis({
+          host,
+          port,
+          password,
+          retryStrategy(times: number) {
+            return Math.min(times * 100, 3000);
+          },
+        });
+      }
 
       this.instance.on('error', (err: unknown) => {
         console.error('[Redis] Erro de conexão:', err);

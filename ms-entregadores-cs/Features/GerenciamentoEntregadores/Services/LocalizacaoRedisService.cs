@@ -20,9 +20,8 @@ namespace Features.GerenciamentoEntregadores.Services
     public async Task<(double Latitude, double Longitude)?> ObterPosicaoRedis(int entregadorId)
     {
         var positions = await _redis.GeoPositionAsync(GeoKey, new RedisValue[] { entregadorId.ToString() });
-        if (positions != null && positions.Length > 0 && positions[0].HasValue)
+        if (positions != null && positions.Length > 0 && positions[0] is { } pos)
         {
-            var pos = positions[0].Value;
             _logger.LogInformation("[Redis] GeoPosition encontrada para {Id}: Lon={Lon}, Lat={Lat}", entregadorId, pos.Longitude, pos.Latitude);
             return (pos.Latitude, pos.Longitude);
         }
@@ -56,11 +55,11 @@ namespace Features.GerenciamentoEntregadores.Services
       for (int i = 0; i < members.Length; i++)
       {
           if (int.TryParse(members[i].ToString(), out var id) && 
-              positions[i].HasValue && 
-              positions[i].Value.Latitude != 0 && 
-              positions[i].Value.Longitude != 0)
+              positions[i] is { } pos && 
+              pos.Latitude != 0 && 
+              pos.Longitude != 0)
           {
-              dict[id] = (positions[i].Value.Latitude, positions[i].Value.Longitude);
+              dict[id] = (pos.Latitude, pos.Longitude);
           }
       }
 

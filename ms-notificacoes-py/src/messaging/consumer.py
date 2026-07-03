@@ -15,18 +15,26 @@ class RabbitMQConsumer:
         self.channel = None
 
     def connect_with_retry(self):
-        credentials = pika.PlainCredentials(Config.RABBIT_USER, Config.RABBIT_PASS)
-        parameters = pika.ConnectionParameters(
-            host=Config.RABBIT_HOST,
-            port=Config.RABBIT_PORT,
-            credentials=credentials,
-            heartbeat=600,
-            blocked_connection_timeout=300
-        )
+        if Config.RABBIT_URL:
+            parameters = pika.URLParameters(Config.RABBIT_URL)
+            parameters.heartbeat = 600
+            parameters.blocked_connection_timeout = 300
+        else:
+            credentials = pika.PlainCredentials(Config.RABBIT_USER, Config.RABBIT_PASS)
+            parameters = pika.ConnectionParameters(
+                host=Config.RABBIT_HOST,
+                port=Config.RABBIT_PORT,
+                credentials=credentials,
+                heartbeat=600,
+                blocked_connection_timeout=300
+            )
 
         while True:
             try:
-                print(f"[Consumer] Conectando ao RabbitMQ em {Config.RABBIT_HOST}:{Config.RABBIT_PORT}...")
+                if Config.RABBIT_URL:
+                    print("[Consumer] Conectando ao RabbitMQ usando URL...")
+                else:
+                    print(f"[Consumer] Conectando ao RabbitMQ em {Config.RABBIT_HOST}:{Config.RABBIT_PORT}...")
                 self.connection = pika.BlockingConnection(parameters)
                 self.channel = self.connection.channel()
 

@@ -30,10 +30,10 @@ export class RabbitMQPublisher implements IEventPublisher {
     const pass = process.env.RABBIT_PASS || 'admin123';
     const host = process.env.RABBIT_HOST || 'localhost';
     const port = process.env.RABBIT_PORT || '5672';
-    const url = `amqp://${user}:${pass}@${host}:${port}`;
+    const url = process.env.RABBIT_URL || `amqp://${user}:${pass}@${host}:${port}`;
 
     try {
-      console.log(`Connecting to RabbitMQ at ${host}:${port}...`);
+      console.log(`Connecting to RabbitMQ...`);
       const conn = await amqp.connect(url);
       
       conn.on('error', (err: Error) => {
