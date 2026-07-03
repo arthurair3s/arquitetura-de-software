@@ -9,6 +9,8 @@ COPY kong.template.yml /usr/local/kong/declarative/kong.template.yml
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+RUN chown -R kong:kong /usr/local/kong/declarative
+
 USER kong
 
 ENTRYPOINT ["/entrypoint.sh"]
