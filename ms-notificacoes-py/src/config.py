@@ -18,5 +18,6 @@ class Config:
     SMTP_PORT = int(os.getenv("SMTP_PORT", "2525"))
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASS = os.getenv("SMTP_PASS", "")
+    MAILTRAP_API_TOKEN = os.getenv("MAILTRAP_API_TOKEN", "")
     
     DEFAULT_FROM_EMAIL = "no-reply@expressdelivery.com"
