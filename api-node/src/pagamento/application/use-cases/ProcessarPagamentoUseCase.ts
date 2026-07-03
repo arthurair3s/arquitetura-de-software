@@ -65,10 +65,6 @@ export class ProcessarPagamentoUseCase {
       this.publicarEventoAprovado(result).catch((err: unknown) => {
         console.error('Erro ao publicar pagamento.aprovado no criar:', err);
       });
-      // Atualiza o status do pedido para EM_PREPARO_ENTREGA
-      this.pedidoService.editarPorId(result.pedido_id, { status: 'EM_PREPARO_ENTREGA' }).catch((err: unknown) => {
-        console.error('Erro ao atualizar status do pedido para EM_PREPARO_ENTREGA:', err);
-      });
     }
 
     return result

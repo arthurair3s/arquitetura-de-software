@@ -44,10 +44,6 @@ export class PagamentoAppService implements IPagamentoService {
       this.publicarEventoAprovado(result).catch((err) => {
         console.error('Erro ao publicar pagamento.aprovado no editar:', err);
       });
-      // Atualiza o status do pedido para EM_PREPARO_ENTREGA
-      this.pedidoService.editarPorId(result.pedido_id, { status: 'EM_PREPARO_ENTREGA' }).catch((err) => {
-        console.error('Erro ao atualizar status do pedido para EM_PREPARO_ENTREGA no editar:', err);
-      });
     }
 
     return result
