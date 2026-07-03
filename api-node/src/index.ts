@@ -66,7 +66,10 @@ const server = new ApolloServer<MyContext>({
 const tokenService = diContainer.getJwtTokenService();
 
 const { url } = await startStandaloneServer(server, {
-  listen: { port: 4000, host: '0.0.0.0' },
+  listen: { 
+    port: process.env.PORT ? parseInt(process.env.PORT, 10) : 4000, 
+    host: '0.0.0.0' 
+  },
   context: async ({ req }): Promise<MyContext> => {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.replace('Bearer ', '');
