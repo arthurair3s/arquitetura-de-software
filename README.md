@@ -1,6 +1,6 @@
 # 📦 Express Delivery - Real-time Microservices Simulation
 
-Este projeto é um ecossistema de alta performance projetado para demonstrar a aplicação prática de arquiteturas modernas e escaláveis. Desenvolvido com foco em **Microserviços**, **Comunicação gRPC** e **Geoprocessamento**, o foco principal reside na implementação de padrões de resiliência e baixa latência em sistemas distribuídos..
+Este projeto é um ecossistema de alta performance projetado para demonstrar a aplicação prática de arquiteturas modernas e escaláveis. Desenvolvido com foco em **Microserviços**, **Comunicação gRPC** e **Geoprocessamento**, o foco principal reside na implementação de padrões de resiliência e baixa latência em sistemas distribuídos.
 
 ---
 
@@ -19,12 +19,17 @@ graph TD
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
     %% Elements
-    cliente["Clientes e Parceiros<br>(Usuários Finais, Lojistas, Entregadores)"]:::person
-    sys["Sistema Express Delivery<br>(Plataforma Central de Delivery)"]:::system
-    externos["Integrações Externas<br>(OSRM, Stripe, Mailtrap)"]:::ext
+    cliente["Cliente<br>(Visualiza cardápios, faz pedidos e acompanha entregas em tempo real via Web)"]:::person
+    entregador["Entregador<br>(Gerencia disponibilidade, aceita corridas e atualiza localização via painel web dedicado)"]:::person
+    lojista["Lojista (Restaurante)<br>(Gerencia cardápios e acompanha insights competitivos da loja via painel web)"]:::person
 
-    cliente -->|Interagem via Web/App/APIs| sys
-    sys -->|Consome serviços de mapas, pagamento e email| externos
+    express_delivery["Sistema Express Delivery<br>(Plataforma Central de Delivery e Roteamento Logístico)"]:::system
+    externos["Integrações Externas<br>(OSRM, Stripe, Mailtrap HTTP/SMTP)"]:::ext
+
+    cliente -->|Interagem via Web/App/APIs| express_delivery
+    entregador -->|Gerenciam disponibilidade e entregas| express_delivery
+    lojista -->|Gerenciam lojas e visualizam insights| express_delivery
+    express_delivery -->|Consome serviços de mapas, pagamento e e-mail| externos
 ```
 > 🔗 [Ver Diagrama de Contexto Detalhado (L1)](docs/diagramas/c1/c4_l1_context.md)
 
@@ -55,7 +60,7 @@ graph TD
         messaging[("Plataformas de Mensageria<br>(RabbitMQ / Kafka CDC)")]:::db
     end
 
-    ext["Integrações Externas (OSRM, Stripe, Mailtrap)"]:::ext
+    ext["Integrações Externas (OSRM, Stripe, Mailtrap HTTP/SMTP)"]:::ext
 
     %% Flows
     cliente -->|Acessa / Interage| frontend
@@ -75,7 +80,7 @@ graph TD
 
     ms_python -->|Réplica analítica B2B| databases
     ms_python -->|Consome eventos / CDC| messaging
-    ms_python -->|Envio de e-mails| ext
+    ms_python -->|Envio de e-mails (HTTP REST / SMTP)| ext
 ```
 > 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/diagramas/c2/c4_l2_container.md)
 
@@ -139,10 +144,13 @@ docker compose up --build
 ## 🕹️ Manual de Voo: Guia de Simulação
 
 1.  **Acesso**: Acesse `http://localhost:5173`. (O tráfego de API passa pelo API Gateway Express na porta 8080).
-2.  **Login**: Registre-se e faça login. Seu endereço servirá de destino para as entregas.
-3.  **Radar**: Observe os entregadores se movendo no mapa. Eles atualizam o **Redis** a cada 3 segundos.
-4.  **Compra**: Escolha um restaurante e clique em "Comprar".
-5.  **Painel Técnico**: No menu lateral, simule as ações do motoboy para ver o rastreamento em tempo real via **gRPC** e **OSRM**.
+2.  **Login**: Registre-se e faça login como cliente para visualizar a página de rastreamento de entregas.
+3.  **App do Entregador**: Acesse o painel dedicado do entregador na interface web. A partir dele você pode:
+    *   Ficar online/offline para atualizar o radar de ofertas.
+    *   Visualizar ofertas de corridas pendentes na região geográfica.
+    *   Aceitar corridas, visualizar o trajeto e acompanhar a posição em tempo real em um mini-mapa com ícone de moto.
+    *   Simular o deslocamento de forma autônoma pelo GPS (OSRM) ou realizar **overrides manuais** clicando nos botões de preset ou arrastando o marcador de localização no mapa.
+4.  **Ações Rápidas**: Ao realizar um override manual (arrastando o pino ou teletransportando-se), qualquer simulação autônoma ativa para a entrega em questão é interrompida no backend para respeitar a posição selecionada por você.
 
 > [!CAUTION]
 > **Persistência de Dados**: O arquivo `compose.yml` está configurado com `--force-reset`. Isso garante que o ambiente de teste sempre inicie em um estado limpo e controlado.
@@ -153,11 +161,11 @@ docker compose up --build
 
 | Componente | Tecnologia | Papel |
 | :--- | :--- | :--- |
-| **Frontend** | React, Leaflet | UI moderna e visualização de geoprocessamento |
+| **Frontend** | React, Leaflet | UI moderna e visualização de geoprocessamento com marcadores personalizados (cliente, restaurante e moto) |
 | **Gateway** | API Gateway (Express) | Porta de entrada profissional, JWT e Rate Limit |
 | **API Principal** | Node.js (TypeScript), Apollo Server (GraphQL) | Orquestração de Microserviços e Schema unificado sob Clean Architecture |
 | **Microserviços C#** | .NET 10, gRPC, EF Core | Performance extrema para gerenciamento de entregadores e roteamento |
-| **Microserviços Python** | Python 3.12, FastAPI, gRPC, Pika | Motores de recomendação de precificação B2B e envio de notificações |
+| **Microserviços Python** | Python 3.12, FastAPI, gRPC, Pika, urllib | Motores de recomendação de precificação B2B e envio de notificações resilientes via Mailtrap HTTP/SMTP |
 | **Bancos de Dados** | PostgreSQL 15, Redis 7 (Redis Geo) | Persistência física isolada por domínio e cache/localização ultra-rápida |
 | **Roteamento** | OSRM Engine (C++ Engine) | Inteligência logística baseada em OpenStreetMap |
 | **Mensageria** | RabbitMQ (AMQP) | Barramento de eventos assíncronos (atribuição de entregas) |
@@ -172,6 +180,8 @@ Com base nas últimas evoluções de arquitetura descritas no histórico do proj
 
 *   **Arquitetura baseada em Casos de Uso (Clean Architecture & DIP)**: Divisão estruturada em Presentation (GraphQL Resolvers), Application (Use Cases atômicos e isolados), Domain (Entities, Value Objects & Ports) e Infrastructure, com total inversão de dependências.
 *   **Isolamento Completo de Bancos de Dados**: Bancos de dados PostgreSQL dedicados para o núcleo principal (`postgres_db`), entregadores (`postgres_entregadores`) e recomendações B2B (`postgres_recomendacao`), reduzindo drasticamente o acoplamento físico.
+*   **Cancelamento Dinâmico de Simulação / Override de Localização**: O mecanismo de simulação autônoma de GPS é cancelado imediatamente quando o entregador atualiza sua geolocalização manualmente no painel, garantindo que o backend respeite o ponto selecionado pelo usuário sem concorrência de threads/timeouts.
+*   **Envio Resiliente de E-mails via HTTP REST**: O microserviço de notificações autodetecta a presença da credencial de token do Mailtrap para alternar o envio de emails do protocolo SMTP tradicional para a API REST HTTP, contornando bloqueios de portas de e-mail típicos em ambientes de produção na nuvem (como no Railway).
 *   **Mensageria Assíncrona com RabbitMQ**: Atribuição de entregadores guiada por eventos (`pedido.confirmado` e `entrega.atribuida`) com filas de Dead Letter (DLQ/DLX) para resiliência no processamento.
 *   **Change Data Capture (CDC) via Kafka**: Transmissão em tempo real das alterações do banco principal (WAL) para a base analítica, com tratamento resiliente contra desordenação de eventos e tombstones.
 *   **Strategy Pattern para Regras de Negócio**: Utilizado para alternar dinamicamente métodos de pagamento (Pix, Cartão de Crédito com limite, Stripe) e níveis de planos de recomendação (Gratuito vs Premium).

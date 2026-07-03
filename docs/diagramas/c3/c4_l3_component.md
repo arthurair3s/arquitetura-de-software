@@ -1,6 +1,6 @@
 # Nível 3: Diagrama de Componentes (Component Diagram)
 
-Devido à complexidade e diversidade de responsabilidades do **Backend Core (API Node)**, o diagrama de componentes é dividido em 4 contextos de negócio/lógicos fundamentais, além de uma visão geral de camadas (Clean Architecture).
+Devido à complexidade e diversidade de responsabilidades do **Backend Core (API Node)**, o diagrama de componentes é dividido em 5 contextos de negócio/lógicos fundamentais, além de uma visão geral de camadas (Clean Architecture).
 
 ---
 
@@ -77,7 +77,7 @@ graph TB
 
 ## 3. Contexto de Pedidos, Entregas & Roteamento (Core Logístico)
 
-O coração logístico da plataforma, englobando a confirmação de pedidos, simulação de frotas, atualização geográfica e o cálculo de rotas físicas.
+O coração logístico da plataforma, englobando a confirmação de pedidos, simulação de frotas, atualização geográfica (com tratamento de override de localização) e o cálculo de rotas físicas.
 
 ```mermaid
 graph TB
@@ -100,6 +100,7 @@ graph TB
         uc_entrega["AtribuirEntregadorUseCase"]:::comp
         uc_frota["PovoarFrotaUseCase"]:::comp
         uc_localizacao["AtualizarLocalizacaoEntregadorUseCase"]:::comp
+        uc_simulacao["SimularDeslocamentoUseCase"]:::comp
         uc_rota["ObterRotaEstavelUseCase"]:::comp
         uc_coleta["ObterRotaColetaUseCase"]:::comp
         uc_entrega_rota["ObterRotaEntregaUseCase"]:::comp
@@ -109,6 +110,7 @@ graph TB
         i_entregador_provider["IEntregadorProvider"]:::port
         i_rota_provider["IRotaProvider"]:::port
         i_pub["IEventPublisher"]:::port
+        i_entregador_service["IEntregadorService"]:::port
 
         %% Infra
         prisma_adapters["Adaptores Prisma"]:::comp
@@ -116,12 +118,14 @@ graph TB
         rabbitmq_pub["RabbitMQPublisher"]:::comp
         rabbitmq_con["RabbitMQConsumer"]:::comp
         redis_client["RedisClient"]:::comp
+        entregador_service["EntregadorAppService"]:::comp
     end
 
     %% Flows
     resolvers -->|Invoca| uc_pedido
     resolvers -->|Invoca| uc_frota
     resolvers -->|Invoca| uc_localizacao
+    resolvers -->|Invoca| uc_simulacao
     resolvers -->|Invoca| uc_rota
 
     %% UC Pedido
@@ -133,8 +137,15 @@ graph TB
     rabbitmq_con -->|Executa| uc_entrega
     uc_entrega -->|Persiste status de entrega| i_pedido_repo
 
-    %% UC Localização
-    uc_localizacao -->|Salva posições geográficas| redis_client
+    %% UC Localização com Override de Simulação
+    uc_localizacao -->|1. Cancela timers se ativo| uc_simulacao
+    uc_localizacao -->|2. Libera entregador| i_entregador_service
+    uc_localizacao -->|3. Salva posições geográficas| redis_client
+
+    %% UC Simulação
+    uc_simulacao -->|Verifica se está em simulação| i_entregador_service
+    uc_simulacao -->|Calcula trajeto logístico| uc_rota
+    uc_simulacao -->|Atualiza passo a passo| i_entregador_service
 
     %% UC Rotas & Frota
     uc_frota -->|Popula frotas| i_entregador_provider
@@ -147,6 +158,7 @@ graph TB
     grpc_providers -.->|Implements| i_entregador_provider
     grpc_providers -.->|Implements| i_rota_provider
     rabbitmq_pub -.->|Implements| i_pub
+    entregador_service -.->|Implements| i_entregador_service
 
     %% External calls
     prisma_adapters -->|SQL| db_postgres
@@ -176,7 +188,6 @@ graph TB
     subgraph analytics_context ["Contexto Analítico"]
         resolvers["GraphQL Resolvers"]:::comp
         
-        uc_assinatura["AssinarPlanoRecomendacaoUseCase"]:::comp
         uc_insights["ObterInsightsUseCase"]:::comp
 
         i_insights_provider["IInsightsProvider"]:::port
@@ -185,11 +196,9 @@ graph TB
     end
 
     %% Flows
-    resolvers -->|"Mutation: Assinar Plano"| uc_assinatura
     resolvers -->|"Query: Insights Comerciais"| uc_insights
 
     uc_insights -->|Busca previsões e KPIs| i_insights_provider
-    uc_assinatura -->|Atualiza permissões gRPC| i_insights_provider
 
     grpc_providers -.->|Implements| i_insights_provider
     grpc_providers -->|gRPC call| ms_recomendacao

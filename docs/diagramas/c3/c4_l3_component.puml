@@ -58,7 +58,7 @@ LAYOUT_WITH_LEGEND()
 title Diagrama de Componentes (L3) - Contexto de Pedidos, Entregas & Roteamento
 
 Container(rabbitmq, "RabbitMQ", "RabbitMQ 3", "Broker de eventos assíncronos.")
-ContainerDb(db_redis, "Cache (Redis)", "Redis 7", "Guarda cache-aside e posições geográficas.")
+ContainerDb(db_redis, "Cache (Redis)", "Redis 7", "Guarda cache-aside, posições geográficas e override de rotas.")
 ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Persiste pedidos e status.")
 Container(ms_entregadores, "MS Entregadores", "C# / gRPC", "Rastreamento da frota.")
 Container(ms_roteamento, "MS Roteamento", "C# / gRPC", "Cálculo de caminhos geográficos.")
@@ -69,6 +69,7 @@ Container_Boundary(api_node_logistics, "Contexto de Logística (API Node)") {
     Component(uc_entrega, "AtribuirEntregadorUseCase", "TypeScript Class")
     Component(uc_frota, "PovoarFrotaUseCase", "TypeScript Class")
     Component(uc_localizacao, "AtualizarLocalizacaoEntregadorUseCase", "TypeScript Class")
+    Component(uc_simulacao, "SimularDeslocamentoUseCase", "TypeScript Class")
     Component(uc_rota, "ObterRotaEstavelUseCase", "TypeScript Class")
     Component(uc_coleta, "ObterRotaColetaUseCase", "TypeScript Class")
     Component(uc_entrega_rota, "ObterRotaEntregaUseCase", "TypeScript Class")
@@ -77,17 +78,20 @@ Container_Boundary(api_node_logistics, "Contexto de Logística (API Node)") {
     Component(i_entregador_provider, "IEntregadorProvider", "Interface")
     Component(i_rota_provider, "IRotaProvider", "Interface")
     Component(i_pub, "IEventPublisher", "Interface")
+    Component(i_entregador_service, "IEntregadorService", "Interface")
 
     Component(prisma_adapters, "Adaptores Prisma", "TypeScript Repositories")
     Component(grpc_providers, "Provedores gRPC", "gRPC Clients")
     Component(rabbitmq_pub, "RabbitMQPublisher", "Event Publisher")
     Component(rabbitmq_con, "RabbitMQConsumer", "Background Consumer")
     Component(redis_client, "RedisClient Singleton", "ioredis")
+    Component(entregador_service, "EntregadorAppService", "Service Implementation")
 }
 
 Rel(resolvers, uc_pedido, "Invoca")
 Rel(resolvers, uc_frota, "Invoca")
 Rel(resolvers, uc_localizacao, "Invoca")
+Rel(resolvers, uc_simulacao, "Invoca")
 Rel(resolvers, uc_rota, "Invoca")
 
 Rel(uc_pedido, i_pedido_repo, "Grava pedido", "Port")
@@ -97,7 +101,13 @@ Rel(rabbitmq_con, rabbitmq, "Consome entrega.atribuida", "AMQP (Port 5672)")
 Rel(rabbitmq_con, uc_entrega, "Executa")
 Rel(uc_entrega, i_pedido_repo, "Grava atribuição", "Port")
 
-Rel(uc_localizacao, redis_client, "Atualiza GPS", "Method Call")
+Rel(uc_localizacao, uc_simulacao, "1. Cancela timers se ativo", "Static Method Call")
+Rel(uc_localizacao, i_entregador_service, "2. Libera entregador da simulação", "Port")
+Rel(uc_localizacao, redis_client, "3. Salva posição geográfica manual", "Method Call")
+
+Rel(uc_simulacao, i_entregador_service, "Verifica se motorista está em simulação", "Port")
+Rel(uc_simulacao, uc_rota, "Calcula trajeto logístico", "Dependency")
+Rel(uc_simulacao, i_entregador_service, "Atualiza posição do tick", "Port")
 
 Rel(uc_frota, i_entregador_provider, "Popula frota", "Port")
 Rel(uc_rota, i_rota_provider, "Calcula rotas", "Port")
@@ -108,6 +118,7 @@ Rel(prisma_adapters, i_pedido_repo, "Implementa", "Implements")
 Rel(grpc_providers, i_entregador_provider, "Implementa", "Implements")
 Rel(grpc_providers, i_rota_provider, "Implementa", "Implements")
 Rel(rabbitmq_pub, i_pub, "Implementa", "Implements")
+Rel(entregador_service, i_entregador_service, "Implementa", "Implements")
 
 Rel(prisma_adapters, db_postgres, "Grava", "Prisma Client (Port 5433)")
 Rel(rabbitmq_pub, rabbitmq, "Dispara eventos", "AMQP (Port 5672)")

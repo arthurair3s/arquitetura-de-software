@@ -14,20 +14,20 @@ graph TB
 
     %% Actors
     cliente["Cliente<br>(Utiliza o sistema para visualizar cardápios, realizar pedidos e acompanhar entregas)"]:::person
-    entregador["Entregador<br>(Utiliza o sistema para atualizar sua localização e gerenciar status das entregas)"]:::person
+    entregador["Entregador<br>(Utiliza o sistema para gerenciar disponibilidade, aceitar corridas e atualizar sua localização)"]:::person
     lojista["Lojista (Restaurante)<br>(Gerencia cardápios, produtos, recebe pedidos e acompanha insights)"]:::person
 
     %% Containers
-    frontend["Frontend Web<br>(React + Vite, TailwindCSS)<br>(Interface Web SPA que fornece as telas para Clientes e Lojistas)"]:::container
+    frontend["Frontend Web<br>(React + Vite, TailwindCSS)<br>(Interface Web SPA unificada que fornece as telas para Clientes, Lojistas e o App do Entregador)"]:::container
 
     subgraph private_backend ["Rede Privada / Servidores de Backend"]
-        gateway["API Gateway (Express)<br>(Node.js Express)<br>(Gerencia autenticação JWT, CORS, Rate Limiting e roteamento de borda)"]:::container
-        api_node["Backend Core (API Node)<br>(TypeScript, Node.js, GraphQL, Prisma)<br>(Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e gRPC)"]:::container
+        gateway["API Gateway (Express)<br>(Node.js Express)<br>(Gerencia autenticação JWT, CORS, Rate Limiting e roteamento de borda na porta 8080)"]:::container
+        api_node["Backend Core (API Node)<br>(TypeScript, Node.js, GraphQL, Prisma)<br>(Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos, cancelamento de simulações e conexões gRPC)"]:::container
         
-        ms_entregadores["Microserviço de Entregadores<br>(C#, .NET 10, gRPC)<br>(Gerencia o ciclo de vida, disponibilidade e o rastreamento em tempo real da frota de entregadores)"]:::container
-        ms_roteamento["Microserviço de Roteamento<br>(C#, .NET 10, gRPC)<br>(Responsável pelo cálculo de rotas ideais, estimativas de tempos e trajetos de coleta/entrega)"]:::container
+        ms_entregadores["Microserviço de Entregadores<br>(C#, .NET 10, gRPC)<br>(Gerencia o ciclo de vida, disponibilidade, bloqueio de simulação e o rastreamento em tempo real da frota no Redis)"]:::container
+        ms_roteamento["Microserviço de Roteamento<br>(C#, .NET 10, gRPC)<br>(Responsável pelo cálculo de rotas ideais, estimativas de tempos e trajetos de coleta/entrega usando OSRM)"]:::container
         ms_recomendacao["Microserviço de Recomendação<br>(Python, FastAPI, gRPC, SQLAlchemy)<br>(Gera insights analíticos de preços para lojistas baseados em geolocalização e histórico de vendas locais)"]:::container
-        ms_notificacoes["Microserviço de Notificações<br>(Python, pika, SMTP)<br>(Consome eventos e envia notificações por e-mail transacionais em background)"]:::container
+        ms_notificacoes["Microserviço de Notificações<br>(Python, pika, urllib)<br>(Consome eventos e envia notificações por e-mail em background via HTTP REST ou SMTP)"]:::container
 
         %% Databases
         db_postgres[("Banco de Dados Principal<br>(PostgreSQL 15)<br>(Armazena dados transacionais de usuários, restaurantes, produtos, pedidos, pagamentos e avaliações)")]:::db
@@ -43,7 +43,7 @@ graph TB
     subgraph externals ["Serviços Externos"]
         osrm_server["Servidor de Roteamento (OSRM)<br>(C++ Engine)<br>(Servidor OSRM que resolve caminhos geométricos e estimativas físicas reais)"]:::ext
         stripe["Gateway de Pagamento (Stripe)<br>(Processa transações financeiras de forma segura)"]:::ext
-        mailtrap["Servidor de E-mail (Mailtrap/SMTP)<br>(Sandbox de testes de envio de emails transacionais)"]:::ext
+        mailtrap["Servidor de E-mail (Mailtrap)<br>(Plataforma para teste de emails via API HTTP REST ou SMTP tradicional)"]:::ext
     end
 
     subgraph observability ["Observabilidade"]
@@ -55,12 +55,13 @@ graph TB
     %% Flows
     cliente -->|"Interage com a interface (HTTPS/SPA)"| frontend
     lojista -->|"Acessa o painel do restaurante (HTTPS/SPA)"| frontend
-    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8000)"| gateway
-    entregador -->|"Transmite fluxo de coordenadas (gRPC Stream Port 5001)"| ms_entregadores
+    entregador -->|"Gerencia entregas e localização no painel (HTTPS/SPA)"| frontend
+    
+    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8080)"| gateway
 
     gateway -->|"Encaminha requisições GraphQL (HTTP/GraphQL Port 4000)"| api_node
     api_node -->|"Grava/lê dados transacionais (Prisma Client Port 5433)"| db_postgres
-    api_node -->|"Lê/grava cache-aside de queries (TCP/ioredis Port 6379)"| db_redis
+    api_node -->|"Lê/grava cache-aside de queries e override de rotas (TCP/ioredis Port 6379)"| db_redis
     api_node -->|"Consulta entregadores próximos (gRPC Client Port 5001)"| ms_entregadores
     api_node -->|"Solicita cálculo de rota (gRPC Client Port 5002)"| ms_roteamento
     api_node -->|"Busca insights e atualiza assinatura (gRPC Client Port 50053)"| ms_recomendacao
@@ -77,7 +78,7 @@ graph TB
     ms_recomendacao -->|"Consome pedido.confirmado (AMQP Port 5672)"| rabbitmq
 
     ms_notificacoes -->|"Consome eventos para disparar e-mails (AMQP Port 5672)"| rabbitmq
-    ms_notificacoes -->|"Dispara e-mails transacionais (SMTP/TCP Port 2525)"| mailtrap
+    ms_notificacoes -->|"Dispara e-mails transacionais (HTTPS/REST Port 443 ou SMTP Port 2525)"| mailtrap
 
     db_postgres -->|"Lê logs de transações (WAL) (Logical Replication Port 5433)"| kafka_cdc
     kafka_cdc -->|"Transmite réplicas de restaurantes e produtos (Kafka Protocol Port 9092)"| ms_recomendacao
