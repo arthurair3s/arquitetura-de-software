@@ -61,6 +61,8 @@ desktop.ini
 # === Dados Pesados (OSRM) ===
 osrm-data/*
 !osrm-data/.gitkeep
+!osrm-data/Dockerfile
+!osrm-data/rio-metropolitano.osrm*
 
 # === Protos Gerados (Opcional, mas recomendado) ===
 # O gRPC gera esses arquivos no build, não precisam ir pro Git
