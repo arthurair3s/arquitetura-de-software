@@ -14,14 +14,20 @@ export default function LoginPage({ onLogin, onRegister }) {
     setLoading(true);
 
     try {
-      const res = await fetch(API_URL, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: LOGIN,
           variables: { email, senha }
         })
-      }).then(r => r.json());
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro no servidor: ${response.status} ${response.statusText}`);
+      }
+
+      const res = await response.json();
 
       if (res.errors) {
         throw new Error(res.errors[0].message);
