@@ -21,6 +21,19 @@ export class SimularDeslocamentoUseCase {
     private readonly finalizarEntregaUseCase: FinalizarEntregaUseCase
   ) {}
 
+  /**
+   * Cancela uma simulação ativa para a entrega especificada.
+   * Chamado quando o usuário atualiza a localização manualmente.
+   */
+  static cancelar(entregaId: number): void {
+    const timeoutId = SimularDeslocamentoUseCase.activeSimulations.get(entregaId);
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      SimularDeslocamentoUseCase.activeSimulations.delete(entregaId);
+      logger.info(`Simulação da entrega ${entregaId} cancelada por override manual.`, 'Simulação');
+    }
+  }
+
   async execute(entregaId: number | string): Promise<boolean> {
     const entregaIdNum = Number(entregaId);
     if (SimularDeslocamentoUseCase.activeSimulations.has(entregaIdNum)) return true;
@@ -66,6 +79,13 @@ export class SimularDeslocamentoUseCase {
     logger.info(`Rota carregada: ${pontos.length} pontos disponíveis.`, 'Simulação');
 
     const tick = async () => {
+      // Se o entregador foi liberado da simulação (override manual), encerra o loop
+      if (!this.entregadorService.estaEmSimulacao(motorista.id!)) {
+        SimularDeslocamentoUseCase.activeSimulations.delete(entregaIdNum);
+        logger.info(`Simulação da entrega ${entregaIdNum} interrompida por override de localização.`, 'Simulação');
+        return;
+      }
+
       if (pontos.length === 0) {
         SimularDeslocamentoUseCase.activeSimulations.delete(entregaIdNum);
         

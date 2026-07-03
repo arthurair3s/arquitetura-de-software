@@ -375,6 +375,17 @@ export default function EntregadorPanel({ usuario }) {
               <div className="space-y-4">
                 <h3 className="font-bold text-gray-800 text-lg">Central de Roteamento & Simulação</h3>
                 
+                {/* Mini mapa da posição atual do entregador */}
+                {coords && (
+                  <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-inner" style={{ height: '200px' }}>
+                    <MapContainer center={coords} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                      <Marker position={coords} icon={driverIcon} />
+                      <RecenterMap position={coords} />
+                    </MapContainer>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleSimularDeslocamento}

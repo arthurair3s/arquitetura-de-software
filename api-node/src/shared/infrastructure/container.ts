@@ -437,7 +437,8 @@ export class DIContainer {
   getAtualizarLocalizacaoEntregadorUseCase(): AtualizarLocalizacaoEntregadorUseCase {
     if (!this._atualizarLocalizacaoEntregadorUseCase) {
       this._atualizarLocalizacaoEntregadorUseCase = new AtualizarLocalizacaoEntregadorUseCase(
-        this.getEntregadorRepository()
+        this.getEntregadorRepository(),
+        this.getEntregadorService()
       );
     }
     return this._atualizarLocalizacaoEntregadorUseCase;
