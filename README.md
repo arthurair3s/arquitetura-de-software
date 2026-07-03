@@ -41,7 +41,7 @@ graph TD
     classDef ext fill:#121212,stroke:#666,stroke-width:1px,color:#aaa;
 
     cliente["Usuários (Clientes, Lojistas, Entregadores)"]:::client
-    gateway["Gateway de Borda (Kong Gateway:8000)"]:::container
+    gateway["API Gateway (Express:8080)"]:::container
     frontend["Frontend Web (React SPA)"]:::container
 
     subgraph "Backend Core & Microserviços"
@@ -88,7 +88,7 @@ graph TB
     classDef comp fill:#85bbf0,stroke:#6699cc,stroke-width:2px,color:#000;
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    gateway["API Gateway (Kong)"]:::ext
+    gateway["API Gateway (Express)"]:::ext
 
     subgraph "Backend Core (API Node)"
         pres["Camada de Apresentação (GraphQL Resolvers)"]:::comp
@@ -138,7 +138,7 @@ docker compose up --build
 
 ## 🕹️ Manual de Voo: Guia de Simulação
 
-1.  **Acesso**: Acesse `http://localhost:8000`. (O tráfego passa pelo Kong Gateway).
+1.  **Acesso**: Acesse `http://localhost:5173`. (O tráfego de API passa pelo API Gateway Express na porta 8080).
 2.  **Login**: Registre-se e faça login. Seu endereço servirá de destino para as entregas.
 3.  **Radar**: Observe os entregadores se movendo no mapa. Eles atualizam o **Redis** a cada 3 segundos.
 4.  **Compra**: Escolha um restaurante e clique em "Comprar".
@@ -154,7 +154,7 @@ docker compose up --build
 | Componente | Tecnologia | Papel |
 | :--- | :--- | :--- |
 | **Frontend** | React, Leaflet | UI moderna e visualização de geoprocessamento |
-| **Gateway** | Kong Gateway | Porta de entrada profissional, JWT e Rate Limit |
+| **Gateway** | API Gateway (Express) | Porta de entrada profissional, JWT e Rate Limit |
 | **API Principal** | Node.js (TypeScript), Apollo Server (GraphQL) | Orquestração de Microserviços e Schema unificado sob Clean Architecture |
 | **Microserviços C#** | .NET 10, gRPC, EF Core | Performance extrema para gerenciamento de entregadores e roteamento |
 | **Microserviços Python** | Python 3.12, FastAPI, gRPC, Pika | Motores de recomendação de precificação B2B e envio de notificações |
@@ -181,8 +181,8 @@ Com base nas últimas evoluções de arquitetura descritas no histórico do proj
 ---
 
 ## 📡 Endpoints de Acesso (Via Gateway)
-*   **Aplicação Web (Frontend)**: [http://localhost:8000](http://localhost:8000)
-*   **GraphQL Playground (API)**: [http://localhost:8000/graphql](http://localhost:8000/graphql)
+*   **Aplicação Web (Frontend)**: [http://localhost:5173](http://localhost:5173)
+*   **GraphQL Playground (API)**: [http://localhost:8080/graphql](http://localhost:8080/graphql)
 *   **OSRM (Direto)**: [http://localhost:5080](http://localhost:5080)
 *   **Jaeger Tracing Dashboard**: [http://localhost:16686](http://localhost:16686)
 *   **Grafana Dashboards**: [http://localhost:3000](http://localhost:3000)
