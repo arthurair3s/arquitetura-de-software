@@ -289,7 +289,7 @@ export class DIContainer {
     if (!this._pagamentoService) {
       this._pagamentoService = new PagamentoAppService(
         this.getPagamentoRepository(),
-        this.getPedidoRepository(),
+        this.getPedidoService(),
         this.getUsuarioService(),
         rabbitMQPublisher
       );
@@ -396,7 +396,7 @@ export class DIContainer {
     if (!this._processarPagamentoUseCase) {
       this._processarPagamentoUseCase = new ProcessarPagamentoUseCase(
         this.getPagamentoRepository(),
-        this.getPedidoRepository(),
+        this.getPedidoService(),
         this.getUsuarioService(),
         rabbitMQPublisher
       );

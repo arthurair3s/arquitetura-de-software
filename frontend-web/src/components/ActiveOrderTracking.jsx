@@ -24,9 +24,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
   useEffect(() => {
     // polling a cada 3 segundos
     const fetchStatus = () => {
+      const token = localStorage.getItem('token');
       fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: ACOMPANHAR_PEDIDO,
           variables: { id: pedidoId }
@@ -67,9 +71,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
     }
 
     const fetchCandidatos = () => {
+      const token = localStorage.getItem('token');
       fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: BUSCAR_CANDIDATOS,
           variables: { restauranteId: restaurante.id, raioKm: 3.0 }
@@ -93,9 +101,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
   const handleAtribuirEntregador = async () => {
     setSimulando(true);
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: ATRIBUIR_ENTREGADOR,
           variables: { pedido_id: pedidoId }
@@ -113,9 +125,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
 
   const handleMudarStatus = async (novoStatus, entregaId) => {
     try {
+      const token = localStorage.getItem('token');
       await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: ATUALIZAR_STATUS_ENTREGA,
           variables: { id: entregaId, status: novoStatus }
@@ -140,9 +156,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
 
     setSimulando(true);
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: SIMULAR_DESLOCAMENTO,
           variables: { id: entregaId }
@@ -164,9 +184,13 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
   const handleEnviarAvaliacao = async () => {
     try {
       const savedUser = JSON.parse(localStorage.getItem('usuario') || '{}');
+      const token = localStorage.getItem('token');
       await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: CRIAR_AVALIACAO,
           variables: {

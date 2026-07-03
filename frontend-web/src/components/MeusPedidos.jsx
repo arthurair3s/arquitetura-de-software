@@ -11,9 +11,13 @@ export default function MeusPedidos({ usuario, onSelectPedido }) {
   // 1. Carrega todos os restaurantes para poder cruzar o nome do restaurante pelo id
   const fetchRestaurantes = async () => {
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ query: GET_RESTAURANTES })
       }).then(r => r.json());
       if (res.data?.restaurantes) {
@@ -27,9 +31,13 @@ export default function MeusPedidos({ usuario, onSelectPedido }) {
   const fetchPedidos = async () => {
     if (!usuario?.id) return;
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           query: GET_USER_PEDIDOS,
           variables: { id: usuario.id }

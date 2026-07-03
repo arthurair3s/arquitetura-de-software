@@ -13,6 +13,18 @@ import {
 } from '../graphql/queries';
 import { API_URL } from '../config';
 
+const authFetch = (query, variables = {}) => {
+  const token = localStorage.getItem('token');
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ query, variables })
+  }).then(r => r.json());
+};
+
 export default function RestaurantePanel({ usuario }) {
   const [restaurantes, setRestaurantes] = useState([]);
   const [selectedRestauranteId, setSelectedRestauranteId] = useState('');
@@ -45,12 +57,7 @@ export default function RestaurantePanel({ usuario }) {
 
   // 1. Carrega os restaurantes
   useEffect(() => {
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: GET_RESTAURANTES })
-    })
-      .then(r => r.json())
+    authFetch(GET_RESTAURANTES)
       .then(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         const list = res.data.restaurantes || [];
@@ -96,14 +103,7 @@ export default function RestaurantePanel({ usuario }) {
     if (!restauranteId) return;
     setLoadingPedidos(true);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: GET_PEDIDOS_RESTAURANTE,
-          variables: { restaurante_id: restauranteId }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(GET_PEDIDOS_RESTAURANTE, { restaurante_id: restauranteId });
       if (res.errors) throw new Error(res.errors[0].message);
       setPedidos(res.data.pedidosPorRestaurante || []);
     } catch (e) {
@@ -118,14 +118,7 @@ export default function RestaurantePanel({ usuario }) {
     if (!restauranteId) return;
     setLoadingMenu(true);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: GET_RESTAURANTE_MENU,
-          variables: { id: restauranteId }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(GET_RESTAURANTE_MENU, { id: restauranteId });
       if (res.errors) throw new Error(res.errors[0].message);
       setMenu(res.data.restaurante);
     } catch (e) {
@@ -139,15 +132,7 @@ export default function RestaurantePanel({ usuario }) {
   const fetchInsights = (restauranteId) => {
     if (!restauranteId) return;
     setLoadingInsights(true);
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: OBTER_INSIGHTS_LOJA,
-        variables: { restauranteId: parseInt(restauranteId) }
-      })
-    })
-      .then(r => r.json())
+    authFetch(OBTER_INSIGHTS_LOJA, { restauranteId: parseInt(restauranteId) })
       .then(res => {
         if (res.errors) throw new Error(res.errors[0].message);
         setInsights(res.data.obterInsightsLoja);
@@ -164,14 +149,7 @@ export default function RestaurantePanel({ usuario }) {
   const handleAlterarStatusPedido = async (pedidoId, novoStatus) => {
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: EDITAR_STATUS_PEDIDO,
-          variables: { id: pedidoId, status: novoStatus }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(EDITAR_STATUS_PEDIDO, { id: pedidoId, status: novoStatus });
       if (res.errors) throw new Error(res.errors[0].message);
       
       showSuccess(`Pedido #${pedidoId} status alterado para ${novoStatus}!`);
@@ -187,14 +165,7 @@ export default function RestaurantePanel({ usuario }) {
     if (!novaCategoriaNome.trim()) return;
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: CRIAR_CATEGORIA,
-          variables: { nome: novaCategoriaNome, restaurante_id: selectedRestauranteId }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(CRIAR_CATEGORIA, { nome: novaCategoriaNome, restaurante_id: selectedRestauranteId });
       if (res.errors) throw new Error(res.errors[0].message);
       
       setNovaCategoriaNome('');
@@ -211,19 +182,12 @@ export default function RestaurantePanel({ usuario }) {
     if (!novoProduto.nome || !novoProduto.preco) return;
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: CRIAR_PRODUTO,
-          variables: {
-            nome: novoProduto.nome,
-            descricao: novoProduto.descricao,
-            preco: parseFloat(novoProduto.preco),
-            categoria_id: novoProduto.categoriaId || null
-          }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(CRIAR_PRODUTO, {
+        nome: novoProduto.nome,
+        descricao: novoProduto.descricao,
+        preco: parseFloat(novoProduto.preco),
+        categoria_id: novoProduto.categoriaId || null
+      });
       if (res.errors) throw new Error(res.errors[0].message);
       
       setNovoProduto({ nome: '', descricao: '', preco: '', categoriaId: '' });
@@ -239,14 +203,7 @@ export default function RestaurantePanel({ usuario }) {
     if (!window.confirm('Tem certeza que deseja remover este produto?')) return;
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: DELETAR_PRODUTO,
-          variables: { id }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(DELETAR_PRODUTO, { id });
       if (res.errors) throw new Error(res.errors[0].message);
       
       showSuccess('Produto excluído com sucesso!');
@@ -262,21 +219,14 @@ export default function RestaurantePanel({ usuario }) {
     setSavingConfig(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: EDITAR_RESTAURANTE,
-          variables: {
-            id: selectedRestauranteId,
-            nome: config.nome,
-            descricao: config.descricao,
-            endereco: config.endereco,
-            latitude: config.latitude ? parseFloat(config.latitude) : null,
-            longitude: config.longitude ? parseFloat(config.longitude) : null
-          }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(EDITAR_RESTAURANTE, {
+        id: selectedRestauranteId,
+        nome: config.nome,
+        descricao: config.descricao,
+        endereco: config.endereco,
+        latitude: config.latitude ? parseFloat(config.latitude) : null,
+        longitude: config.longitude ? parseFloat(config.longitude) : null
+      });
       if (res.errors) throw new Error(res.errors[0].message);
       
       showSuccess('Configurações atualizadas!');
@@ -294,17 +244,10 @@ export default function RestaurantePanel({ usuario }) {
     setUpdatingSubscription(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: ATUALIZAR_ASSINATURA,
-          variables: {
-            restauranteId: parseInt(selectedRestauranteId),
-            plano: novoPlano
-          }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(ATUALIZAR_ASSINATURA, {
+        restauranteId: parseInt(selectedRestauranteId),
+        plano: novoPlano
+      });
       if (res.errors) throw new Error(res.errors[0].message);
       
       showSuccess(`Plano de assinatura atualizado para ${novoPlano}!`);

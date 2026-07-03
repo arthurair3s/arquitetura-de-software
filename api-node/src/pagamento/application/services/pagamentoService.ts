@@ -1,6 +1,6 @@
 import type { IPagamentoRepository } from '../../domain/ports/IPagamentoRepository.js'
 import type { IPagamentoService } from '../ports/IPagamentoService.js'
-import type { IPedidoRepository } from '../../../pedido/domain/ports/IPedidoRepository.js'
+import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
 import type { IUsuarioService } from '../../../usuario/application/ports/IUsuarioService.js'
 import type { IEventPublisher } from '../../../shared/application/ports/IEventPublisher.js'
 import { Pagamento, PagamentoInvalidoError } from '../../domain/Pagamento.js'
@@ -9,7 +9,7 @@ import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 export class PagamentoAppService implements IPagamentoService {
   constructor(
     private readonly repository: IPagamentoRepository,
-    private readonly pedidoRepository: IPedidoRepository,
+    private readonly pedidoService: IPedidoService,
     private readonly usuarioService: IUsuarioService,
     private readonly eventPublisher: IEventPublisher
   ) {}
@@ -44,6 +44,10 @@ export class PagamentoAppService implements IPagamentoService {
       this.publicarEventoAprovado(result).catch((err) => {
         console.error('Erro ao publicar pagamento.aprovado no editar:', err);
       });
+      // Atualiza o status do pedido para EM_PREPARO_ENTREGA
+      this.pedidoService.editarPorId(result.pedido_id, { status: 'EM_PREPARO_ENTREGA' }).catch((err) => {
+        console.error('Erro ao atualizar status do pedido para EM_PREPARO_ENTREGA no editar:', err);
+      });
     }
 
     return result
@@ -54,7 +58,7 @@ export class PagamentoAppService implements IPagamentoService {
   }
 
   private async publicarEventoAprovado(pagamento: Pagamento): Promise<void> {
-    const pedido = await this.pedidoRepository.buscarPedidoPorId(pagamento.pedido_id)
+    const pedido = await this.pedidoService.buscarPorId(pagamento.pedido_id)
     let nomeUsuario = 'Cliente'
     let emailUsuario: string | null = null
 

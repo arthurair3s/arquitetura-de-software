@@ -13,6 +13,18 @@ import {
 } from '../graphql/queries';
 import { API_URL } from '../config';
 
+const authFetch = (query, variables = {}) => {
+  const token = localStorage.getItem('token');
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ query, variables })
+  }).then(r => r.json());
+};
+
 // Correção de ícone padrão do Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -90,14 +102,7 @@ export default function EntregadorPanel({ usuario }) {
     if (!entregadorId) return;
     setLoadingActive(true);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: GET_ENTREGADOR_ENTREGAS,
-          variables: { id: String(entregadorId) }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(GET_ENTREGADOR_ENTREGAS, { id: String(entregadorId) });
 
       if (res.errors) throw new Error(res.errors[0].message);
       
@@ -127,14 +132,11 @@ export default function EntregadorPanel({ usuario }) {
   const handleUpdateLocation = async (lat, lon) => {
     if (!entregadorId) return;
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: ATUALIZAR_LOCALIZACAO_ENTREGADOR,
-          variables: { id: String(entregadorId), latitude: Number(lat), longitude: Number(lon) }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(ATUALIZAR_LOCALIZACAO_ENTREGADOR, { 
+        id: String(entregadorId), 
+        latitude: Number(lat), 
+        longitude: Number(lon) 
+      });
 
       if (res.errors) throw new Error(res.errors[0].message);
       setCoords([lat, lon]);
@@ -151,11 +153,7 @@ export default function EntregadorPanel({ usuario }) {
     if (statusEntregador === 'OFFLINE') return;
     setLoadingRadar(true);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: GET_ENTREGAS_PENDENTES })
-      }).then(r => r.json());
+      const res = await authFetch(GET_ENTREGAS_PENDENTES);
 
       if (res.errors) throw new Error(res.errors[0].message);
       setEntregasPendentes(res.data.entregasPendentes || []);
@@ -195,14 +193,7 @@ export default function EntregadorPanel({ usuario }) {
     setError(null);
     const novoStatus = statusEntregador === 'OFFLINE' ? 'DISPONIVEL' : 'OFFLINE';
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: ATUALIZAR_STATUS_ENTREGADOR,
-          variables: { id: String(entregadorId), novoStatus }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(ATUALIZAR_STATUS_ENTREGADOR, { id: String(entregadorId), novoStatus });
 
       if (res.errors) throw new Error(res.errors[0].message);
       setStatusEntregador(res.data.atualizarStatusEntregador.status);
@@ -221,14 +212,7 @@ export default function EntregadorPanel({ usuario }) {
     if (!entregadorId) return;
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: ACEITAR_ENTREGA,
-          variables: { entrega_id: entregaId, entregador_id: String(entregadorId) }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(ACEITAR_ENTREGA, { entrega_id: entregaId, entregador_id: String(entregadorId) });
 
       if (res.errors) throw new Error(res.errors[0].message);
       showSuccess('Entrega aceita com sucesso! Rota vinculada.');
@@ -244,14 +228,7 @@ export default function EntregadorPanel({ usuario }) {
     setSimulando(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: SIMULAR_DESLOCAMENTO,
-          variables: { id: String(activeEntrega.id) }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(SIMULAR_DESLOCAMENTO, { id: String(activeEntrega.id) });
 
       if (res.errors) throw new Error(res.errors[0].message);
       showSuccess('Simulação iniciada em segundo plano! Acompanhe o progresso.');
@@ -267,14 +244,7 @@ export default function EntregadorPanel({ usuario }) {
     if (!activeEntrega) return;
     setError(null);
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: ATUALIZAR_STATUS_ENTREGA,
-          variables: { id: String(activeEntrega.id), status: novoStatus }
-        })
-      }).then(r => r.json());
+      const res = await authFetch(ATUALIZAR_STATUS_ENTREGA, { id: String(activeEntrega.id), status: novoStatus });
 
       if (res.errors) throw new Error(res.errors[0].message);
       showSuccess(`Status da entrega alterado para ${novoStatus}`);

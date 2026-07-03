@@ -1,5 +1,5 @@
 import type { IPagamentoRepository } from '../../domain/ports/IPagamentoRepository.js'
-import type { IPedidoRepository } from '../../../pedido/domain/ports/IPedidoRepository.js'
+import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
 import type { IUsuarioService } from '../../../usuario/application/ports/IUsuarioService.js'
 import type { IEventPublisher } from '../../../shared/application/ports/IEventPublisher.js'
 import type { IPagamentoStrategy } from '../ports/IPagamentoStrategy.js'
@@ -20,7 +20,7 @@ export interface ProcessarPagamentoInput {
 export class ProcessarPagamentoUseCase {
   constructor(
     private readonly repository: IPagamentoRepository,
-    private readonly pedidoRepository: IPedidoRepository,
+    private readonly pedidoService: IPedidoService,
     private readonly usuarioService: IUsuarioService,
     private readonly eventPublisher: IEventPublisher
   ) {}
@@ -65,13 +65,17 @@ export class ProcessarPagamentoUseCase {
       this.publicarEventoAprovado(result).catch((err: unknown) => {
         console.error('Erro ao publicar pagamento.aprovado no criar:', err);
       });
+      // Atualiza o status do pedido para EM_PREPARO_ENTREGA
+      this.pedidoService.editarPorId(result.pedido_id, { status: 'EM_PREPARO_ENTREGA' }).catch((err: unknown) => {
+        console.error('Erro ao atualizar status do pedido para EM_PREPARO_ENTREGA:', err);
+      });
     }
 
     return result
   }
 
   private async publicarEventoAprovado(pagamento: Pagamento): Promise<void> {
-    const pedido = await this.pedidoRepository.buscarPedidoPorId(pagamento.pedido_id)
+    const pedido = await this.pedidoService.buscarPorId(pagamento.pedido_id)
     let nomeUsuario = 'Cliente'
     let emailUsuario: string | null = null
 

@@ -26,9 +26,13 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
   const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
     fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({
         query: GET_RESTAURANTE_MENU,
         variables: { id: restaurante.id }
@@ -77,10 +81,15 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
         valor_total: valorTotal
       };
 
+      const token = localStorage.getItem('token');
+
       // 1. Criar o pedido
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ query: CRIAR_PEDIDO, variables })
       }).then(r => r.json());
 
@@ -96,7 +105,10 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
 
       const payRes = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ query: CRIAR_PAGAMENTO, variables: paymentVariables })
       }).then(r => r.json());
 
