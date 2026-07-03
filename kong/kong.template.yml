@@ -13,7 +13,7 @@ consumers:
 
 services:
   - name: api-graphql
-    url: ${API_URL}
+    url: https://api-node-production-f27c.up.railway.app
     connect_timeout: 5000
     read_timeout: 30000
     write_timeout: 30000
