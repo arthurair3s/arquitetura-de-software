@@ -8,5 +8,5 @@ RUN npm install --production
 # Copia o servidor
 COPY api-gateway/server.js ./
 
-EXPOSE 8000
+EXPOSE 8080
 CMD ["node", "server.js"]
