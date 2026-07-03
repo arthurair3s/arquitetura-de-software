@@ -26,7 +26,7 @@ LAYOUT_WITH_LEGEND()
 
 title Diagrama de Componentes (L3) - Contexto de Autenticação & Usuários
 
-Container(gateway, "API Gateway (Kong)", "Kong 3.4", "Encaminha requisições GraphQL.")
+Container(gateway, "API Gateway (Express)", "Node.js Express", "Encaminha requisições GraphQL.")
 ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Armazena credenciais e dados cadastrais.")
 
 Container_Boundary(api_node_auth, "Contexto de Autenticação (API Node)") {

@@ -21,7 +21,7 @@ graph TB
     frontend["Frontend Web<br>(React + Vite, TailwindCSS)<br>(Interface Web SPA que fornece as telas para Clientes e Lojistas)"]:::container
 
     subgraph private_backend ["Rede Privada / Servidores de Backend"]
-        gateway["API Gateway (Kong)<br>(Kong 3.4 DB-less)<br>(Gerencia autenticação JWT, CORS, Rate Limiting e roteamento de borda)"]:::container
+        gateway["API Gateway (Express)<br>(Node.js Express)<br>(Gerencia autenticação JWT, CORS, Rate Limiting e roteamento de borda)"]:::container
         api_node["Backend Core (API Node)<br>(TypeScript, Node.js, GraphQL, Prisma)<br>(Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e gRPC)"]:::container
         
         ms_entregadores["Microserviço de Entregadores<br>(C#, .NET 10, gRPC)<br>(Gerencia o ciclo de vida, disponibilidade e o rastreamento em tempo real da frota de entregadores)"]:::container

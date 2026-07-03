@@ -44,7 +44,7 @@ graph TB
     classDef port fill:#e9c46a,stroke:#f4a261,stroke-width:2px,color:#000;
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    gateway["API Gateway (Kong)"]:::ext
+    gateway["API Gateway (Express)"]:::ext
     db_postgres[("PostgreSQL")]:::ext
 
     subgraph auth_context ["Contexto de Autenticação"]

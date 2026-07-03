@@ -21,7 +21,7 @@ Container(frontend, "Frontend Web", "React + Vite, TailwindCSS", "Interface Web 
 System_Boundary(private_backend, "Rede Privada / Servidores de Backend") {
     
     ' API Gateway Container
-    Container(gateway, "API Gateway (Kong)", "Kong 3.4 (DB-less)", "Gerencia autenticação JWT, CORS, Rate Limiting e roteamento unificado de requisições de borda.")
+    Container(gateway, "API Gateway (Express)", "Node.js Express", "Gerencia autenticação JWT, CORS, Rate Limiting e roteamento unificado de requisições de borda.")
 
     ' Core Backend Container (GraphQL API)
     Container(api_node, "Backend Core (API Node)", "TypeScript, Node.js, GraphQL, Prisma", "Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos e integrações gRPC.")
