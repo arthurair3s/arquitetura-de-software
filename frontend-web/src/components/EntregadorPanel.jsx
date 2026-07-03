@@ -34,9 +34,9 @@ L.Icon.Default.mergeOptions({
 });
 
 const driverIcon = L.icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1048/1048329.png', // Moto / Scooter Icon
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
+  iconUrl: '/icons/entregador-icon.png',
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 function RecenterMap({ position }) {
