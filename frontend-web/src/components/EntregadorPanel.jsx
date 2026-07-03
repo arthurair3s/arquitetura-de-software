@@ -94,12 +94,20 @@ export default function EntregadorPanel({ usuario }) {
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const loadingStatusRef = React.useRef(false);
+
+  const updateLoadingStatus = (val) => {
+    setLoadingStatus(val);
+    loadingStatusRef.current = val;
+  };
+
   const entregadorId = usuario?.entregador_id;
 
 
   // 1. Busca status e entregas do próprio entregador
   const fetchEntregadorDados = async () => {
-    if (!entregadorId) return;
+    if (!entregadorId || loadingStatusRef.current) return;
     setLoadingActive(true);
     try {
       const res = await authFetch(GET_ENTREGADOR_ENTREGAS, { id: String(entregadorId) });
@@ -107,7 +115,7 @@ export default function EntregadorPanel({ usuario }) {
       if (res.errors) throw new Error(res.errors[0].message);
       
       const motorista = res.data.entregador;
-      if (motorista) {
+      if (motorista && !loadingStatusRef.current) {
         setStatusEntregador(motorista.status || 'OFFLINE');
         const list = motorista.entregas || [];
         setEntregasProprias(list);
@@ -241,16 +249,26 @@ export default function EntregadorPanel({ usuario }) {
 
   // Manualmente mudar status de entrega ativa
   const handleAtualizarStatusEntrega = async (novoStatus) => {
-    if (!activeEntrega) return;
+    if (!activeEntrega || loadingStatusRef.current) return;
+    
+    // Atualização otimista imediata para evitar que o clique duplo seja necessário
+    const oldEntrega = activeEntrega;
+    setActiveEntrega(prev => prev ? { ...prev, status: novoStatus } : null);
+    
+    updateLoadingStatus(true);
     setError(null);
     try {
-      const res = await authFetch(ATUALIZAR_STATUS_ENTREGA, { id: String(activeEntrega.id), status: novoStatus });
+      const res = await authFetch(ATUALIZAR_STATUS_ENTREGA, { id: String(oldEntrega.id), status: novoStatus });
 
       if (res.errors) throw new Error(res.errors[0].message);
       showSuccess(`Status da entrega alterado para ${novoStatus}`);
-      fetchEntregadorDados();
+      await fetchEntregadorDados();
     } catch (e) {
+      // Desfaz a atualização otimista em caso de falha
+      setActiveEntrega(oldEntrega);
       showError(e.message || 'Erro ao mudar status.');
+    } finally {
+      updateLoadingStatus(false);
     }
   };
 
@@ -372,17 +390,17 @@ export default function EntregadorPanel({ usuario }) {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleAtualizarStatusEntrega('EM_TRANSITO')}
-                      disabled={activeEntrega.status !== 'ATRIBUIDA'}
+                      disabled={activeEntrega.status !== 'ATRIBUIDA' || loadingStatus}
                       className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50"
                     >
-                      Peguei o Pedido
+                      {loadingStatus && activeEntrega.status === 'EM_TRANSITO' ? 'Processando...' : 'Peguei o Pedido'}
                     </button>
                     <button
                       onClick={() => handleAtualizarStatusEntrega('ENTREGUE')}
-                      disabled={activeEntrega.status !== 'EM_TRANSITO'}
+                      disabled={activeEntrega.status !== 'EM_TRANSITO' || loadingStatus}
                       className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-50"
                     >
-                      Finalizar Entrega
+                      {loadingStatus && activeEntrega.status === 'ENTREGUE' ? 'Processando...' : 'Finalizar Entrega'}
                     </button>
                   </div>
                 </div>

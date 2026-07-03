@@ -6,6 +6,7 @@ import { Bike, Navigation2, CheckCircle } from 'lucide-react';
 export default function DriverSimulator({ activePedidoId }) {
   const [mover] = useMutation(MOVER_ENTREGADOR);
   const [atualizarStatus] = useMutation(ATUALIZAR_STATUS_ENTREGA);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   const { data } = useQuery(ACOMPANHAR_PEDIDO, {
     variables: { id: activePedidoId },
@@ -43,11 +44,17 @@ export default function DriverSimulator({ activePedidoId }) {
   };
 
   const handleMudarStatus = async (novoStatus) => {
-    if (!entrega) return;
+    if (!entrega || loadingStatus) return;
+    setLoadingStatus(true);
     try {
-      await atualizarStatus({ variables: { id: entrega.id, status: novoStatus } });
+      await atualizarStatus({ 
+        variables: { id: entrega.id, status: novoStatus },
+        refetchQueries: [{ query: ACOMPANHAR_PEDIDO, variables: { id: activePedidoId } }]
+      });
     } catch(e) {
       console.error(e);
+    } finally {
+      setLoadingStatus(false);
     }
   };
 
@@ -103,17 +110,17 @@ export default function DriverSimulator({ activePedidoId }) {
               <button 
                 className={`btn ${entrega?.status === 'ATRIBUIDA' ? 'btn-success' : ''}`}
                 onClick={() => handleMudarStatus('EM_TRANSITO')}
-                disabled={entrega?.status !== 'ATRIBUIDA'}
+                disabled={entrega?.status !== 'ATRIBUIDA' || loadingStatus}
               >
-                Peguei o Lanche
+                {loadingStatus && entrega?.status === 'ATRIBUIDA' ? 'Processando...' : 'Peguei o Lanche'}
               </button>
               
               <button 
                 className={`btn ${entrega?.status === 'EM_TRANSITO' ? 'btn-success' : ''}`}
                 onClick={() => handleMudarStatus('ENTREGUE')}
-                disabled={entrega?.status !== 'EM_TRANSITO'}
+                disabled={entrega?.status !== 'EM_TRANSITO' || loadingStatus}
               >
-                <CheckCircle size={18} /> Finalizar Entrega
+                <CheckCircle size={18} /> {loadingStatus && entrega?.status === 'EM_TRANSITO' ? 'Finalizando...' : 'Finalizar Entrega'}
               </button>
             </div>
           </div>
