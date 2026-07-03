@@ -80,7 +80,7 @@ graph TD
 
     ms_python -->|Réplica analítica B2B| databases
     ms_python -->|Consome eventos / CDC| messaging
-    ms_python -->|Envio de e-mails (HTTP REST / SMTP)| ext
+    ms_python -->|"Envio de e-mails (HTTP REST / SMTP)"| ext
 ```
 > 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/diagramas/c2/c4_l2_container.md)
 
