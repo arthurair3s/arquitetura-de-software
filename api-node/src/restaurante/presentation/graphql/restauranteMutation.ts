@@ -16,7 +16,7 @@ export const createRestauranteMutation = (service: IRestauranteService) => ({
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
     const restaurante = await service.criar(parsed.data as any)
-    // Outbox: notifica o ms-recomendacao sobre o novo restaurante
+    // Evento de catálogo: replica no ms-recomendacao o novo restaurante
     catalogEventPublisher.restauranteCriado(restaurante as any).catch(console.error)
     return restaurante
   },
@@ -36,7 +36,7 @@ export const createRestauranteMutation = (service: IRestauranteService) => ({
     const { id, ...dados } = parsed.data as any
     const antes = await service.buscarPorId(id)
     const restaurante = await service.editarPorId(id, dados)
-    // Outbox: notifica o ms-recomendacao sobre a atualização
+    // Evento de catálogo: replica no ms-recomendacao a atualização
     catalogEventPublisher.restauranteAtualizado(antes as any, restaurante as any).catch(console.error)
     return restaurante
   },
@@ -44,7 +44,7 @@ export const createRestauranteMutation = (service: IRestauranteService) => ({
   deletarRestaurante: async (_: any, { id }: { id: string }) => {
     const antes = await service.buscarPorId(id)
     const result = !!(await service.deletar(id))
-    // Outbox: notifica o ms-recomendacao sobre a remoção
+    // Evento de catálogo: replica no ms-recomendacao a remoção
     if (result && antes) {
       catalogEventPublisher.restauranteDeletado(antes as any).catch(console.error)
     }

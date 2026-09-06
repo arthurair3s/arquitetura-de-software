@@ -69,7 +69,7 @@ class RabbitMQConsumer:
                 })
                 self.channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name, routing_key="pedido.confirmado")
 
-                # --- Fila de catálogo (Outbox Pattern — substitui Debezium CDC) ---
+                # --- Fila de catálogo (replicação do catálogo via eventos de domínio) ---
                 self.channel.queue_declare(queue=self.catalog_queue_name, durable=True, arguments={
                     "x-dead-letter-exchange": self.dlx_exchange_name,
                     "x-dead-letter-routing-key": self.catalog_dlq_routing_key,
@@ -96,13 +96,13 @@ class RabbitMQConsumer:
                 print(f"[Consumer] Evento recebido '{routing_key}' — Pedido #{payload.get('id')}")
                 self._save_order_history(payload)
             elif routing_key.startswith("restaurante."):
-                print(f"[Consumer] Outbox CDC: '{routing_key}'")
+                print(f"[Consumer] Evento de catálogo: '{routing_key}'")
                 self._handle_restaurante(payload)
             elif routing_key.startswith("categoria."):
-                print(f"[Consumer] Outbox CDC: '{routing_key}'")
+                print(f"[Consumer] Evento de catálogo: '{routing_key}'")
                 self._handle_categoria(payload)
             elif routing_key.startswith("produto."):
-                print(f"[Consumer] Outbox CDC: '{routing_key}'")
+                print(f"[Consumer] Evento de catálogo: '{routing_key}'")
                 self._handle_produto(payload)
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -112,8 +112,10 @@ class RabbitMQConsumer:
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     # ──────────────────────────────────────────────
-    # Handlers de Catálogo (Outbox Pattern)
-    # Equivalentes aos handlers do antigo kafka_consumer.py
+    # Handlers de Catálogo — replicação por eventos de domínio.
+    # Substituem os handlers do antigo kafka_consumer.py (Debezium/CDC).
+    # Não é o padrão Outbox: o publisher do api-node emite após o commit, sem
+    # garantia atômica.
     # ──────────────────────────────────────────────
 
     def _handle_restaurante(self, payload: dict):
@@ -314,7 +316,7 @@ class RabbitMQConsumer:
             try:
                 self.connect_with_retry()
                 if self.channel is not None:
-                    # Consome fila de pedidos e fila de catálogo (Outbox Pattern)
+                    # Consome a fila de pedidos e a fila de catálogo
                     self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.process_message, auto_ack=False)
                     self.channel.basic_consume(queue=self.catalog_queue_name, on_message_callback=self.process_message, auto_ack=False)
                     self.channel.start_consuming()

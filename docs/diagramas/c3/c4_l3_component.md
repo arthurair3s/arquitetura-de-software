@@ -44,7 +44,7 @@ graph TB
     classDef port fill:#e9c46a,stroke:#f4a261,stroke-width:2px,color:#000;
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
-    gateway["API Gateway (Express)"]:::ext
+    gateway["API Gateway (Kong)"]:::ext
     db_postgres[("PostgreSQL")]:::ext
 
     subgraph auth_context ["Contexto de Autenticação"]
@@ -172,7 +172,7 @@ graph TB
 
 ## 4. Contexto de Assinaturas, Recomendações & Insights
 
-Responsável por planos de insights, consumo de relatórios analíticos de vendas e replicação de dados CDC (Change Data Capture) via Kafka.
+Responsável por planos de insights, consumo de relatórios analíticos de vendas e replicação do catálogo via eventos de domínio no RabbitMQ.
 
 ```mermaid
 graph TB
@@ -182,7 +182,7 @@ graph TB
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
     ms_recomendacao["MS Recomendação (gRPC)"]:::ext
-    kafka_cdc["Kafka + Debezium (CDC)"]:::ext
+    catalogo_eventos["RabbitMQ — eventos de catálogo"]:::ext
     db_postgres[("PostgreSQL Principal")]:::ext
 
     subgraph analytics_context ["Contexto Analítico"]
@@ -204,8 +204,8 @@ graph TB
     grpc_providers -->|gRPC call| ms_recomendacao
 
     %% CDC flow
-    db_postgres -->|CDC WAL capture| kafka_cdc
-    kafka_cdc -->|Replica dados cadastrais| ms_recomendacao
+    api_node -->|Publica eventos de domínio| catalogo_eventos
+    catalogo_eventos -->|Fila recomendacao.catalog| ms_recomendacao
 ```
 
 ---

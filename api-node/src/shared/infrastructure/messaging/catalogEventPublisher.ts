@@ -37,10 +37,15 @@ function toPlainProduto(p: any) {
 
 /**
  * Publica eventos de catálogo (restaurantes, categorias, produtos) no exchange
- * 'delivery-events' do RabbitMQ usando o padrão Outbox.
+ * 'delivery-events' do RabbitMQ. O ms-recomendacao os consome para manter suas
+ * réplicas locais sincronizadas — substituindo o pipeline anterior de Debezium
+ * + Kafka CDC.
  *
- * O ms-recomendacao consome esses eventos para manter suas réplicas locais
- * sincronizadas — substituindo o pipeline anterior de Debezium + Kafka CDC.
+ * ATENÇÃO — isto NÃO é o padrão Outbox, apesar de já ter sido descrito assim.
+ * A publicação acontece depois do commit, em uma operação separada: se o
+ * processo cair entre o commit e o publish, o evento se perde e a réplica fica
+ * defasada até a próxima escrita naquele registro. Um Outbox de verdade exigiria
+ * gravar o evento na MESMA transação e ter um relay lendo essa tabela.
  */
 export class CatalogEventPublisher {
   async restauranteCriado(after: any): Promise<void> {

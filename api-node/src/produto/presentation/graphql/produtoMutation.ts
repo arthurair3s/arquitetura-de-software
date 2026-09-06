@@ -9,7 +9,7 @@ export const createProdutoMutation = (service: IProdutoService) => ({
     categoria_id?: string
   }) => {
     const produto = await service.criar(args)
-    // Outbox: notifica o ms-recomendacao sobre o novo produto
+    // Evento de catálogo: replica no ms-recomendacao o novo produto
     catalogEventPublisher.produtoCriado(produto as any).catch(console.error)
     return produto
   },
@@ -24,7 +24,7 @@ export const createProdutoMutation = (service: IProdutoService) => ({
     const { id, ...dados } = args
     const antes = await service.buscarPorId(id)
     const produto = await service.editarPorId(id, dados)
-    // Outbox: notifica o ms-recomendacao sobre a atualização
+    // Evento de catálogo: replica no ms-recomendacao a atualização
     catalogEventPublisher.produtoAtualizado(antes as any, produto as any).catch(console.error)
     return produto
   },
@@ -32,7 +32,7 @@ export const createProdutoMutation = (service: IProdutoService) => ({
   deletarProduto: async (_: any, { id }: { id: string }) => {
     const antes = await service.buscarPorId(id)
     const result = !!(await service.deletar(id))
-    // Outbox: notifica o ms-recomendacao sobre a remoção
+    // Evento de catálogo: replica no ms-recomendacao a remoção
     if (result && antes) {
       catalogEventPublisher.produtoDeletado(antes as any).catch(console.error)
     }

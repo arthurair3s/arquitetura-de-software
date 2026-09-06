@@ -21,7 +21,7 @@ graph TB
     frontend["Frontend Web<br>(React + Vite, TailwindCSS)<br>(Interface Web SPA unificada que fornece as telas para Clientes, Lojistas e o App do Entregador)"]:::container
 
     subgraph private_backend ["Rede Privada / Servidores de Backend"]
-        gateway["API Gateway (Express)<br>(Node.js Express)<br>(Gerencia autenticação JWT, CORS, Rate Limiting e roteamento de borda na porta 8080)"]:::container
+        gateway["API Gateway (Kong)<br>(Kong 3.4 DB-less / declarativo)<br>(Valida assinatura e expiração do JWT, CORS, Rate Limiting, correlation-id e roteamento de borda na porta 8000)"]:::container
         api_node["Backend Core (API Node)<br>(TypeScript, Node.js, GraphQL, Prisma)<br>(Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos, cancelamento de simulações e conexões gRPC)"]:::container
         
         ms_entregadores["Microserviço de Entregadores<br>(C#, .NET 10, gRPC)<br>(Gerencia o ciclo de vida, disponibilidade, bloqueio de simulação e o rastreamento em tempo real da frota no Redis)"]:::container
@@ -37,7 +37,7 @@ graph TB
 
         %% Messaging
         rabbitmq["RabbitMQ Message Broker<br>(RabbitMQ 3)<br>(Roteia eventos assíncronos (pedido.confirmado, pagamento.aprovado, entrega.atribuida) entre serviços)"]:::broker
-        kafka_cdc["Plataforma CDC (Kafka + Debezium)<br>(Apache Kafka, Debezium Connect)<br>(Captura alterações de dados (WAL) no banco de dados principal e replica para os microsserviços interessados)"]:::broker
+        catalogo_eventos["Replicação de Catálogo por Eventos<br>(RabbitMQ topic exchange)<br>(O api-node publica eventos de domínio de restaurante, categoria e produto; o ms-recomendacao os aplica nas suas réplicas locais)"]:::broker
     end
 
     subgraph externals ["Serviços Externos"]
@@ -57,7 +57,7 @@ graph TB
     lojista -->|"Acessa o painel do restaurante (HTTPS/SPA)"| frontend
     entregador -->|"Gerencia entregas e localização no painel (HTTPS/SPA)"| frontend
     
-    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8080)"| gateway
+    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8000)"| gateway
 
     gateway -->|"Encaminha requisições GraphQL (HTTP/GraphQL Port 4000)"| api_node
     api_node -->|"Grava/lê dados transacionais (Prisma Client Port 5433)"| db_postgres
@@ -80,8 +80,8 @@ graph TB
     ms_notificacoes -->|"Consome eventos para disparar e-mails (AMQP Port 5672)"| rabbitmq
     ms_notificacoes -->|"Dispara e-mails transacionais (HTTPS/REST Port 443 ou SMTP Port 2525)"| mailtrap
 
-    db_postgres -->|"Lê logs de transações (WAL) (Logical Replication Port 5433)"| kafka_cdc
-    kafka_cdc -->|"Transmite réplicas de restaurantes e produtos (Kafka Protocol Port 9092)"| ms_recomendacao
+    api_node -->|"Publica eventos de catálogo (AMQP restaurante./categoria./produto.*)"| catalogo_eventos
+    catalogo_eventos -->|"Entrega na fila recomendacao.catalog (AMQP Port 5672)"| ms_recomendacao
 
     %% Traces and Metrics
     api_node -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
