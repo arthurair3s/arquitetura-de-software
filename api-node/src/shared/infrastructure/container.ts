@@ -6,6 +6,8 @@ import { UsuarioAppService } from '../../usuario/application/services/usuarioSer
 
 // Restaurante
 import { RestauranteRepository } from '../../restaurante/infrastructure/adapters/restauranteRepository.js';
+import { CachedRestauranteRepository } from '../../restaurante/infrastructure/adapters/cachedRestauranteRepository.js';
+import type { IRestauranteRepository } from '../../restaurante/domain/ports/IRestauranteRepository.js';
 import { RestauranteAppService } from '../../restaurante/application/services/restauranteService.js';
 
 // Produto
@@ -42,6 +44,8 @@ import { PagamentoAppService } from '../../pagamento/application/services/pagame
 
 // Avaliacao
 import { AvaliacaoRepository } from '../../avaliacao/infrastructure/adapters/avaliacaoRepository.js';
+import { CachedAvaliacaoRepository } from '../../avaliacao/infrastructure/adapters/cachedAvaliacaoRepository.js';
+import type { IAvaliacaoRepository } from '../../avaliacao/domain/ports/IAvaliacaoRepository.js';
 import { AvaliacaoAppService } from '../../avaliacao/application/services/avaliacaoService.js';
 
 // Recomendacao
@@ -71,7 +75,7 @@ export class DIContainer {
 
   // Repositories
   private _usuarioRepository?: UsuarioRepository;
-  private _restauranteRepository?: RestauranteRepository;
+  private _restauranteRepository?: IRestauranteRepository;
   private _produtoRepository?: ProdutoRepository;
   private _categoriaRepository?: CategoriaRepository;
   private _pedidoRepository?: PedidoRepository;
@@ -80,7 +84,7 @@ export class DIContainer {
   private _entregadorRepository?: EntregadorRepository;
   private _entregaRepository?: EntregaRepository;
   private _pagamentoRepository?: PagamentoRepository;
-  private _avaliacaoRepository?: AvaliacaoRepository;
+  private _avaliacaoRepository?: IAvaliacaoRepository;
   private _recomendacaoProvider?: GrpcRecomendacaoProvider;
 
   // Services
@@ -130,9 +134,11 @@ export class DIContainer {
     return this._usuarioRepository;
   }
 
-  getRestauranteRepository(): RestauranteRepository {
+  // O cache é composto aqui: o repositório real não sabe que existe Redis, e
+  // quem consome a porta não sabe que existe cache.
+  getRestauranteRepository(): IRestauranteRepository {
     if (!this._restauranteRepository) {
-      this._restauranteRepository = new RestauranteRepository();
+      this._restauranteRepository = new CachedRestauranteRepository(new RestauranteRepository());
     }
     return this._restauranteRepository;
   }
@@ -193,9 +199,9 @@ export class DIContainer {
     return this._pagamentoRepository;
   }
 
-  getAvaliacaoRepository(): AvaliacaoRepository {
+  getAvaliacaoRepository(): IAvaliacaoRepository {
     if (!this._avaliacaoRepository) {
-      this._avaliacaoRepository = new AvaliacaoRepository();
+      this._avaliacaoRepository = new CachedAvaliacaoRepository(new AvaliacaoRepository());
     }
     return this._avaliacaoRepository;
   }
