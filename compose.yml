@@ -86,7 +86,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:5002
-      OSRM_URL: http://172.25.0.250:5000/
+      OSRM_URL: http://osrm-server:5000/
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
       OTEL_SERVICE_NAME: ms-roteamento
 
@@ -108,8 +108,7 @@ services:
     command: osrm-routed --algorithm mld /data/${OSRM_FILE}
     restart: unless-stopped
     networks:
-      app-network:
-        ipv4_address: 172.25.0.250
+      - app-network
 
   api:
     build:
@@ -299,11 +298,12 @@ services:
 
 
 networks:
+  # Sem subnet fixa de propósito: fixar um /16 colide com qualquer outro projeto
+  # Docker na mesma máquina que ocupe a mesma faixa, e o compose passa a falhar
+  # com "Pool overlaps with other one on this address space". Os serviços se
+  # encontram por DNS do Compose (osrm-server, kafka, postgres_db, ...).
   app-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16
 
 volumes:
   postgres_data:
