@@ -200,6 +200,102 @@ services:
     networks:
       - app-network
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # Change Data Capture: PostgreSQL -> Debezium -> Kafka -> ms-recomendacao
+  # a replicação do catálogo é derivada do WAL, não publicada pela aplicação
+  # ───────────────────────────────────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    environment:
+      # Modo KRaft: broker e controller no mesmo processo, sem Zookeeper.
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - '29092:29092'
+    healthcheck:
+      test: ['CMD', 'kafka-broker-api-versions', '--bootstrap-server', 'kafka:9092']
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  debezium-connect:
+    image: debezium/connect:2.4
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: delivery-connect
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+    ports:
+      - '8084:8083'
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres_db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:8083/connectors || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Registra o connector automaticamente. Sem isso o Kafka sobe mas nenhum dado
+  # flui — era exatamente esse o "falta configurar o Kafka" da entrega anterior.
+  debezium-connector-init:
+    image: curlimages/curl:8.10.1
+    depends_on:
+      debezium-connect:
+        condition: service_healthy
+    environment:
+      DB_USER: ${DB_MAIN_USER}
+      DB_PASS: ${DB_MAIN_PASS}
+      DB_NAME: ${DB_MAIN_NAME}
+    volumes:
+      - ./debezium:/debezium:ro
+    entrypoint: ['/bin/sh', '/debezium/register-connector.sh']
+    restart: on-failure
+    networks:
+      - app-network
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    environment:
+      KAFKA_CLUSTERS_0_NAME: express-delivery
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://debezium-connect:8083
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    ports:
+      - '8080:8080'
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
   ms-notificacoes:
     build:
       context: .
@@ -244,18 +340,15 @@ services:
       context: .
       dockerfile: ms-recomendacao-py/Dockerfile
     environment:
-      RABBIT_HOST: rabbitmq
-      RABBIT_PORT: 5672
-      RABBIT_USER: ${RABBIT_USER}
-      RABBIT_PASS: ${RABBIT_PASS}
       DATABASE_URL: postgresql://${DB_RECOMENDACAO_USER}:${DB_RECOMENDACAO_PASS}@postgres_recomendacao:5432/${DB_RECOMENDACAO_NAME}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
       OTEL_SERVICE_NAME: ms-recomendacao
 
     depends_on:
       postgres_recomendacao:
         condition: service_healthy
-      rabbitmq:
+      kafka:
         condition: service_healthy
     restart: unless-stopped
     networks:

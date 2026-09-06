@@ -1,0 +1,24 @@
+{
+  "name": "delivery-catalogo-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "plugin.name": "pgoutput",
+    "database.hostname": "postgres_db",
+    "database.port": "5432",
+    "database.user": "${DB_USER}",
+    "database.password": "${DB_PASS}",
+    "database.dbname": "${DB_NAME}",
+    "topic.prefix": "dbserver1",
+    "slot.name": "delivery_catalogo_slot",
+    "publication.name": "delivery_catalogo_pub",
+    "table.include.list": "public.restaurantes,public.categorias,public.produtos,public.pedidos,public.itens_pedido",
+    "snapshot.mode": "initial",
+    "decimal.handling.mode": "double",
+    "tombstones.on.delete": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false",
+    "publication.autocreate.mode": "filtered"
+  }
+}

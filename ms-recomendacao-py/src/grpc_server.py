@@ -11,7 +11,7 @@ import recomendacao_pb2_grpc
 
 from database import get_db
 from services.recommendation_service import RecommendationService
-from models import RestauranteReplica
+from models import RestauranteReplica, AssinaturaRestaurante
 
 # pyrefly: ignore [missing-import]
 class RecomendacaoServiceServicer(recomendacao_pb2_grpc.RecomendacaoServiceServicer):
@@ -80,8 +80,15 @@ class RecomendacaoServiceServicer(recomendacao_pb2_grpc.RecomendacaoServiceServi
                 # pyrefly: ignore [missing-attribute]
                 return recomendacao_pb2.AssinaturaResponse()
 
-            # pyrefly: ignore [bad-assignment]
-            restaurante.plano = plano_upper
+            # A assinatura é estado próprio: mora fora da réplica para sobreviver
+            # a um rebuild do CDC. Ver models.AssinaturaRestaurante.
+            assinatura = db.query(AssinaturaRestaurante).filter(
+                AssinaturaRestaurante.restaurante_id == request.restaurante_id
+            ).first()
+            if assinatura:
+                assinatura.plano = plano_upper
+            else:
+                db.add(AssinaturaRestaurante(restaurante_id=request.restaurante_id, plano=plano_upper))
             db.commit()
             print(f"[gRPC-Server] Plano do restaurante #{request.restaurante_id} alterado para {plano_upper}.")
             

@@ -1,7 +1,7 @@
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 from typing import Dict, Any
-from models import RestauranteReplica
+from models import RestauranteReplica, AssinaturaRestaurante
 from services.recommendation_strategy import (
     GratuitoInsightStrategy,
     PremiumInsightStrategy
@@ -30,8 +30,15 @@ class RecommendationService:
                 "mensagem": f"Restaurante ID {restaurante_id} não cadastrado no motor de recomendações."
             }
 
+        # O plano vem da tabela de assinaturas (estado próprio), não da réplica.
+        # sem assinatura registrada, o restaurante é GRATUITO.
+        assinatura = db.query(AssinaturaRestaurante).filter(
+            AssinaturaRestaurante.restaurante_id == restaurante_id
+        ).first()
+        plano = assinatura.plano if assinatura else "GRATUITO"
+
         # Resolve e aplica a estratégia correspondente baseada no plano comercial
-        if restaurante.plano.upper() == "PREMIUM":
+        if plano.upper() == "PREMIUM":
             strategy = self.premium_strategy
         else:
             strategy = self.gratuito_strategy
