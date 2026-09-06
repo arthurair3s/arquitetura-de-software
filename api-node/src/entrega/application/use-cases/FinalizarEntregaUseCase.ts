@@ -2,7 +2,7 @@ import type { IEntregaRepository } from '../../domain/ports/IEntregaRepository.j
 import type { IPedidoService } from '../../../pedido/application/ports/IPedidoService.js'
 import type { IEntregadorService } from '../../../entregador/application/ports/IEntregadorService.js'
 import type { IUsuarioService } from '../../../usuario/application/ports/IUsuarioService.js'
-import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
+import type { IEventPublisher } from '../../../shared/application/ports/IEventPublisher.js'
 import { Entrega, EntregaInvalidaError } from '../../domain/Entrega.js'
 import { logger } from '../../../shared/utils/logger.js'
 
@@ -11,7 +11,8 @@ export class FinalizarEntregaUseCase {
     private readonly repository: IEntregaRepository,
     private readonly pedidoService: IPedidoService,
     private readonly entregadorService: IEntregadorService,
-    private readonly usuarioService: IUsuarioService
+    private readonly usuarioService: IUsuarioService,
+    private readonly eventPublisher: IEventPublisher
   ) {}
 
   async execute(entregaId: number | string): Promise<Entrega> {
@@ -36,7 +37,7 @@ export class FinalizarEntregaUseCase {
         // Envia notificação por email (evento pedido.entregue)
         const usuario = await this.usuarioService.buscarPorId(pedido.usuario_id);
         if (usuario) {
-          await rabbitMQPublisher.publish('pedido.entregue', {
+          await this.eventPublisher.publish('pedido.entregue', {
             pedido_id: pedido.id,
             usuario_id: usuario.id,
             usuario_nome: usuario.nome,

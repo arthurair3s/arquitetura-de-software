@@ -4,7 +4,6 @@ import { Pedido, PedidoInvalidoError } from '../../domain/Pedido.js';
 import { Coordenada } from '../../../shared/domain/value-objects/Coordenada.js';
 import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js';
 import { StatusPedido } from '../../domain/StatusPedido.js';
-import type { IEventPublisher } from '../../../shared/application/ports/IEventPublisher.js';
 
 export interface ConfirmarPedidoInput {
   usuario_id: string | number;
@@ -17,8 +16,7 @@ export interface ConfirmarPedidoInput {
 export class ConfirmarPedidoUseCase {
   constructor(
     private readonly repository: IPedidoRepository,
-    private readonly usuarioService: IUsuarioService,
-    private readonly eventPublisher: IEventPublisher
+    private readonly usuarioService: IUsuarioService
   ) {}
 
   async execute(dados: ConfirmarPedidoInput): Promise<Pedido> {

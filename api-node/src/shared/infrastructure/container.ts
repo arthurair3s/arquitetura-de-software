@@ -242,7 +242,8 @@ export class DIContainer {
       this._pedidoService = new PedidoAppService(
         this.getPedidoRepository(),
         this.getUsuarioService(),
-        this.getEntregaRepository()
+        this.getEntregaRepository(),
+        rabbitMQPublisher
       );
     }
     return this._pedidoService;
@@ -317,8 +318,7 @@ export class DIContainer {
     if (!this._confirmarPedidoUseCase) {
       this._confirmarPedidoUseCase = new ConfirmarPedidoUseCase(
         this.getPedidoRepository(),
-        this.getUsuarioService(),
-        rabbitMQPublisher
+        this.getUsuarioService()
       );
     }
     return this._confirmarPedidoUseCase;
@@ -386,7 +386,8 @@ export class DIContainer {
         this.getEntregaRepository(),
         this.getPedidoService(),
         this.getEntregadorService(),
-        this.getUsuarioService()
+        this.getUsuarioService(),
+        rabbitMQPublisher
       );
     }
     return this._finalizarEntregaUseCase;

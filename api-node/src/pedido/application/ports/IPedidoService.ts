@@ -5,13 +5,6 @@ export interface IPedidoService {
   buscarPorId(id: number | string): Promise<Pedido | null>
   buscarPorUsuarioId(id: number | string): Promise<Pedido[]>
   buscarPorRestauranteId(id: number | string): Promise<Pedido[]>
-  criar(dados: {
-    usuario_id: string | number
-    restaurante_id: string | number
-    destino_latitude?: number | null
-    destino_longitude?: number | null
-    valor_total: number
-  }): Promise<Pedido>
   editarPorId(id: number | string, dados: {
     status?: string
     valor_total?: number

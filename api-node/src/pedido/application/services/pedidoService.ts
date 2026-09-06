@@ -7,14 +7,14 @@ import { Dinheiro } from '../../../shared/domain/value-objects/Dinheiro.js'
 import { StatusPedido } from '../../domain/StatusPedido.js'
 import type { IEntregaRepository } from '../../../entrega/domain/ports/IEntregaRepository.js'
 import { Entrega } from '../../../entrega/domain/Entrega.js'
-
-import { rabbitMQPublisher } from '../../../shared/infrastructure/messaging/rabbitmqPublisher.js'
+import type { IEventPublisher } from '../../../shared/application/ports/IEventPublisher.js'
 
 export class PedidoAppService implements IPedidoService {
   constructor(
     private readonly repository: IPedidoRepository,
     private readonly usuarioService: IUsuarioService,
-    private readonly entregaRepository: IEntregaRepository
+    private readonly entregaRepository: IEntregaRepository,
+    private readonly eventPublisher: IEventPublisher
   ) {}
 
   async listar(): Promise<Pedido[]> {
@@ -31,38 +31,6 @@ export class PedidoAppService implements IPedidoService {
 
   async buscarPorRestauranteId(id: number | string): Promise<Pedido[]> {
     return this.repository.buscarPedidoPorRestauranteId(id)
-  }
-
-  async criar(dados: {
-    usuario_id: string | number
-    restaurante_id: string | number
-    destino_latitude?: number | null
-    destino_longitude?: number | null
-    valor_total: number
-  }): Promise<Pedido> {
-    let { destino_latitude, destino_longitude, usuario_id, restaurante_id, valor_total } = dados
-
-    if (destino_latitude == null || destino_longitude == null) {
-      const usuario = await this.usuarioService.buscarPorId(usuario_id)
-      if (!usuario || usuario.coordenada?.latitude == null || usuario.coordenada?.longitude == null) {
-        throw new PedidoInvalidoError('Endereço de entrega não definido no perfil do usuário.')
-      }
-      destino_latitude = usuario.coordenada.latitude
-      destino_longitude = usuario.coordenada.longitude
-    }
-
-    const destino = new Coordenada(Number(destino_latitude), Number(destino_longitude))
-
-    const pedido = new Pedido(
-      Number(usuario_id),
-      Number(restaurante_id),
-      new StatusPedido('PENDENTE'),
-      new Dinheiro(Number(valor_total)),
-      destino
-    )
-
-    const result = await this.repository.criarPedido(pedido)
-    return result
   }
 
   async editarPorId(id: number | string, dados: {
@@ -103,7 +71,7 @@ export class PedidoAppService implements IPedidoService {
       }
 
       // Publica o evento pedido.confirmado assincronamente
-      rabbitMQPublisher.publish('pedido.confirmado', {
+      this.eventPublisher.publish('pedido.confirmado', {
         id: result.id,
         usuario_id: result.usuario_id,
         restaurante_id: result.restaurante_id,
