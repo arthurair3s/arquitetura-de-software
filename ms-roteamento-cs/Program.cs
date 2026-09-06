@@ -28,6 +28,10 @@ builder.Services.AddHttpClient("OsrmClient", client =>
 {
     var osrmUrl = builder.Configuration["OSRM_URL"] ?? "http://172.20.0.10:5000/";
     client.BaseAddress = new Uri(osrmUrl);
+
+    // Sem timeout explícito o HttpClient usa o default de 100s: uma chamada ao OSRM
+    // travado seguraria a thread do gRPC muito além do deadline do chamador (8s).
+    client.Timeout = TimeSpan.FromSeconds(6);
 });
 
 builder.Services.AddScoped<IRoutingProvider, Features.ProcessamentoRotas.Providers.OsrmProvider>();
@@ -39,4 +43,4 @@ app.MapGrpcService<RoteamentoService>();
 
 app.MapGet("/", () => "Serviço de Roteamento gRPC ativo.");
 
-app.Run();
+app.Run();

@@ -3,6 +3,7 @@ import protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { comDeadline, opcoesDeCanal } from './resilience.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +39,8 @@ export interface IEntregadorServiceClient extends grpc.Client {
 
 const client = new entregadorProto.EntregadorService(
   process.env.ENTREGADORES_SERVICE_URL || 'localhost:5001',
-  grpc.credentials.createInsecure()
+  grpc.credentials.createInsecure(),
+  opcoesDeCanal()
 ) as IEntregadorServiceClient;
 
-export default client;
+export default comDeadline(client);

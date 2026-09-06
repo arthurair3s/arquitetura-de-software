@@ -1,4 +1,5 @@
 import grpc from '@grpc/grpc-js';
+import { comDeadline, opcoesDeCanal, DEADLINE_ROTEAMENTO_MS } from './resilience.js';
 import protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -34,7 +35,8 @@ export interface IRoteamentoServiceClient extends grpc.Client {
 
 const client = new roteamentoProto.RoteamentoService(
   process.env.ROTEAMENTO_SERVICE_URL || 'localhost:5002',
-  grpc.credentials.createInsecure()
+  grpc.credentials.createInsecure(),
+  opcoesDeCanal()
 ) as IRoteamentoServiceClient;
 
-export default client;
+export default comDeadline(client, DEADLINE_ROTEAMENTO_MS);

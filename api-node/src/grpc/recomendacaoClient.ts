@@ -3,6 +3,7 @@ import protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { comDeadline, opcoesDeCanal } from './resilience.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,14 +53,18 @@ export interface IRecomendacaoServiceClient extends grpc.Client {
   AtualizarAssinatura(request: { restaurante_id: number, plano: string }, callback: (error: grpc.ServiceError | null, response: IAssinaturaResponse) => void): void;
 }
 
+const ENDERECO = process.env.RECOMENDACAO_SERVICE_URL || 'localhost:50053';
+
 const client = recomendacaoProto.recomendacao && recomendacaoProto.recomendacao.RecomendacaoService
   ? new recomendacaoProto.recomendacao.RecomendacaoService(
-      process.env.RECOMENDACAO_SERVICE_URL || 'localhost:50053',
-      grpc.credentials.createInsecure()
+      ENDERECO,
+      grpc.credentials.createInsecure(),
+      opcoesDeCanal()
     ) as IRecomendacaoServiceClient
   : new (recomendacaoProto.RecomendacaoService || recomendacaoProto.recomendacao)(
-      process.env.RECOMENDACAO_SERVICE_URL || 'localhost:50053',
-      grpc.credentials.createInsecure()
+      ENDERECO,
+      grpc.credentials.createInsecure(),
+      opcoesDeCanal()
     ) as IRecomendacaoServiceClient;
 
-export default client;
+export default comDeadline(client);
