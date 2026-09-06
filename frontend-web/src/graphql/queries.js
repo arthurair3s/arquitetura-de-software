@@ -29,10 +29,10 @@ export const GET_RESTAURANTE_MENU = `
   }
 `;
 
+// O dono do pedido vem do token no backend — não é mais um argumento.
 export const CRIAR_PEDIDO = `
-  mutation CriarPedido($usuario_id: ID!, $restaurante_id: ID!, $destino_latitude: Float, $destino_longitude: Float, $valor_total: Float!) {
+  mutation CriarPedido($restaurante_id: ID!, $destino_latitude: Float, $destino_longitude: Float, $valor_total: Float) {
     criarPedido(
-      usuario_id: $usuario_id, 
       restaurante_id: $restaurante_id,
       valor_total: $valor_total,
       destino_latitude: $destino_latitude,
@@ -115,8 +115,8 @@ export const SIMULAR_DESLOCAMENTO = `
 `;
 
 export const CRIAR_AVALIACAO = `
-  mutation CriarAvaliacao($usuario_id: ID!, $restaurante_id: ID!, $nota: Int, $comentario: String) {
-    criarAvaliacao(usuario_id: $usuario_id, restaurante_id: $restaurante_id, nota: $nota, comentario: $comentario) {
+  mutation CriarAvaliacao($restaurante_id: ID!, $nota: Int, $comentario: String) {
+    criarAvaliacao(restaurante_id: $restaurante_id, nota: $nota, comentario: $comentario) {
       id
     }
   }
@@ -287,8 +287,8 @@ export const GET_ENTREGAS_PENDENTES = `
 `;
 
 export const ACEITAR_ENTREGA = `
-  mutation AceitarEntrega($entrega_id: ID!, $entregador_id: ID!) {
-    aceitarEntrega(entrega_id: $entrega_id, entregador_id: $entregador_id) {
+  mutation AceitarEntrega($entrega_id: ID!) {
+    aceitarEntrega(entrega_id: $entrega_id) {
       id
       status
       entregador {
@@ -378,16 +378,15 @@ export const ATUALIZAR_LOCALIZACAO_ENTREGADOR = `
   }
 `;
 
-export const GET_USER_PEDIDOS = `
-  query GetUserPedidos($id: ID!) {
-    usuario(id: $id) {
-      pedidos {
-        id
-        status
-        valor_total
-        data_criacao
-        restaurante_id
-      }
+// Substitui o antigo GET_USER_PEDIDOS, que lia os pedidos por um id arbitrário.
+export const GET_MEUS_PEDIDOS = `
+  query GetMeusPedidos {
+    meusPedidos {
+      id
+      status
+      valor_total
+      data_criacao
+      restaurante_id
     }
   }
 `;

@@ -18,13 +18,13 @@ extend type Mutation {
   criarCategoria(
     nome: String!
     restaurante_id: ID!
-  ): Categoria
+  ): Categoria @auth(roles: ["RESTAURANTE"])
 
   editarCategoria(
     id: ID!
     nome: String
     restaurante_id: ID
-  ): Categoria
+  ): Categoria @auth(roles: ["RESTAURANTE"])
 
-  deletarCategoria(id: ID!): Boolean
+  deletarCategoria(id: ID!): Boolean @auth(roles: ["RESTAURANTE"])
 }

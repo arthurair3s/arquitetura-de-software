@@ -5,13 +5,17 @@ import { withDomainErrorHandling } from '../../../shared/utils/errorHandler.js'
 import { diContainer } from '../../../shared/infrastructure/container.js'
 
 export const createPedidoMutation = (service: IPedidoService) => ({
-  criarPedido: async (_: any, args: any) => {
+  criarPedido: async (_: any, args: any, context: any) => {
     const parsed = criarPedidoSchema.safeParse(args)
     if (!parsed.success) {
       throw new GraphQLError(parsed.error.issues[0].message, { extensions: { code: 'BAD_USER_INPUT', zodError: parsed.error.format() } })
     }
     const useCase = diContainer.getConfirmarPedidoUseCase()
-    return withDomainErrorHandling(() => useCase.execute(parsed.data as any))
+    // O dono do pedido é o portador do token — não um argumento da mutation.
+    return withDomainErrorHandling(() => useCase.execute({
+      ...parsed.data,
+      usuario_id: context.user.id
+    } as any))
   },
 
   editarPedido: async (_: any, args: any) => {

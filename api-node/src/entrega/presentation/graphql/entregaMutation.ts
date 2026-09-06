@@ -50,7 +50,14 @@ export const createEntregaMutation = (
     return atribuirMelhorEntregadorUseCase.execute(pedido_id)
   },
 
-  aceitarEntrega: async (_: any, { entrega_id, entregador_id }: { entrega_id: string, entregador_id: string }) => {
-    return service.editarPorId(entrega_id, { entregador_id, status: 'ATRIBUIDA' })
+  aceitarEntrega: async (_: any, { entrega_id }: { entrega_id: string }, context: any) => {
+    // O entregador é o do token: um entregador não aceita corrida em nome de outro.
+    const entregadorId = context.user?.entregador_id
+    if (!entregadorId) {
+      throw new GraphQLError('Usuário autenticado não possui cadastro de entregador vinculado.', {
+        extensions: { code: 'FORBIDDEN' }
+      })
+    }
+    return service.editarPorId(entrega_id, { entregador_id: String(entregadorId), status: 'ATRIBUIDA' })
   }
 })

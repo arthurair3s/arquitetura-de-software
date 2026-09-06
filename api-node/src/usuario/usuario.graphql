@@ -17,9 +17,9 @@ type LoginResponse {
 }
 
 extend type Query {
-  usuarios: [Usuario]
-  usuario(id: ID!): Usuario
-  me: Usuario
+  usuarios: [Usuario] @auth(roles: ["RESTAURANTE"])
+  usuario(id: ID!): Usuario @auth
+  me: Usuario @auth
 }
 
 extend type Mutation {
@@ -35,23 +35,22 @@ extend type Mutation {
     restaurante_id: Int
   ): Usuario
 
+  # Sem `role`/`entregador_id`/`restaurante_id`: são campos administrativos e,
+  # numa mutation que o próprio usuário executa, seriam escalada de privilégio.
   editarUsuario(
     id: ID!
     nome: String
     email: String
     telefone: String
     senha: String
-    role: String
-    entregador_id: Int
-    restaurante_id: Int
-  ): Usuario
+  ): Usuario @auth
 
   atualizarEndereco(
     latitude: Float
     longitude: Float
     endereco: String!
-  ): Usuario
+  ): Usuario @auth
 
-  deletarUsuario(id: ID!): Boolean
+  deletarUsuario(id: ID!): Boolean @auth
 }
 

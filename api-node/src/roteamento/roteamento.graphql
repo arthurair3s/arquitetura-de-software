@@ -31,7 +31,7 @@ extend type Query {
     origemLon: Float!
     destinoLat: Float!
     destinoLon: Float!
-  ): ResumoRota
+  ): ResumoRota @auth
 
   # Retorna o trajeto completo (lista de pontos do caminho) entre dois pontos
   obterGeometriaRota(
@@ -39,8 +39,8 @@ extend type Query {
     origemLon: Float!
     destinoLat: Float!
     destinoLon: Float!
-  ): GeometriaRota
+  ): GeometriaRota @auth
 
   # Rota com múltiplas paradas (ex: entregador → restaurante → cliente)
-  calcularRotaMultiplosPontos(pontos: [LocalizacaoInput!]!): GeometriaRota
+  calcularRotaMultiplosPontos(pontos: [LocalizacaoInput!]!): GeometriaRota @auth
 }

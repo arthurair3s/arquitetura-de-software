@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
+// usuario_id não é mais entrada do cliente: vem do token, validado pela @auth.
 export const criarPedidoSchema = z.object({
-  usuario_id: z.string().or(z.number()),
   restaurante_id: z.string().or(z.number()),
   destino_latitude: z.coerce.number().nullable().optional(),
   destino_longitude: z.coerce.number().nullable().optional(),

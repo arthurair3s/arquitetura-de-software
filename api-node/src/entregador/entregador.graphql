@@ -15,40 +15,41 @@ type Entregador {
 }
 
 extend type Query {
-  entregadores: [Entregador]
-  entregador(id: ID!): Entregador
+  entregadores: [Entregador] @auth
+  entregador(id: ID!): Entregador @auth
   buscarEntregadoresProximos(
     latitude: Float!
     longitude: Float!
     raioKm: Float!
-  ): [Entregador]
+  ): [Entregador] @auth
 
   # busca entregadores automaticamente com base no id do restaurante
   entregadoresProximosAoRestaurante(
     restauranteId: ID!
     raioKm: Float!
-  ): [Entregador]
+  ): [Entregador] @auth
 }
 
 extend type Mutation {
-  criarEntregador(nome: String, telefone: String, veiculo: String): Entregador
+  criarEntregador(nome: String, telefone: String, veiculo: String): Entregador @auth(roles: ["ENTREGADOR"])
 
   editarEntregador(
     id: ID!
     nome: String
     telefone: String
     veiculo: String
-  ): Entregador
+  ): Entregador @auth(roles: ["ENTREGADOR"])
 
-  deletarEntregador(id: ID!): Boolean
+  deletarEntregador(id: ID!): Boolean @auth(roles: ["ENTREGADOR"])
 
-  atualizarStatusEntregador(id: ID!, novoStatus: StatusEntregador!): Entregador
+  atualizarStatusEntregador(id: ID!, novoStatus: StatusEntregador!): Entregador @auth(roles: ["ENTREGADOR"])
 
   atualizarLocalizacaoEntregador(
     id: ID!
     latitude: Float!
     longitude: Float!
-  ): Boolean
+  ): Boolean @auth(roles: ["ENTREGADOR"])
 
-  povoarFrota: Boolean
+  # Utilitário de seed da demo: exige login, sem exigir perfil.
+  povoarFrota: Boolean @auth
 }

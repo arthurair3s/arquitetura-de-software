@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GET_USER_PEDIDOS, GET_RESTAURANTES } from '../graphql/queries';
+import { GET_MEUS_PEDIDOS, GET_RESTAURANTES } from '../graphql/queries';
 import { API_URL } from '../config';
 
 export default function MeusPedidos({ usuario, onSelectPedido }) {
@@ -39,14 +39,13 @@ export default function MeusPedidos({ usuario, onSelectPedido }) {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          query: GET_USER_PEDIDOS,
-          variables: { id: usuario.id }
+          query: GET_MEUS_PEDIDOS
         })
       }).then(r => r.json());
       
       if (res.errors) throw new Error(res.errors[0].message);
       
-      const list = res.data.usuario?.pedidos || [];
+      const list = res.data.meusPedidos || [];
       // Ordena decrescente por id do pedido (mais recentes primeiro)
       const sorted = [...list].sort((a, b) => Number(b.id) - Number(a.id));
       setPedidos(sorted);

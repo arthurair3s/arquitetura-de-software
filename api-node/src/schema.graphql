@@ -1,2 +1,6 @@
+# Exige um token válido no campo. Sem `roles`, basta estar autenticado;
+# com `roles`, o perfil do token precisa estar na lista.
+directive @auth(roles: [String!]) on FIELD_DEFINITION
+
 type Query
 type Mutation

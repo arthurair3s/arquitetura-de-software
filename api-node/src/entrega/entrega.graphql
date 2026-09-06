@@ -19,9 +19,9 @@ extend type Entregador {
 }
 
 extend type Query {
-  entregas: [Entrega]
-  entrega(id: ID!): Entrega
-  entregasPendentes: [Entrega]
+  entregas: [Entrega] @auth
+  entrega(id: ID!): Entrega @auth
+  entregasPendentes: [Entrega] @auth(roles: ["ENTREGADOR"])
 }
 
 extend type Mutation {
@@ -30,7 +30,7 @@ extend type Mutation {
     entregador_id: ID
     status: String
     previsao_entrega: String
-  ): Entrega
+  ): Entrega @auth(roles: ["RESTAURANTE"])
 
   editarEntrega(
     id: ID!
@@ -38,13 +38,16 @@ extend type Mutation {
     entregador_id: ID
     status: String
     previsao_entrega: String
-  ): Entrega
+  ): Entrega @auth
 
+  deletarEntrega(id: ID!): Boolean @auth(roles: ["RESTAURANTE"])
 
-  deletarEntrega(id: ID!): Boolean
+  # Controles de simulação: qualquer usuário autenticado, porque o painel do
+  # cliente também dispara o deslocamento na demo.
+  simularDeslocamento(id: ID!): Boolean @auth
 
-  simularDeslocamento(id: ID!): Boolean
-  
-  atribuirEntregador(pedido_id: ID!): Entrega
-  aceitarEntrega(entrega_id: ID!, entregador_id: ID!): Entrega
+  atribuirEntregador(pedido_id: ID!): Entrega @auth
+
+  # `entregador_id` removido: quem aceita a corrida é o entregador do token.
+  aceitarEntrega(entrega_id: ID!): Entrega @auth(roles: ["ENTREGADOR"])
 }

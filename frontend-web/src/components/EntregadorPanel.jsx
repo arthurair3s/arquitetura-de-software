@@ -220,7 +220,7 @@ export default function EntregadorPanel({ usuario }) {
     if (!entregadorId) return;
     setError(null);
     try {
-      const res = await authFetch(ACEITAR_ENTREGA, { entrega_id: entregaId, entregador_id: String(entregadorId) });
+      const res = await authFetch(ACEITAR_ENTREGA, { entrega_id: entregaId });
 
       if (res.errors) throw new Error(res.errors[0].message);
       showSuccess('Entrega aceita com sucesso! Rota vinculada.');

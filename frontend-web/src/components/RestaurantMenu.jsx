@@ -72,9 +72,7 @@ export default function RestaurantMenu({ restaurante, userLocation, onBack, onOr
     setCreatingOrder(true);
     setPaymentError(null);
     try {
-      const savedUser = JSON.parse(localStorage.getItem('usuario') || '{}');
       const variables = {
-        usuario_id: savedUser.id || '1',
         restaurante_id: restaurante.id,
         destino_latitude: userLocation.lat,
         destino_longitude: userLocation.lon,

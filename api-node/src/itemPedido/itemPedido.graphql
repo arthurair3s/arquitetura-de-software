@@ -12,8 +12,8 @@ extend type Produto {
 }
 
 extend type Query {
-  itensPedido: [ItemPedido]
-  itemPedido(id: ID!): ItemPedido
+  itensPedido: [ItemPedido] @auth(roles: ["RESTAURANTE"])
+  itemPedido(id: ID!): ItemPedido @auth
 }
 
 extend type Mutation {
@@ -22,7 +22,7 @@ extend type Mutation {
     produto_id: ID!
     quantidade: Int!
     preco_unitario: Float!
-  ): ItemPedido
+  ): ItemPedido @auth
 
   editarItemPedido(
     id: ID!
@@ -30,7 +30,7 @@ extend type Mutation {
     produto_id: ID
     quantidade: Int
     preco_unitario: Float
-  ): ItemPedido
+  ): ItemPedido @auth
 
-  deletarItemPedido(id: ID!): Boolean
+  deletarItemPedido(id: ID!): Boolean @auth
 }

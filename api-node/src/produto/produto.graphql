@@ -17,7 +17,7 @@ extend type Mutation {
     descricao: String
     preco: Float!
     categoria_id: ID
-  ): Produto
+  ): Produto @auth(roles: ["RESTAURANTE"])
 
   editarProduto(
     id: ID!
@@ -25,7 +25,7 @@ extend type Mutation {
     descricao: String
     preco: Float!
     categoria_id: ID
-  ): Produto
+  ): Produto @auth(roles: ["RESTAURANTE"])
 
-  deletarProduto(id: ID!): Boolean
+  deletarProduto(id: ID!): Boolean @auth(roles: ["RESTAURANTE"])
 }

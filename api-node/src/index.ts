@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadFilesSync } from '@graphql-tools/load-files';
 import { mergeTypeDefs } from '@graphql-tools/merge';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { aplicarAuthDirective } from './shared/presentation/graphql/authDirective.js';
 
 import { resolvers } from './resolvers.js';
 
@@ -31,9 +33,12 @@ rabbitMQConsumer.connect().catch((err) => {
   console.error('RabbitMQ consumer startup connection error:', err);
 });
 
+// A autorização é aplicada como uma transformação do schema: todo campo marcado
+// com @auth passa a ter o seu resolver embrulhado pela checagem de token/perfil.
+const schema = aplicarAuthDirective(makeExecutableSchema({ typeDefs, resolvers }));
+
 const server = new ApolloServer<MyContext>({
-  typeDefs,
-  resolvers,
+  schema,
   formatError: (formattedError, error: any) => {
     const originalError = error?.originalError || error;
 

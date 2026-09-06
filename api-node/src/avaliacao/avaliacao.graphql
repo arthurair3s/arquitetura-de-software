@@ -20,20 +20,18 @@ extend type Query {
 }
 
 extend type Mutation {
+  # `usuario_id` removido: o autor da avaliação é o portador do token.
   criarAvaliacao(
-    usuario_id: ID!
     restaurante_id: ID!
     nota: Int
     comentario: String
-  ): Avaliacao
+  ): Avaliacao @auth
 
   editarAvaliacao(
     id: ID!
-    usuario_id: ID
-    restaurante_id: ID
     nota: Int
     comentario: String
-  ): Avaliacao
+  ): Avaliacao @auth
 
-  deletarAvaliacao(id: ID!): Boolean
+  deletarAvaliacao(id: ID!): Boolean @auth
 }

@@ -11,12 +11,12 @@ extend type Pedido {
 }
 
 extend type Query {
-  pagamentos: [Pagamento]
-  pagamento(id: ID!): Pagamento
+  pagamentos: [Pagamento] @auth(roles: ["RESTAURANTE"])
+  pagamento(id: ID!): Pagamento @auth
 }
 
 extend type Mutation {
-  criarPagamento(pedido_id: ID!, metodo: String, status: String, valor: Float): Pagamento
+  criarPagamento(pedido_id: ID!, metodo: String, status: String, valor: Float): Pagamento @auth
 
   editarPagamento(
     id: ID!
@@ -24,7 +24,7 @@ extend type Mutation {
     metodo: String
     status: String
     valor: Float
-  ): Pagamento
+  ): Pagamento @auth(roles: ["RESTAURANTE"])
 
-  deletarPagamento(id: ID!): Boolean
+  deletarPagamento(id: ID!): Boolean @auth(roles: ["RESTAURANTE"])
 }

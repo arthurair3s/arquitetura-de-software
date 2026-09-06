@@ -183,7 +183,6 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
 
   const handleEnviarAvaliacao = async () => {
     try {
-      const savedUser = JSON.parse(localStorage.getItem('usuario') || '{}');
       const token = localStorage.getItem('token');
       await fetch(API_URL, {
         method: 'POST',
@@ -194,7 +193,6 @@ export default function ActiveOrderTracking({ pedidoId, restaurante, onCancel })
         body: JSON.stringify({
           query: CRIAR_AVALIACAO,
           variables: {
-            usuario_id: savedUser.id || "1",
             restaurante_id: restaurante.id,
             nota: nota > 0 ? nota : null,
             comentario: comentario || null

@@ -21,9 +21,9 @@ type AssinaturaRecomendacao {
 }
 
 extend type Query {
-  obterInsightsLoja(restauranteId: Int!): InsightsLoja
+  obterInsightsLoja(restauranteId: Int!): InsightsLoja @auth(roles: ["RESTAURANTE"])
 }
 
 extend type Mutation {
-  atualizarAssinaturaRecomendacao(restauranteId: Int!, plano: String!): AssinaturaRecomendacao
+  atualizarAssinaturaRecomendacao(restauranteId: Int!, plano: String!): AssinaturaRecomendacao @auth(roles: ["RESTAURANTE"])
 }

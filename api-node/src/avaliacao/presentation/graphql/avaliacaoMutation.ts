@@ -2,11 +2,12 @@ import type { IAvaliacaoService } from '../../application/ports/IAvaliacaoServic
 
 export const createAvaliacaoMutation = (service: IAvaliacaoService) => ({
   criarAvaliacao: async (_: any, args: {
-    usuario_id: string
     restaurante_id: string
     nota: number
     comentario?: string
-  }) => service.criar(args),
+  }, context: any) =>
+    // O autor da avaliação é o portador do token.
+    service.criar({ ...args, usuario_id: context.user.id }),
 
   editarAvaliacao: async (_: any, args: {
     id: string

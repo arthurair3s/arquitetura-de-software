@@ -19,7 +19,7 @@ extend type Mutation {
     endereco: String
     latitude: Float
     longitude: Float
-  ): Restaurante
+  ): Restaurante @auth(roles: ["RESTAURANTE"])
 
   editarRestaurante(
     id: ID!
@@ -28,7 +28,7 @@ extend type Mutation {
     endereco: String
     latitude: Float
     longitude: Float
-  ): Restaurante
+  ): Restaurante @auth(roles: ["RESTAURANTE"])
 
-  deletarRestaurante(id: ID!): Boolean
+  deletarRestaurante(id: ID!): Boolean @auth(roles: ["RESTAURANTE"])
 }
