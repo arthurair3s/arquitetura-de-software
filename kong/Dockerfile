@@ -4,7 +4,7 @@ FROM kong:3.4
 USER root
 RUN apt-get update && apt-get install -y gettext-base && rm -rf /var/lib/apt/lists/*
 
-# Copia a configuração declarativa do Kong e o script de entrypoint
+# O contexto de build é a raiz do repositório (ver compose.yml / compose.prod.yml).
 COPY kong/kong.template.yml /usr/local/kong/declarative/kong.template.yml
 COPY kong/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

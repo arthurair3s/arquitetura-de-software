@@ -166,16 +166,17 @@ services:
       - app-network
 
   kong:
-    image: kong:3.4
+    build:
+      context: .
+      dockerfile: kong/Dockerfile
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
-      KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_LOG_LEVEL: notice
       KONG_VAULT_ENV_PREFIX: SECRET_
       SECRET_JWT_SECRET: ${JWT_SECRET}
-    volumes:
-      - ./kong:/usr/local/kong/declarative
+      # Mesma imagem e mesma configuração de produção; só o upstream muda.
+      API_URL: http://api:4000/
     ports:
       - '8000:8000'
     depends_on:

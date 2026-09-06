@@ -75,14 +75,15 @@ services:
 
   kong:
     build:
-      context: ./kong
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: kong/Dockerfile
     environment:
       KONG_DATABASE: "off"
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_LOG_LEVEL: notice
       KONG_VAULT_ENV_PREFIX: SECRET_
       SECRET_JWT_SECRET: ${JWT_SECRET}
+      # Interpolado no kong.template.yml pelo entrypoint.
       API_URL: http://api:4000/
     ports:
       - '8000:8000'

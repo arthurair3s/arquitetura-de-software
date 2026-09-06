@@ -1,19 +1,31 @@
+# Configuração declarativa do Kong (DB-less).
+#
+# Este é o ÚNICO arquivo de configuração do gateway: o entrypoint interpola as
+# variáveis de ambiente com envsubst e gera o kong.yml final em tempo de boot.
+# Antes existiam dois arquivos quase idênticos (um para dev, outro para prod)
+# que divergiram silenciosamente — a URL de upstream ficou apontando para o
+# endereço público do Railway mesmo quando rodando dentro do compose.
 _format_version: "3.0"
 _transform: true
 
 consumers:
+  # Portador de um JWT válido, emitido pelo LoginUsuarioUseCase do api-node.
+  # A chave bate com a claim `iss` do token (ver key_claim_name abaixo).
   - username: app-usuario
     jwt_secrets:
       - key: express-delivery-app
         algorithm: HS256
         secret: "{vault://env/jwt_secret}"
 
+  # Consumidor anônimo: requisições sem token não são barradas aqui.
+  # Quem decide o que é público é a diretiva @auth do schema GraphQL — o gateway
+  # apenas valida a assinatura e a expiração de quem apresenta um token.
   - username: anonimo
     id: "00000000-0000-0000-0000-000000000001"
 
 services:
   - name: api-graphql
-    url: https://api-node-production-f27c.up.railway.app
+    url: ${API_URL}
     connect_timeout: 5000
     read_timeout: 30000
     write_timeout: 30000
@@ -60,3 +72,19 @@ plugins:
         - exp
       key_claim_name: iss
       anonymous: "00000000-0000-0000-0000-000000000001"
+
+  # Propaga um id de correlação por requisição. O api-node e os microserviços
+  # exportam traces para o Jaeger; sem um id que atravesse o gateway, o trace
+  # começa só depois dele.
+  - name: correlation-id
+    config:
+      header_name: X-Request-Id
+      generator: uuid
+      echo_downstream: true
+
+  # Uma query GraphQL legítima não passa de alguns KB. O limite evita que um
+  # corpo gigante chegue a consumir CPU de parsing no api-node.
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 1
+      size_unit: megabytes
