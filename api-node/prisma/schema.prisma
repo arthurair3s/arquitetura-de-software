@@ -15,6 +15,9 @@ model avaliacoes {
   comentario     String?
   restaurantes   restaurantes? @relation(fields: [restaurante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   usuarios       usuarios?     @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([usuario_id])
+  @@index([restaurante_id])
 }
 
 model categorias {
@@ -23,6 +26,8 @@ model categorias {
   restaurante_id Int?
   restaurantes   restaurantes? @relation(fields: [restaurante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   produtos       produtos[]
+
+  @@index([restaurante_id])
 }
 
 model entregas {
@@ -32,6 +37,9 @@ model entregas {
   status           String?   @db.VarChar(50)
   previsao_entrega DateTime? @db.Timestamp(6)
   pedidos          pedidos?  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([pedido_id])
+  @@index([entregador_id])
 }
 
 model itens_pedido {
@@ -42,6 +50,9 @@ model itens_pedido {
   preco_unitario Decimal?  @db.Decimal(10, 2)
   pedidos        pedidos?  @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   produtos       produtos? @relation(fields: [produto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([pedido_id])
+  @@index([produto_id])
 }
 
 model pagamentos {
@@ -51,6 +62,8 @@ model pagamentos {
   status    String?  @db.VarChar(50)
   valor     Decimal? @db.Decimal(10, 2)
   pedidos   pedidos? @relation(fields: [pedido_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([pedido_id])
 }
 
 model pedidos {
@@ -67,6 +80,10 @@ model pedidos {
   pagamentos        pagamentos[]
   usuarios          usuarios?      @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   restaurantes      restaurantes?  @relation(fields: [restaurante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([usuario_id])
+  @@index([restaurante_id])
+  @@index([status])
 }
 
 model produtos {
@@ -77,6 +94,8 @@ model produtos {
   categoria_id Int?
   itens_pedido itens_pedido[]
   categorias   categorias?    @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([categoria_id])
 }
 
 model restaurantes {
@@ -107,4 +126,6 @@ model usuarios {
   avaliacoes     avaliacoes[]
   pedidos        pedidos[]
   restaurantes   restaurantes? @relation(fields: [restaurante_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([restaurante_id])
 }

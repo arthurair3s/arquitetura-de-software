@@ -13,8 +13,8 @@ class HistoricoPedido(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     pedido_id = Column(Integer, unique=True, index=True, nullable=False)
-    usuario_id = Column(Integer, nullable=False)
-    restaurante_id = Column(Integer, nullable=False)
+    usuario_id = Column(Integer, index=True, nullable=False)
+    restaurante_id = Column(Integer, index=True, nullable=False)
     valor_total = Column(Float, nullable=False)
     destino_latitude = Column(Float, nullable=False)
     destino_longitude = Column(Float, nullable=False)
@@ -37,7 +37,7 @@ class CategoriaReplica(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=False)
     nome = Column(String(100), nullable=False)
-    restaurante_id = Column(Integer, nullable=False)
+    restaurante_id = Column(Integer, index=True, nullable=False)
 
 
 class ProdutoReplica(Base):
@@ -46,17 +46,17 @@ class ProdutoReplica(Base):
     id = Column(Integer, primary_key=True, autoincrement=False)
     nome = Column(String(255), nullable=False)
     preco = Column(Float, nullable=False)
-    categoria_id = Column(Integer, nullable=False)
-    restaurante_id = Column(Integer, nullable=False)
+    categoria_id = Column(Integer, index=True, nullable=False)
+    restaurante_id = Column(Integer, index=True, nullable=False)
 
 
 class VendaProdutoAnalise(Base):
     __tablename__ = "vendas_produtos_analise"
 
     id = Column(Integer, primary_key=True, index=True)
-    pedido_id = Column(Integer, nullable=False)
-    produto_id = Column(Integer, nullable=False)
-    restaurante_id = Column(Integer, nullable=False)
+    pedido_id = Column(Integer, index=True, nullable=False)
+    produto_id = Column(Integer, index=True, nullable=False)
+    restaurante_id = Column(Integer, index=True, nullable=False)
     preco_unitario = Column(Float, nullable=False)
     quantidade = Column(Integer, nullable=False)
     data_criacao = Column(DateTime, default=get_utc_now, nullable=False)
