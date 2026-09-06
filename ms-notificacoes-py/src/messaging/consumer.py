@@ -11,6 +11,9 @@ class RabbitMQConsumer:
     def __init__(self):
         self.exchange_name = "delivery-events"
         self.queue_name = "notificacoes.eventos"
+        self.dlx_exchange_name = "delivery-events.dlx"
+        self.dlq_queue_name = "notificacoes.eventos.dlq"
+        self.dlq_routing_key = "dlq.notificacoes.eventos"
         self.connection = None
         self.channel = None
 
@@ -39,7 +42,17 @@ class RabbitMQConsumer:
                 self.channel = self.connection.channel()
 
                 self.channel.exchange_declare(exchange=self.exchange_name, exchange_type="topic", durable=True)
-                self.channel.queue_declare(queue=self.queue_name, durable=True)
+
+                # Dead Letter Exchange: um e-mail que falha (SMTP fora do ar, template
+                # quebrado) fica retido na DLQ para inspeção em vez de ser descartado.
+                self.channel.exchange_declare(exchange=self.dlx_exchange_name, exchange_type="topic", durable=True)
+                self.channel.queue_declare(queue=self.dlq_queue_name, durable=True)
+                self.channel.queue_bind(exchange=self.dlx_exchange_name, queue=self.dlq_queue_name, routing_key=self.dlq_routing_key)
+
+                self.channel.queue_declare(queue=self.queue_name, durable=True, arguments={
+                    "x-dead-letter-exchange": self.dlx_exchange_name,
+                    "x-dead-letter-routing-key": self.dlq_routing_key,
+                })
                 self.channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name, routing_key="pagamento.aprovado")
                 self.channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name, routing_key="pedido.entregue")
 
@@ -66,7 +79,7 @@ class RabbitMQConsumer:
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
         except Exception as e:
-            print(f"[Consumer] Erro ao processar mensagem '{routing_key}': {e}")
+            print(f"[Consumer] Erro ao processar '{routing_key}': {e}. Enviando para a DLQ '{self.dlq_queue_name}'.")
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     # -------------------------------------------------------------------------

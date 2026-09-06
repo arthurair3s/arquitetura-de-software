@@ -6,6 +6,9 @@ export class RabbitMQConsumer {
   private channel: amqp.Channel | null = null;
   private readonly exchangeName = 'delivery-events';
   private readonly queueName = 'api.entrega-atribuida';
+  private readonly dlxExchangeName = 'delivery-events.dlx';
+  private readonly dlqQueueName = 'api.entrega-atribuida.dlq';
+  private readonly dlqRoutingKey = 'dlq.api.entrega-atribuida';
   private isConnecting = false;
   private reconnectTimeout: NodeJS.Timeout | null = null;
 
@@ -59,7 +62,21 @@ export class RabbitMQConsumer {
       });
 
       await chan.assertExchange(this.exchangeName, 'topic', { durable: true });
-      await chan.assertQueue(this.queueName, { durable: true });
+
+      // Dead Letter Exchange: mensagens rejeitadas vão para uma DLQ própria em vez
+      // de serem descartadas. A routing key explícita evita que a DLQ deste consumidor
+      // receba o dead letter dos outros serviços que compartilham a mesma DLX.
+      await chan.assertExchange(this.dlxExchangeName, 'topic', { durable: true });
+      await chan.assertQueue(this.dlqQueueName, { durable: true });
+      await chan.bindQueue(this.dlqQueueName, this.dlxExchangeName, this.dlqRoutingKey);
+
+      await chan.assertQueue(this.queueName, {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': this.dlxExchangeName,
+          'x-dead-letter-routing-key': this.dlqRoutingKey,
+        },
+      });
       await chan.bindQueue(this.queueName, this.exchangeName, 'entrega.atribuida');
 
       this.connection = conn;
@@ -90,7 +107,7 @@ export class RabbitMQConsumer {
 
           chan.ack(msg);
         } catch (err) {
-          console.error(`[Consumer] Error processing message:`, err);
+          console.error(`[Consumer] Error processing message, enviando para a DLQ '${this.dlqQueueName}':`, err);
           chan.nack(msg, false, false);
         }
       });

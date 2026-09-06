@@ -31,6 +31,7 @@ namespace Features.GerenciamentoEntregadores.Services
         private const string QueueName = "entregas.pedido-confirmado";
         private const string DlxExchangeName = "delivery-events.dlx";
         private const string DlqQueueName = "entregas.pedido-confirmado.dlq";
+        private const string DlqRoutingKey = "dlq.entregas.pedido-confirmado";
         private bool _isReconnecting = false;
 
         public PedidoConfirmadoConsumer(
@@ -94,13 +95,17 @@ namespace Features.GerenciamentoEntregadores.Services
 
                 _channel = _connection.CreateModel();
 
+                // A DLX é compartilhada por todos os serviços; cada fila tem a sua própria
+                // DLQ, isolada por routing key. Ligar a DLQ em "#" faria esta fila receber
+                // também os dead letters do api-node e dos serviços Python.
                 _channel.ExchangeDeclare(DlxExchangeName, ExchangeType.Topic, durable: true);
                 _channel.QueueDeclare(DlqQueueName, durable: true, exclusive: false, autoDelete: false);
-                _channel.QueueBind(DlqQueueName, DlxExchangeName, "#");
+                _channel.QueueBind(DlqQueueName, DlxExchangeName, DlqRoutingKey);
 
                 var queueArgs = new Dictionary<string, object>
                 {
-                    { "x-dead-letter-exchange", DlxExchangeName }
+                    { "x-dead-letter-exchange", DlxExchangeName },
+                    { "x-dead-letter-routing-key", DlqRoutingKey }
                 };
 
                 _channel.QueueDeclare(QueueName, durable: true, exclusive: false, autoDelete: false, arguments: queueArgs);

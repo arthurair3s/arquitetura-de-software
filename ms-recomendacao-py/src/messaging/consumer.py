@@ -16,6 +16,11 @@ class RabbitMQConsumer:
         self.exchange_name = "delivery-events"
         self.queue_name = "recomendacao.pedidos"
         self.catalog_queue_name = "recomendacao.catalog"
+        self.dlx_exchange_name = "delivery-events.dlx"
+        self.dlq_queue_name = "recomendacao.pedidos.dlq"
+        self.dlq_routing_key = "dlq.recomendacao.pedidos"
+        self.catalog_dlq_queue_name = "recomendacao.catalog.dlq"
+        self.catalog_dlq_routing_key = "dlq.recomendacao.catalog"
         self.connection = None
         self.channel = None
 
@@ -46,12 +51,29 @@ class RabbitMQConsumer:
                 # Declarar exchange
                 self.channel.exchange_declare(exchange=self.exchange_name, exchange_type="topic", durable=True)
 
-                # --- Fila de pedidos (existente) ---
-                self.channel.queue_declare(queue=self.queue_name, durable=True)
+                # --- Dead Letter Exchange compartilhada, com uma DLQ por fila ---
+                # A routing key explícita é o que mantém os dead letters separados:
+                # sem ela cada DLQ receberia as mensagens rejeitadas de todas as filas.
+                self.channel.exchange_declare(exchange=self.dlx_exchange_name, exchange_type="topic", durable=True)
+
+                self.channel.queue_declare(queue=self.dlq_queue_name, durable=True)
+                self.channel.queue_bind(exchange=self.dlx_exchange_name, queue=self.dlq_queue_name, routing_key=self.dlq_routing_key)
+
+                self.channel.queue_declare(queue=self.catalog_dlq_queue_name, durable=True)
+                self.channel.queue_bind(exchange=self.dlx_exchange_name, queue=self.catalog_dlq_queue_name, routing_key=self.catalog_dlq_routing_key)
+
+                # --- Fila de pedidos ---
+                self.channel.queue_declare(queue=self.queue_name, durable=True, arguments={
+                    "x-dead-letter-exchange": self.dlx_exchange_name,
+                    "x-dead-letter-routing-key": self.dlq_routing_key,
+                })
                 self.channel.queue_bind(exchange=self.exchange_name, queue=self.queue_name, routing_key="pedido.confirmado")
 
                 # --- Fila de catálogo (Outbox Pattern — substitui Debezium CDC) ---
-                self.channel.queue_declare(queue=self.catalog_queue_name, durable=True)
+                self.channel.queue_declare(queue=self.catalog_queue_name, durable=True, arguments={
+                    "x-dead-letter-exchange": self.dlx_exchange_name,
+                    "x-dead-letter-routing-key": self.catalog_dlq_routing_key,
+                })
                 for routing_key in [
                     "restaurante.created", "restaurante.updated", "restaurante.deleted",
                     "categoria.created",   "categoria.updated",   "categoria.deleted",
@@ -85,7 +107,8 @@ class RabbitMQConsumer:
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as e:
-            print(f"[Consumer] Erro ao processar mensagem '{routing_key}': {e}")
+            dlq = self.catalog_dlq_queue_name if routing_key and not routing_key.startswith("pedido.") else self.dlq_queue_name
+            print(f"[Consumer] Erro ao processar '{routing_key}': {e}. Enviando para a DLQ '{dlq}'.")
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     # ──────────────────────────────────────────────
