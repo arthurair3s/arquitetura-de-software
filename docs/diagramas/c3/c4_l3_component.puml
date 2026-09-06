@@ -136,7 +136,7 @@ LAYOUT_WITH_LEGEND()
 title Diagrama de Componentes (L3) - Contexto de Assinaturas, Recomendações & Insights
 
 Container(ms_recomendacao, "MS Recomendação", "Python / gRPC", "Processamento analítico.")
-Container(catalogo_eventos, "RabbitMQ — eventos de catálogo", "Topic Exchange", "Replicação cadastral por eventos de domínio.")
+Container(cdc, "Kafka + Debezium (CDC)", "Broker/Connector", "Replicação derivada do WAL do banco principal.")
 ContainerDb(db_postgres, "Banco de Dados Principal", "PostgreSQL 15", "Fonte dos cadastros.")
 
 Container_Boundary(api_node_analytics, "Contexto de Analytics (API Node)") {
@@ -153,8 +153,8 @@ Rel(uc_insights, i_insights_provider, "Busca KPIs", "Port")
 Rel(uc_assinatura, i_insights_provider, "Atualiza planos", "Port")
 Rel(grpc_providers, i_insights_provider, "Implementa", "Implements")
 Rel(grpc_providers, ms_recomendacao, "Consome insights", "gRPC (Port 50053)")
-Rel(api_node, catalogo_eventos, "Publica eventos de domínio", "AMQP")
-Rel(catalogo_eventos, ms_recomendacao, "Fila recomendacao.catalog", "AMQP (Port 5672)")
+Rel(db_postgres, cdc, "WAL / logical decoding", "Logical Replication")
+Rel(cdc, ms_recomendacao, "Tópicos dbserver1.public.*", "Kafka Protocol (Port 9092)")
 
 @enduml
 

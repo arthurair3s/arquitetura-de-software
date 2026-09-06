@@ -172,7 +172,7 @@ graph TB
 
 ## 4. Contexto de Assinaturas, Recomendações & Insights
 
-Responsável por planos de insights, consumo de relatórios analíticos de vendas e replicação do catálogo via eventos de domínio no RabbitMQ.
+Responsável por planos de insights e por relatórios analíticos de vendas, sobre uma réplica derivada do WAL do banco principal via Kafka + Debezium.
 
 ```mermaid
 graph TB
@@ -182,7 +182,7 @@ graph TB
     classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
 
     ms_recomendacao["MS Recomendação (gRPC)"]:::ext
-    catalogo_eventos["RabbitMQ — eventos de catálogo"]:::ext
+    cdc["Kafka + Debezium (CDC)"]:::ext
     db_postgres[("PostgreSQL Principal")]:::ext
 
     subgraph analytics_context ["Contexto Analítico"]
@@ -204,8 +204,8 @@ graph TB
     grpc_providers -->|gRPC call| ms_recomendacao
 
     %% CDC flow
-    api_node -->|Publica eventos de domínio| catalogo_eventos
-    catalogo_eventos -->|Fila recomendacao.catalog| ms_recomendacao
+    db_postgres -->|WAL / logical decoding| cdc
+    cdc -->|Tópicos dbserver1.public.*| ms_recomendacao
 ```
 
 ---

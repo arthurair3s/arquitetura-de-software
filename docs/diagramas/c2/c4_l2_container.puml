@@ -53,8 +53,8 @@ System_Boundary(private_backend, "Rede Privada / Servidores de Backend") {
     ' Mensageria e Eventos de Negócio (RabbitMQ)
     Container(rabbitmq, "RabbitMQ Message Broker", "RabbitMQ 3", "Roteia eventos assíncronos (pedido.confirmado, pagamento.aprovado, entrega.atribuida) entre serviços.")
 
-    ' Replicação de catálogo por eventos de domínio
-    Container(catalogo_eventos, "Replicação de Catálogo por Eventos", "RabbitMQ topic exchange", "O api-node publica eventos de domínio de restaurante, categoria e produto; o ms-recomendacao os aplica nas suas réplicas locais.")
+    ' Change Data Capture: replicação derivada do WAL
+    Container(cdc, "Change Data Capture (Kafka + Debezium)", "Apache Kafka (KRaft), Debezium 2.4", "Deriva do WAL do banco principal as mudanças de catálogo, pedidos e itens vendidos, e as entrega ao motor analítico.")
 }
 
 ' -------------------------------------------------------------
@@ -108,8 +108,8 @@ Rel(ms_notificacoes, rabbitmq, "Consome eventos para disparar e-mails", "AMQP / 
 Rel(ms_notificacoes, mailtrap, "Dispara e-mails transacionais", "HTTPS / REST (Port 443) ou SMTP (Port 2525)")
 
 ' CDC e Replicação
-Rel(api_node, catalogo_eventos, "Publica eventos de catálogo", "AMQP (restaurante./categoria./produto.*)")
-Rel(catalogo_eventos, ms_recomendacao, "Entrega na fila recomendacao.catalog", "AMQP (Port 5672)")
+Rel(db_postgres, cdc, "Replicação lógica do WAL", "Postgres logical decoding")
+Rel(cdc, ms_recomendacao, "Tópicos dbserver1.public.*", "Kafka Protocol (Port 9092)")
 
 ' Traces e Métricas
 Rel(api_node, jaeger, "Envia traces distribuídos", "OTLP / gRPC (Port 4317)")

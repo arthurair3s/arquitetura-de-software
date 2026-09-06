@@ -57,7 +57,7 @@ graph TD
 
     subgraph "Persistência e Mensageria"
         databases[("Bancos de Dados & Cache<br>(PostgreSQL / Redis)")]:::db
-        messaging[("Mensageria<br>(RabbitMQ · topic exchange + DLX)")]:::db
+        messaging[("Mensageria<br>(RabbitMQ: trabalho · Kafka+Debezium: replicação)")]:::db
     end
 
     ext["Integrações Externas (OSRM, Stripe, Mailtrap HTTP/SMTP)"]:::ext
@@ -79,7 +79,7 @@ graph TD
     ms_dotnet -->|Cálculo geográfico| ext
 
     ms_python -->|Réplica analítica B2B| databases
-    ms_python -->|Consome eventos de pedido e de catálogo| messaging
+    ms_python -->|Consome CDC do catálogo e das vendas| messaging
     ms_python -->|"Envio de e-mails (HTTP REST / SMTP)"| ext
 ```
 > 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/diagramas/c2/c4_l2_container.md)
@@ -168,7 +168,8 @@ docker compose up --build
 | **Microserviços Python** | Python 3.12, FastAPI, gRPC, Pika, urllib | Motores de recomendação de precificação B2B e envio de notificações resilientes via Mailtrap HTTP/SMTP |
 | **Bancos de Dados** | PostgreSQL 15, Redis 7 (Redis Geo) | Persistência física isolada por domínio e cache/localização ultra-rápida |
 | **Roteamento** | OSRM Engine (C++ Engine) | Inteligência logística baseada em OpenStreetMap |
-| **Mensageria** | RabbitMQ (AMQP) | Barramento de eventos assíncronos: atribuição de entregas, notificações e replicação de catálogo, com DLQ por fila |
+| **Mensageria** | RabbitMQ (AMQP) | Transporte de trabalho: atribuição de entregas e notificações, com DLQ por fila |
+| **Change Data Capture** | Apache Kafka (KRaft), Debezium 2.4 | Replicação de estado: o WAL do banco principal alimenta a réplica analítica do motor B2B |
 | **Observabilidade** | OpenTelemetry, Jaeger, Prometheus, Grafana | Tracing distribuído e métricas consolidadas dos serviços |
 
 ---
@@ -183,7 +184,10 @@ Com base nas últimas evoluções de arquitetura descritas no histórico do proj
 *   **Envio Resiliente de E-mails via HTTP REST**: O microserviço de notificações autodetecta a presença da credencial de token do Mailtrap para alternar o envio de emails do protocolo SMTP tradicional para a API REST HTTP, contornando bloqueios de portas de e-mail típicos em ambientes de produção na nuvem (como no Railway).
 *   **Autorização declarativa no schema GraphQL**: uma diretiva `@auth(roles: [...])` aplicada por transformação de schema embrulha o resolver de cada campo protegido. O que é público — catálogo, login, registro — é público por ausência explícita da diretiva, legível direto no SDL. Argumentos de identidade (`usuario_id`, `entregador_id`) foram **removidos do contrato**: o dono de cada recurso vem do token, então forjar identidade deixou de ser expressável.
 *   **Mensageria Assíncrona com RabbitMQ**: Atribuição de entregadores guiada por eventos (`pedido.confirmado` e `entrega.atribuida`). As cinco filas têm **DLQ dedicada**, isolada por `x-dead-letter-routing-key` em uma DLX compartilhada — uma mensagem que falha fica retida para inspeção em vez de ser descartada.
-*   **Replicação de catálogo por eventos de domínio**: o `api-node` publica `restaurante.*`, `categoria.*` e `produto.*`; o `ms-recomendacao` os aplica em réplicas locais. Substituiu um pipeline Debezium + Kafka CDC — o porquê está na a seção de trade-offs.
+*   **Change Data Capture com Kafka + Debezium**: a réplica analítica do `ms-recomendacao` é derivada do WAL do PostgreSQL, não publicada pela aplicação. Isso elimina o *dual write* — o evento nasce de uma transação já commitada — e captura **toda** escrita, inclusive seed e SQL manual, que nunca passariam pelos resolvers. O Kafka roda em **modo KRaft**, sem Zookeeper, e o connector é registrado automaticamente no boot.
+*   **Divisão explícita entre os dois brokers**: *Kafka replica estado, RabbitMQ carrega trabalho*. Replicação de catálogo e vendas é fluxo de dados com replay e ordenação — caso do Kafka. `pedido.confirmado → atribuir entregador` é tarefa com consumidor único e DLQ — caso do RabbitMQ.
+*   **Read-model reconstruível**: tudo no banco de recomendação pode ser refeito relendo o tópico desde o snapshot. Por isso uma mudança de schema ali não pede migration, pede *rebuild* — o `replica.py` versiona o schema e, ao detectar divergência, recria as tabelas derivadas e faz o consumidor reler o tópico. O estado **próprio** do serviço (assinaturas comerciais) mora fora do conjunto replicado, justamente para sobreviver a isso.
+*   **Idempotência no consumo**: o Debezium entrega *at-least-once*, então reprocessar é normal, não excepcional. Os handlers aplicam estado completo (`after`) em vez de deltas, e `vendas_produtos_analise.item_pedido_id` é `unique` — a chave natural da origem. Verificado resetando os offsets e reprocessando o tópico inteiro: contagens idênticas.
 *   **Resiliência nas chamadas de saída**: todo cliente gRPC aplica *deadline* por chamada (5s, 8s para roteamento) via proxy que distingue métodos unários de streams long-lived pelos metadados do `grpc-js`, mais retentativa automática com backoff exponencial apenas em `UNAVAILABLE`. O `HttpClient` do OSRM tem timeout explícito de 6s, abaixo do deadline de quem o chama.
 *   **Cache como decorator de repositório**: o cache-aside do Redis vive em um `CachedRestauranteRepository` que implementa a mesma porta do repositório real e é composto no container de DI. Resolvers e casos de uso não sabem que existe cache; a invalidação acontece no ponto por onde toda escrita passa.
 *   **Strategy Pattern para Regras de Negócio**: Utilizado para alternar dinamicamente métodos de pagamento (Pix, Cartão de Crédito com limite, Stripe) e níveis de planos de recomendação (Gratuito vs Premium).
@@ -204,15 +208,30 @@ descartes de todos os serviços.
 | `entregas.pedido-confirmado` | ms-entregadores (C#) | `pedido.confirmado` | `entregas.pedido-confirmado.dlq` |
 | `api.entrega-atribuida` | api-node (TS) | `entrega.atribuida` | `api.entrega-atribuida.dlq` |
 | `notificacoes.eventos` | ms-notificacoes (Py) | `pagamento.aprovado`, `pedido.entregue` | `notificacoes.eventos.dlq` |
-| `recomendacao.pedidos` | ms-recomendacao (Py) | `pedido.confirmado` | `recomendacao.pedidos.dlq` |
-| `recomendacao.catalog` | ms-recomendacao (Py) | `restaurante.*`, `categoria.*`, `produto.*` | `recomendacao.catalog.dlq` |
 
 Todos os consumidores usam `ack` manual e rejeitam com `requeue=false`, de modo
 que a falha vai para a DLQ em vez de entrar em loop de reentrega.
 
-> **Limitação conhecida:** os consumidores ainda não são idempotentes e a
-> publicação não é transacional com a escrita no banco — ver a seção de
-> trade-offs assumidos.
+O `ms-recomendacao` **não** aparece aqui de propósito: ele não recebe trabalho,
+só replica dados, e por isso consome exclusivamente do Kafka.
+
+> **Limitação conhecida:** estes eventos de trabalho são publicados depois do
+> commit, sem Outbox, e os consumidores de RabbitMQ ainda não verificam se já
+> processaram a mensagem.
+
+### Pipeline de CDC
+
+```
+PostgreSQL (WAL, wal_level=logical)
+  └─ Debezium 2.4  →  Kafka (KRaft)  →  ms-recomendacao
+       publication: delivery_catalogo_pub    tópicos: dbserver1.public.<tabela>
+       slot:        delivery_catalogo_slot   tabelas: restaurantes, categorias,
+                                                      produtos, pedidos, itens_pedido
+```
+
+O connector é registrado automaticamente pelo serviço `debezium-connector-init`
+no boot — a configuração está versionada em [`debezium/`](debezium/), e não
+depende mais de um POST manual na API do Kafka Connect.
 
 ---
 
@@ -223,6 +242,8 @@ que a falha vai para a DLQ em vez de entrar em loop de reentrega.
 *   **Jaeger Tracing Dashboard**: [http://localhost:16686](http://localhost:16686)
 *   **Grafana Dashboards**: [http://localhost:3000](http://localhost:3000)
 *   **RabbitMQ Management**: [http://localhost:15672](http://localhost:15672)
+*   **Kafka UI (tópicos e connectors)**: [http://localhost:8080](http://localhost:8080)
+*   **Kafka Connect (API do Debezium)**: [http://localhost:8084/connectors](http://localhost:8084/connectors)
 
 ---
 
@@ -232,7 +253,7 @@ Este projeto funciona como um **laboratório vivo de arquitetura de software**, 
 
 ### Próximas evoluções planejadas
 *   **Testes automatizados e CI**: hoje o repositório **não tem nenhum teste**. O plano é começar pelos Value Objects (`Dinheiro`, `Coordenada`, `Email`), pelas transições de `StatusEntrega`/`StatusPedido` e pelo `AtribuirMelhorEntregadorUseCase` com mocks das portas — os casos onde a Clean Architecture realmente paga —, com GitHub Actions rodando as três stacks.
-*   **Idempotência e Outbox no fluxo de pedido**: tabela `processed_events` + `message_id` no publisher, e um Outbox transacional em `pedido.confirmado`.
+*   **Outbox no fluxo de pedido**: a replicação de dados já não tem dual write, mas os eventos de trabalho do RabbitMQ têm. Um pedido confirmado sem entregador atribuído é falha visível — é o próximo alvo.
 *   **Circuit breaker no OSRM**: hoje há deadline e retry; falta o disjuntor. O ponto natural é o `OsrmProvider`, com Polly, por ser a única dependência externa com falha recorrente.
 *   **Paginação e DataLoader**: nenhuma query de lista é paginada, e os resolvers de campo (`Avaliacao.usuario`, `Pedido.itens`) fazem N+1.
 *   **Migrations versionadas**: o `compose.yml` usa `prisma db push --force-reset`, o que é adequado para uma demo reproduzível, mas não deixa histórico de schema.
@@ -244,17 +265,26 @@ Este projeto funciona como um **laboratório vivo de arquitetura de software**, 
 Nem toda limitação aqui é descuido — várias são decisões conscientes, com o custo
 pesado contra o benefício. As que mais importam:
 
-**Kafka e Debezium foram removidos.** A replicação do catálogo passou a ser feita
-por eventos de domínio publicados pelo `api-node` no RabbitMQ, o que economiza
-quatro contêineres e vários GB de RAM. Em troca, perde-se a garantia que o CDC
-dava de graça — ver o item seguinte.
+**Change Data Capture para replicar estado, RabbitMQ para carregar trabalho.**
+A réplica analítica é derivada do WAL do PostgreSQL, não publicada pela aplicação.
+Isso elimina o *dual write* e captura escritas que nunca passariam pelos resolvers
+— o `seed.js` é uma delas. Custa três contêineres; o modo KRaft dispensa o
+Zookeeper. Em contrapartida, o ambiente completo não cabe no plano gratuito de um
+PaaS: em deploy restrito o `ms-recomendacao` fica de fora, o que é preferível a
+servir recomendação sobre dado inventado.
 
-**Eventos são publicados após o commit, sem Outbox.** São duas operações em
-sistemas diferentes, sem transação distribuída: se o processo cair entre o commit
-e o publish, o dado é persistido e o evento nunca sai. Um Outbox correto exigiria
-tabela transacional, processo relay e deduplicação em três stacks; para o perfil
-deste sistema, o custo não se paga ainda. Os comentários que descreviam este
-mecanismo como "Outbox Pattern" estavam errados e foram corrigidos.
+**O CDC foi removido em 07/2026 e retomado em 09/2026.** A remoção foi expediente
+para caber num plano gratuito, não decisão de design — e cobrou caro: sem eventos
+do seed, a réplica nascia vazia, e o serviço passou a manter uma cópia manual do
+catálogo e a fabricar vendas com `random` para alimentar os insights. As duas
+gambiarras foram removidas junto com a retomada.
+
+**Eventos de trabalho ainda são publicados após o commit, sem Outbox.** A
+replicação de dados já não tem *dual write*, mas `pedido.confirmado`,
+`pagamento.aprovado` e `pedido.entregue` sim: se o processo cair entre o commit e
+o publish, o evento se perde. Um Outbox correto exigiria tabela transacional,
+processo relay e deduplicação; para o perfil deste sistema o custo não se paga
+ainda. É a próxima dívida da lista.
 
 **Autorização mora no schema, não no gateway.** O Kong valida assinatura e
 expiração de quem apresenta token, mas repassa requisições anônimas — quem decide

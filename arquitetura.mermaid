@@ -38,17 +38,19 @@ graph TD
         direction LR
         MS_Entregadores["MS Entregadores — :5001<br>(C# · .NET 10 · gRPC · EF Core)<br>Gestão de disponibilidade<br>Atribuição de entregas · Redis Geo"]:::ms
         MS_Roteamento["MS Roteamento — :5002<br>(C# · .NET 10 · gRPC)<br>Cálculo de rotas e trajetos<br>Consome OSRM Engine"]:::ms
-        MS_Recomendacao["MS Recomendação — :50053<br>(Python · FastAPI · gRPC)<br>Motor de precificação B2B<br>Réplica analítica via eventos"]:::ms
+        MS_Recomendacao["MS Recomendação — :50053<br>(Python · FastAPI · gRPC)<br>Motor de precificação B2B<br>Réplica analítica via CDC"]:::ms
         MS_Notificacoes["MS Notificações<br>(Python · Pika)<br>Envio resiliente de e-mails<br>HTTP REST / SMTP Fallback"]:::ms
     end
 
     %% ─────────────────────────────────────────────
     %% Mensageria
     %% ─────────────────────────────────────────────
-    subgraph MESSAGING ["Mensageria"]
+    subgraph MESSAGING ["Mensageria — trabalho (RabbitMQ) e replicação (Kafka)"]
         direction TB
-        RabbitMQ["RabbitMQ Broker<br>(Exchange topic: delivery-events)<br>Filas: entregas.pedido-confirmado · api.entrega-atribuida<br>notificacoes.eventos · recomendacao.pedidos · recomendacao.catalog"]:::broker
+        RabbitMQ["RabbitMQ Broker<br>(Exchange topic: delivery-events)<br>Filas: entregas.pedido-confirmado<br>api.entrega-atribuida · notificacoes.eventos"]:::broker
         DLX["Dead Letter Exchange<br>(delivery-events.dlx)<br>Uma DLQ por fila, isolada por routing key"]:::broker
+        Debezium["Debezium Connect 2.4<br>(Logical decoding do WAL)"]:::broker
+        Kafka["Apache Kafka — modo KRaft<br>Tópicos: dbserver1.public.*"]:::broker
     end
 
     %% ─────────────────────────────────────────────
@@ -56,9 +58,9 @@ graph TD
     %% ─────────────────────────────────────────────
     subgraph PERSISTENCE ["Persistência"]
         direction LR
-        DB_Main[("PostgreSQL Principal — :5435<br>(delivery_db)<br>Índices em todas as FKs")]:::db
+        DB_Main[("PostgreSQL Principal — :5435<br>(delivery_db)<br>wal_level=logical · índices em todas as FKs")]:::db
         DB_Entregadores[("PostgreSQL Entregadores — :5434<br>(entregadores_db)<br>Isolado por domínio")]:::db
-        DB_Recomendacao[("PostgreSQL Recomendação — :5436<br>(recomendacao_db)<br>Réplica analítica via eventos")]:::db
+        DB_Recomendacao[("PostgreSQL Recomendação — :5436<br>(recomendacao_db)<br>Réplica analítica via CDC")]:::db
         Redis[("Redis — :6380<br>Cache-aside · Redis Geo<br>Localização em tempo real")]:::cache
     end
 
@@ -124,11 +126,12 @@ graph TD
     MS_Roteamento -- "HTTP REST" --> OSRM
 
     %% ─────────────────────────────────────────────
-    %% Replicação de catálogo por eventos de domínio
+    %% Change Data Capture: replicação derivada do WAL
     %% ─────────────────────────────────────────────
-    API             -- "Publica restaurante./categoria./produto.*" --> RabbitMQ
-    RabbitMQ        -- "Fila recomendacao.catalog" --> MS_Recomendacao
-    MS_Recomendacao -- "Persist replicas (SQL)" --> DB_Recomendacao
+    DB_Main         -- "Replication slot (WAL)"     --> Debezium
+    Debezium        -- "Publica mudanças"           --> Kafka
+    Kafka           -- "Consumer group (earliest)"  --> MS_Recomendacao
+    MS_Recomendacao -- "Persist replicas (SQL)"     --> DB_Recomendacao
     RabbitMQ        -. "Mensagem rejeitada (nack)" .-> DLX
 
     %% ─────────────────────────────────────────────

@@ -37,7 +37,7 @@ graph TB
 
         %% Messaging
         rabbitmq["RabbitMQ Message Broker<br>(RabbitMQ 3)<br>(Roteia eventos assíncronos (pedido.confirmado, pagamento.aprovado, entrega.atribuida) entre serviços)"]:::broker
-        catalogo_eventos["Replicação de Catálogo por Eventos<br>(RabbitMQ topic exchange)<br>(O api-node publica eventos de domínio de restaurante, categoria e produto; o ms-recomendacao os aplica nas suas réplicas locais)"]:::broker
+        cdc["Change Data Capture (Kafka + Debezium)<br>(Apache Kafka em modo KRaft, Debezium 2.4)<br>(Deriva do WAL do banco principal as mudanças de catálogo, pedidos e itens vendidos, e as entrega ao motor analítico)"]:::broker
     end
 
     subgraph externals ["Serviços Externos"]
@@ -80,8 +80,8 @@ graph TB
     ms_notificacoes -->|"Consome eventos para disparar e-mails (AMQP Port 5672)"| rabbitmq
     ms_notificacoes -->|"Dispara e-mails transacionais (HTTPS/REST Port 443 ou SMTP Port 2525)"| mailtrap
 
-    api_node -->|"Publica eventos de catálogo (AMQP restaurante./categoria./produto.*)"| catalogo_eventos
-    catalogo_eventos -->|"Entrega na fila recomendacao.catalog (AMQP Port 5672)"| ms_recomendacao
+    db_postgres -->|"Replicação lógica do WAL (Postgres logical decoding)"| cdc
+    cdc -->|"Tópicos dbserver1.public.* (Kafka Protocol Port 9092)"| ms_recomendacao
 
     %% Traces and Metrics
     api_node -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
