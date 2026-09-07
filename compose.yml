@@ -154,13 +154,16 @@ services:
     build:
       context: ./frontend-web
       dockerfile: Dockerfile
+    environment:
+      # O Dockerfile serve o build estático por nginx, cujo template faz
+      # listen ${PORT}. Sem esta variável o nginx aborta no boot com
+      # "host not found in ${PORT}" e o frontend simplesmente não sobe.
+      PORT: 5173
     ports:
       - '5173:5173'
     depends_on:
       - api
-    volumes:
-      - ./frontend-web:/app
-      - /app/node_modules
+    restart: unless-stopped
     networks:
       - app-network
 

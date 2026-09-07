@@ -20,8 +20,8 @@ graph TB
         direction TB
 
         subgraph entrada ["Portas de entrada"]
-            grpcsvc["<b>RecomendacaoServiceServicer</b><br>gRPC · insights e assinatura"]:::comp
-            http["<b>FastAPI</b><br>/recomendacoes/lojas · /assinaturas"]:::comp
+            grpcsvc["<b>RecomendacaoServiceServicer</b><br>gRPC :50053 · insights e assinatura"]:::comp
+            http["<b>FastAPI</b> :8001<br>/health · /recomendacoes/lojas · /assinaturas"]:::comp
         end
 
         subgraph replicacao ["Replicação"]

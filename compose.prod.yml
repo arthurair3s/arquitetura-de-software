@@ -97,4 +97,6 @@ services:
       - '5173:5173'
     environment:
       VITE_API_URL: http://localhost:8000
+      # PaaS costuma injetar PORT; o default mantém o compose local funcionando.
+      PORT: ${PORT:-5173}
     restart: unless-stopped

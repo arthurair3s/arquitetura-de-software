@@ -182,7 +182,8 @@ docker compose up --build
 | **Roteamento** | OSRM Engine (C++ Engine) | Inteligência logística baseada em OpenStreetMap |
 | **Mensageria** | RabbitMQ (AMQP) | Transporte de trabalho: atribuição de entregas e notificações, com DLQ por fila |
 | **Change Data Capture** | Apache Kafka (KRaft), Debezium 2.4 | Replicação de estado: o WAL do banco principal alimenta a réplica analítica do motor B2B |
-| **Observabilidade** | OpenTelemetry, Jaeger, Prometheus, Grafana | Tracing distribuído e métricas consolidadas dos serviços |
+| **Observabilidade** | OpenTelemetry, Jaeger | Tracing distribuído ponta a ponta, correlacionando GraphQL, gRPC e fila |
+| **Métricas** *(incompleto)* | Prometheus, Grafana | Sobem no compose e o Prometheus tem os alvos configurados, mas **nenhum serviço expõe `/metrics` ainda** — as três stacks instrumentam apenas tracing |
 
 ---
 
@@ -252,7 +253,7 @@ depende mais de um POST manual na API do Kafka Connect.
 *   **GraphQL Playground (via Kong)**: [http://localhost:8000/graphql](http://localhost:8000/graphql)
 *   **OSRM (Direto)**: [http://localhost:5080](http://localhost:5080)
 *   **Jaeger Tracing Dashboard**: [http://localhost:16686](http://localhost:16686)
-*   **Grafana Dashboards**: [http://localhost:3000](http://localhost:3000)
+*   **Grafana**: [http://localhost:3000](http://localhost:3000) *(sem métricas de aplicação ainda — ver roadmap)*
 *   **RabbitMQ Management**: [http://localhost:15672](http://localhost:15672)
 *   **Kafka UI (tópicos e connectors)**: [http://localhost:8080](http://localhost:8080)
 *   **Kafka Connect (API do Debezium)**: [http://localhost:8084/connectors](http://localhost:8084/connectors)
@@ -267,6 +268,7 @@ Este projeto funciona como um **laboratório vivo de arquitetura de software**, 
 *   **Testes automatizados e CI**: hoje o repositório **não tem nenhum teste**. O plano é começar pelos Value Objects (`Dinheiro`, `Coordenada`, `Email`), pelas transições de `StatusEntrega`/`StatusPedido` e pelo `AtribuirMelhorEntregadorUseCase` com mocks das portas — os casos onde a Clean Architecture realmente paga —, com GitHub Actions rodando as três stacks.
 *   **Outbox no fluxo de pedido**: a replicação de dados já não tem dual write, mas os eventos de trabalho do RabbitMQ têm. Um pedido confirmado sem entregador atribuído é falha visível — é o próximo alvo.
 *   **Circuit breaker no OSRM**: hoje há deadline e retry; falta o disjuntor. O ponto natural é o `OsrmProvider`, com Polly, por ser a única dependência externa com falha recorrente.
+*   **Expor `/metrics` nos serviços**: o Prometheus já sobe com os quatro alvos configurados e o Grafana já está provisionado, mas nenhuma das três stacks instrumenta métricas — só tracing. Hoje o scrape devolve 404 e os painéis ficam vazios.
 *   **Paginação e DataLoader**: nenhuma query de lista é paginada, e os resolvers de campo (`Avaliacao.usuario`, `Pedido.itens`) fazem N+1.
 *   **Migrations versionadas**: o `compose.yml` usa `prisma db push --force-reset`, o que é adequado para uma demo reproduzível, mas não deixa histórico de schema.
 

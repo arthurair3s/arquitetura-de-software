@@ -32,7 +32,7 @@ graph TB
 
         msent["<b>MS Entregadores</b><br><i>[.NET 10 · gRPC · EF Core]</i><br>Ciclo de vida da frota e<br>rastreamento geográfico · :5001"]:::container
         msrot["<b>MS Roteamento</b><br><i>[.NET 10 · gRPC]</i><br>Rotas, distâncias e ETA · :5002"]:::container
-        msrec["<b>MS Recomendação</b><br><i>[Python · FastAPI · gRPC · SQLAlchemy]</i><br>Read-model analítico e insights<br>de precificação B2B · :50053"]:::container
+        msrec["<b>MS Recomendação</b><br><i>[Python · FastAPI · gRPC · SQLAlchemy]</i><br>Read-model analítico e insights<br>de precificação B2B · gRPC :50053 · HTTP :8001"]:::container
         msnot["<b>MS Notificações</b><br><i>[Python · pika]</i><br>Envia e-mail transacional<br>a partir de eventos"]:::container
 
         pgmain[("<b>Banco Principal</b><br><i>[PostgreSQL 15]</i><br>Usuários, lojas, pedidos,<br>pagamentos · :5432")]:::db
@@ -50,7 +50,7 @@ graph TB
     subgraph obs ["Observabilidade"]
         direction LR
         jaeger["<b>Jaeger</b><br><i>[All-in-One]</i><br>Traces distribuídos"]:::obs
-        prom["<b>Prometheus</b><br>Métricas"]:::obs
+        prom["<b>Prometheus</b><br>alvos configurados,<br>sem /metrics ainda"]:::obs
         graf["<b>Grafana</b><br>Painéis"]:::obs
     end
 

@@ -18,7 +18,7 @@ graph TB
 
     subgraph svc ["MS Entregadores"]
         direction TB
-        grpcsvc["<b>EntregadorService</b><br>Serviço gRPC · 9 operações<br>cadastro, status, busca por raio<br>e stream de localização"]:::comp
+        grpcsvc["<b>EntregadorService</b><br>Serviço gRPC · 8 operações<br>cadastro, status, busca por raio<br>e stream de localização"]:::comp
         consumer["<b>PedidoConfirmadoConsumer</b><br>BackgroundService · fila<br>entregas.pedido-confirmado"]:::comp
 
         iRepo["<b>IEntregadorRepository</b>"]:::port
@@ -51,7 +51,7 @@ graph TB
 
 ## Observações de projeto
 
-**`EntregadorService` concentra nove operações gRPC.** É a implementação da
+**`EntregadorService` concentra oito operações gRPC.** É a implementação da
 classe base gerada pelo `.proto`, então cada método é um `override` que delega ao
 repositório. Separar exigiria uma camada de mediação só para redistribuir
 delegação — o ganho não paga o custo. O único método com lógica real é
