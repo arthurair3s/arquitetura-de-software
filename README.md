@@ -4,6 +4,18 @@ Este projeto é um ecossistema de alta performance projetado para demonstrar a a
 
 ---
 
+## 🗺️ A arquitetura em uma tela
+
+Antes de descer nos níveis do C4, o mapa completo:
+**[Visão Geral da Arquitetura](docs/diagramas/visao-geral.md)** — todos os
+contêineres, os dois brokers e o pipeline de CDC num diagrama só.
+
+Existe também uma **[versão interativa](https://claude.ai/code/artifact/6f983440-cba3-46c3-be5b-edfc245d31ac)**:
+clique numa peça para isolar as dependências dela, filtre por camada e leia a
+ficha técnica de cada contêiner. É a versão para apresentar o projeto.
+
+---
+
 ## 🏛️ Arquitetura do Sistema (Modelo C4)
 
 Utilizamos o Modelo C4 para descrever a estrutura do sistema, dividindo-a em três níveis de detalhamento (Contexto, Contêineres e Componentes) de forma limpa e integrada.
@@ -31,7 +43,7 @@ graph TD
     lojista -->|Gerenciam lojas e visualizam insights| express_delivery
     express_delivery -->|Consome serviços de mapas, pagamento e e-mail| externos
 ```
-> 🔗 [Ver Diagrama de Contexto Detalhado (L1)](docs/diagramas/c1/c4_l1_context.md)
+> 🔗 [Nível 1 detalhado, com legenda e fronteira do sistema](docs/diagramas/c1/c4_l1_context.md)
 
 ### Nível 2: Contêineres (Containers)
 Aumenta o detalhamento expondo a topologia de microsserviços, bancos de dados, cache, brokers de mensagens e telemetria que compõem o ecossistema.
@@ -82,7 +94,7 @@ graph TD
     ms_python -->|Consome CDC do catálogo e das vendas| messaging
     ms_python -->|"Envio de e-mails (HTTP REST / SMTP)"| ext
 ```
-> 🔗 [Ver Diagrama de Contêineres Detalhado (L2)](docs/diagramas/c2/c4_l2_container.md)
+> 🔗 [Nível 2 detalhado, com portas internas e os dois brokers](docs/diagramas/c2/c4_l2_container.md)
 
 ### Nível 3: Componentes (Components)
 Zoom sobre a organização do container **Backend Core (API Node)**, estruturada sob as premissas da Clean Architecture com injeção e inversão de dependência (DIP).
@@ -111,7 +123,7 @@ graph TB
     app -->|Orquestração de Dados| infra
     infra -->|Efetua persistência / chamadas RPC| resources
 ```
-> 🔗 [Ver Diagrama de Componentes Detalhado (L3)](docs/diagramas/c3/c4_l3_component.md)
+> 🔗 [Nível 3: um diagrama de componentes por contêiner](docs/diagramas/c3/README.md)
 
 ---
 

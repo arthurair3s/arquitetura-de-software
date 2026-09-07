@@ -1,102 +1,134 @@
-# Nível 2: Diagrama de Contêineres (Container Diagram)
+# C4 — Nível 2: Contêineres
 
-Detalhamento de todos os contêineres executáveis, bancos de dados, brokers de mensageria e ferramentas de observabilidade da rede interna do Express Delivery.
+Zoom dentro do Express Delivery: as unidades executáveis, os bancos, os brokers e
+a stack de observabilidade. Cada caixa aqui é algo que sobe no `compose.yml`.
+
+> **Escopo:** o sistema Express Delivery · **Público:** quem vai desenvolver, operar ou avaliar a arquitetura
+
+As portas indicadas são as **internas da rede Docker** — é por elas que os
+contêineres conversam entre si. As portas publicadas no host estão no
+[README](../../../README.md#-endpoints-de-acesso-via-gateway).
 
 ```mermaid
 graph TB
-    %% Styling
     classDef person fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff;
     classDef container fill:#438dd5,stroke:#3b7bb5,stroke-width:2px,color:#fff;
     classDef db fill:#0b132b,stroke:#00b4d8,stroke-width:2px,color:#fff;
-    classDef broker fill:#2d1a12,stroke:#f8961e,stroke-width:2px,color:#fff;
-    classDef ext fill:#121212,stroke:#666,stroke-width:1px,color:#aaa;
-    classDef obs fill:#333333,stroke:#ff5722,stroke-width:2px,color:#fff;
+    classDef broker fill:#8a5a2b,stroke:#f8961e,stroke-width:2px,color:#fff;
+    classDef ext fill:#999999,stroke:#777777,stroke-width:2px,color:#fff;
+    classDef obs fill:#5c5c5c,stroke:#ff5722,stroke-width:2px,color:#fff;
 
-    %% Actors
-    cliente["Cliente<br>(Utiliza o sistema para visualizar cardápios, realizar pedidos e acompanhar entregas)"]:::person
-    entregador["Entregador<br>(Utiliza o sistema para gerenciar disponibilidade, aceitar corridas e atualizar sua localização)"]:::person
-    lojista["Lojista (Restaurante)<br>(Gerencia cardápios, produtos, recebe pedidos e acompanha insights)"]:::person
+    cliente["<b>Cliente</b><br><i>[Pessoa]</i>"]:::person
+    lojista["<b>Lojista</b><br><i>[Pessoa]</i>"]:::person
+    entregador["<b>Entregador</b><br><i>[Pessoa]</i>"]:::person
 
-    %% Containers
-    frontend["Frontend Web<br>(React + Vite, TailwindCSS)<br>(Interface Web SPA unificada que fornece as telas para Clientes, Lojistas e o App do Entregador)"]:::container
+    subgraph sistema ["Express Delivery"]
+        direction TB
 
-    subgraph private_backend ["Rede Privada / Servidores de Backend"]
-        gateway["API Gateway (Kong)<br>(Kong 3.4 DB-less / declarativo)<br>(Valida assinatura e expiração do JWT, CORS, Rate Limiting, correlation-id e roteamento de borda na porta 8000)"]:::container
-        api_node["Backend Core (API Node)<br>(TypeScript, Node.js, GraphQL, Prisma)<br>(Orquestrador principal. Provê a API GraphQL, gerencia autenticação, usuários, restaurantes, pedidos, cancelamento de simulações e conexões gRPC)"]:::container
-        
-        ms_entregadores["Microserviço de Entregadores<br>(C#, .NET 10, gRPC)<br>(Gerencia o ciclo de vida, disponibilidade, bloqueio de simulação e o rastreamento em tempo real da frota no Redis)"]:::container
-        ms_roteamento["Microserviço de Roteamento<br>(C#, .NET 10, gRPC)<br>(Responsável pelo cálculo de rotas ideais, estimativas de tempos e trajetos de coleta/entrega usando OSRM)"]:::container
-        ms_recomendacao["Microserviço de Recomendação<br>(Python, FastAPI, gRPC, SQLAlchemy)<br>(Gera insights analíticos de preços para lojistas baseados em geolocalização e histórico de vendas locais)"]:::container
-        ms_notificacoes["Microserviço de Notificações<br>(Python, pika, urllib)<br>(Consome eventos e envia notificações por e-mail em background via HTTP REST ou SMTP)"]:::container
+        web["<b>Frontend Web</b><br><i>[React 19 + Vite]</i><br>SPA única com as telas de<br>cliente, lojista e entregador"]:::container
+        kong["<b>API Gateway</b><br><i>[Kong 3.4 DB-less]</i><br>Valida JWT, CORS, rate limit,<br>correlation-id · :8000"]:::container
 
-        %% Databases
-        db_postgres[("Banco de Dados Principal<br>(PostgreSQL 15)<br>(Armazena dados transacionais de usuários, restaurantes, produtos, pedidos, pagamentos e avaliações)")]:::db
-        db_entregadores[("Banco de Dados Entregadores<br>(PostgreSQL 15)<br>(Armazena dados isolados dos entregadores cadastrados no sistema)")]:::db
-        db_recomendacao[("Banco de Dados Recomendação<br>(PostgreSQL 15)<br>(Armazena o histórico analítico de vendas e as réplicas locais de dados para geoprocessamento)")]:::db
-        db_redis[("Cache e Posições (Redis)<br>(Redis 7)<br>(Armazena posições geográficas em tempo real dos entregadores (Redis Geo) e serve como cache-aside de queries GraphQL)")]:::db
+        api["<b>Backend Core</b><br><i>[Node.js · TypeScript · Apollo GraphQL · Prisma]</i><br>Schema GraphQL único, autorização,<br>casos de uso e orquestração gRPC · :4000"]:::container
 
-        %% Messaging
-        rabbitmq["RabbitMQ Message Broker<br>(RabbitMQ 3)<br>(Roteia eventos assíncronos (pedido.confirmado, pagamento.aprovado, entrega.atribuida) entre serviços)"]:::broker
-        cdc["Change Data Capture (Kafka + Debezium)<br>(Apache Kafka em modo KRaft, Debezium 2.4)<br>(Deriva do WAL do banco principal as mudanças de catálogo, pedidos e itens vendidos, e as entrega ao motor analítico)"]:::broker
+        msent["<b>MS Entregadores</b><br><i>[.NET 10 · gRPC · EF Core]</i><br>Ciclo de vida da frota e<br>rastreamento geográfico · :5001"]:::container
+        msrot["<b>MS Roteamento</b><br><i>[.NET 10 · gRPC]</i><br>Rotas, distâncias e ETA · :5002"]:::container
+        msrec["<b>MS Recomendação</b><br><i>[Python · FastAPI · gRPC · SQLAlchemy]</i><br>Read-model analítico e insights<br>de precificação B2B · :50053"]:::container
+        msnot["<b>MS Notificações</b><br><i>[Python · pika]</i><br>Envia e-mail transacional<br>a partir de eventos"]:::container
+
+        pgmain[("<b>Banco Principal</b><br><i>[PostgreSQL 15]</i><br>Usuários, lojas, pedidos,<br>pagamentos · :5432")]:::db
+        pgent[("<b>Banco Entregadores</b><br><i>[PostgreSQL 15]</i><br>Cadastro da frota · :5432")]:::db
+        pgrec[("<b>Banco Analítico</b><br><i>[PostgreSQL 15]</i><br>Réplicas derivadas + assinaturas · :5432")]:::db
+        redis[("<b>Redis</b><br><i>[Redis 7]</i><br>Posições geográficas (GEO)<br>e cache-aside · :6379")]:::db
+
+        rabbit["<b>RabbitMQ</b><br><i>[RabbitMQ 3]</i><br>Transporte de trabalho:<br>exchange + DLX · :5672"]:::broker
+        kafka["<b>Kafka</b><br><i>[Confluent 7.6 · KRaft]</i><br>Replicação de estado:<br>tópicos dbserver1.public.* · :9092"]:::broker
+        debezium["<b>Debezium Connect</b><br><i>[Debezium 2.4]</i><br>Lê o WAL e publica no Kafka · :8083"]:::broker
+
+        osrm["<b>OSRM</b><br><i>[Motor C++ auto-hospedado]</i><br>Cálculo geométrico de rotas · :5000"]:::container
     end
 
-    subgraph externals ["Serviços Externos"]
-        osrm_server["Servidor de Roteamento (OSRM)<br>(C++ Engine)<br>(Servidor OSRM que resolve caminhos geométricos e estimativas físicas reais)"]:::ext
-        stripe["Gateway de Pagamento (Stripe)<br>(Processa transações financeiras de forma segura)"]:::ext
-        mailtrap["Servidor de E-mail (Mailtrap)<br>(Plataforma para teste de emails via API HTTP REST ou SMTP tradicional)"]:::ext
+    subgraph obs ["Observabilidade"]
+        direction LR
+        jaeger["<b>Jaeger</b><br><i>[All-in-One]</i><br>Traces distribuídos"]:::obs
+        prom["<b>Prometheus</b><br>Métricas"]:::obs
+        graf["<b>Grafana</b><br>Painéis"]:::obs
     end
 
-    subgraph observability ["Observabilidade"]
-        jaeger["Jaeger Tracing<br>(Jaeger All-in-One)<br>(Centraliza a visualização de traces distribuídos gRPC/GraphQL)"]:::obs
-        prometheus["Prometheus Metrics<br>(Prometheus Server)<br>(Coleta métricas temporais das aplicações instrumentadas)"]:::obs
-        grafana["Grafana Dashboards<br>(Grafana OSS)<br>(Visualiza painéis analíticos e métricas consolidadas do sistema)"]:::obs
+    subgraph ext ["Sistemas Externos"]
+        direction LR
+        stripe["<b>Stripe</b><br><i>[Sistema Externo]</i>"]:::ext
+        mailtrap["<b>Mailtrap</b><br><i>[Sistema Externo]</i>"]:::ext
     end
 
-    %% Flows
-    cliente -->|"Interage com a interface (HTTPS/SPA)"| frontend
-    lojista -->|"Acessa o painel do restaurante (HTTPS/SPA)"| frontend
-    entregador -->|"Gerencia entregas e localização no painel (HTTPS/SPA)"| frontend
-    
-    frontend -->|"Envia requisições GraphQL (HTTPS/JSON Port 8000)"| gateway
+    cliente --> web
+    lojista --> web
+    entregador --> web
+    web -->|"GraphQL<br>[HTTPS/JSON]"| kong
+    kong -->|"Encaminha /graphql<br>[HTTP]"| api
 
-    gateway -->|"Encaminha requisições GraphQL (HTTP/GraphQL Port 4000)"| api_node
-    api_node -->|"Grava/lê dados transacionais (Prisma Client Port 5433)"| db_postgres
-    api_node -->|"Lê/grava cache-aside de queries e override de rotas (TCP/ioredis Port 6379)"| db_redis
-    api_node -->|"Consulta entregadores próximos (gRPC Client Port 5001)"| ms_entregadores
-    api_node -->|"Solicita cálculo de rota (gRPC Client Port 5002)"| ms_roteamento
-    api_node -->|"Busca insights e atualiza assinatura (gRPC Client Port 50053)"| ms_recomendacao
-    api_node -->|"Publica eventos (AMQP/amqplib Port 5672)"| rabbitmq
-    api_node -->|"Solicita cobrança de cartões/Pix (HTTPS/REST API)"| stripe
+    api -->|"Lê e grava<br>[Prisma/TCP]"| pgmain
+    api -->|"Cache-aside<br>[ioredis]"| redis
+    api -->|"Frota e posições<br>[gRPC]"| msent
+    api -->|"Rotas e ETA<br>[gRPC]"| msrot
+    api -->|"Insights e assinatura<br>[gRPC]"| msrec
+    api -->|"Publica eventos de trabalho<br>[AMQP]"| rabbit
+    api -->|"Cobra pedidos<br>[HTTPS/REST]"| stripe
 
-    ms_entregadores -->|"Persiste entregadores (ADO.NET/EF Core Port 5434)"| db_entregadores
-    ms_entregadores -->|"Salva posições geográficas (Redis Geo Commands Port 6379)"| db_redis
-    ms_entregadores -->|"Publica entrega.atribuida / Consome pedido.confirmado (AMQP Port 5672)"| rabbitmq
+    msent -->|"Persiste frota<br>[EF Core]"| pgent
+    msent -->|"Posições GEO<br>[Redis GEO]"| redis
+    msent -->|"Consome pedido.confirmado<br>publica entrega.atribuida<br>[AMQP]"| rabbit
+    msrot -->|"Consulta trajetos<br>[HTTP/JSON]"| osrm
+    msnot -->|"Consome pagamento.aprovado<br>e pedido.entregue [AMQP]"| rabbit
+    msnot -->|"Dispara e-mails<br>[HTTPS/REST ou SMTP]"| mailtrap
 
-    ms_roteamento -->|"Consulta estimativas e trajetos físicos (HTTP/JSON Port 5080)"| osrm_server
+    pgmain -.->|"WAL / logical decoding"| debezium
+    debezium -.->|"Publica mudanças"| kafka
+    kafka -.->|"Consome tópicos<br>[Kafka Protocol]"| msrec
+    msrec -->|"Aplica réplicas<br>[SQLAlchemy]"| pgrec
 
-    ms_recomendacao -->|"Grava histórico analítico e réplicas (SQLAlchemy Port 5436)"| db_recomendacao
-    ms_recomendacao -->|"Consome pedido.confirmado (AMQP Port 5672)"| rabbitmq
-
-    ms_notificacoes -->|"Consome eventos para disparar e-mails (AMQP Port 5672)"| rabbitmq
-    ms_notificacoes -->|"Dispara e-mails transacionais (HTTPS/REST Port 443 ou SMTP Port 2525)"| mailtrap
-
-    db_postgres -->|"Replicação lógica do WAL (Postgres logical decoding)"| cdc
-    cdc -->|"Tópicos dbserver1.public.* (Kafka Protocol Port 9092)"| ms_recomendacao
-
-    %% Traces and Metrics
-    api_node -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
-    ms_entregadores -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
-    ms_roteamento -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
-    ms_recomendacao -. "Envia traces (OTLP/gRPC Port 4317)" .-> jaeger
-    ms_notificacoes -. "Envia traces (OTLP/HTTP Port 4318)" .-> jaeger
-
-    prometheus -. "Scrape de métricas (HTTP)" .-> api_node
-    prometheus -. "Scrape de métricas (HTTP)" .-> ms_recomendacao
-    prometheus -. "Scrape de métricas (HTTP)" .-> ms_entregadores
-
-    grafana -->|"Consulta métricas (HTTP/REST API)"| prometheus
-    grafana -->|"Busca traces (HTTP/REST API)"| jaeger
+    api -. "OTLP" .-> jaeger
+    msent -. "OTLP" .-> jaeger
+    msrot -. "OTLP" .-> jaeger
+    msrec -. "OTLP" .-> jaeger
+    msnot -. "OTLP" .-> jaeger
+    prom -. "scrape" .-> api
+    graf --> prom
+    graf --> jaeger
 ```
 
+## Como ler este diagrama
+
+| Traço | Significado |
+| :--- | :--- |
+| Linha cheia | Chamada síncrona: quem chama espera a resposta |
+| Linha tracejada | Fluxo assíncrono ou telemetria: quem emite não espera |
+
+| Cor | Tipo |
+| :--- | :--- |
+| Azul escuro | Pessoa |
+| Azul | Contêiner (aplicação executável) |
+| Azul petróleo | Armazenamento de dados |
+| Marrom | Broker de mensageria |
+| Cinza | Sistema externo |
+| Grafite | Observabilidade |
+
+## Os dois brokers
+
+Não é redundância — cada um resolve um problema diferente:
+
+- **RabbitMQ carrega trabalho.** `pedido.confirmado` leva à atribuição de um
+  entregador; `pagamento.aprovado` dispara um e-mail. São tarefas com consumidor
+  único e DLQ por fila.
+- **Kafka replica estado.** O `ms-recomendacao` não recebe trabalho: ele mantém
+  uma cópia analítica do banco principal, derivada do WAL pelo Debezium. Por isso
+  ele **não** consome RabbitMQ — o que entra nele é fluxo de dados, com replay e
+  ordenação.
+
+## Onde o OSRM aparece
+
+No [Nível 1](../c1/c4_l1_context.md) ele é um sistema externo, porque é um motor
+de terceiros. Aqui ele é um contêiner, porque o projeto o auto-hospeda a partir de
+um extrato do OpenStreetMap. As duas leituras estão certas em níveis diferentes.
+
 ---
-[⬅️ Voltar para o README](../../../README.md)
+[⬅️ Nível 1: Contexto](../c1/c4_l1_context.md) · [README](../../../README.md) · [Nível 3: Componentes ➡️](../c3/README.md)
